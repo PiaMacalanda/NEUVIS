@@ -1,7 +1,7 @@
 // app/index.tsx
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { Button, colors, typography } from '../theme';
+import { Button, colors, typography } from '../components';
 
 export default function HomeScreen() {
   return (

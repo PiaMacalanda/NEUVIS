@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { Button, colors, typography } from '../theme';
+import { Button, colors, typography } from '../components';
 import { router } from 'expo-router';
 
 export default function HomeScreen() {
@@ -36,7 +36,7 @@ export default function HomeScreen() {
         <View style={styles.buttonGroup}>
           <Button
             title='Privacy & Policy'
-            variant="ghost"
+            variant='underline'
             onPress={() => {}}
           />
         </View>

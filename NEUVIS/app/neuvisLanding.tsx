@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { Button, colors, typography } from '../theme';
+import { Button, colors, typography } from '../components';
 import { router } from 'expo-router';
 
 export default function HomeScreen() {
@@ -14,6 +14,12 @@ export default function HomeScreen() {
         <Text style={[typography.header.h1, styles.title]}>NEUVIS</Text>
         <Text style={typography.body.regular}>
           New Era University Visitor Identification System
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={typography.body.regular}>
+          Generate Visitor ID
         </Text>
       </View>
 

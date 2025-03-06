@@ -10,12 +10,12 @@ import {
   TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import colors from './colors';
-import spacing from './spacing';
-import typography from './typography';
+import colors from '../components/colors';
+import spacing from '../components/spacing';
+import typography from '../components/typography';
 
 type ButtonSize = 'small' | 'medium' | 'large';
-type ButtonVariant = 'solid' | 'outline' | 'ghost';
+type ButtonVariant = 'solid' | 'outline' | 'ghost' | 'underline';
 type IconPosition = 'left' | 'right';
 
 interface ButtonProps {
@@ -80,6 +80,10 @@ export const Button = ({
       backgroundColor: 'transparent',
       borderWidth: 0,
     },
+    underline: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+    },
   };
 
   // Text color based on variant
@@ -87,6 +91,7 @@ export const Button = ({
     solid: colors.text.light,
     outline: colors.primary,
     ghost: colors.primary,
+    underline: '#2196F3', // Blue for links
   };
 
   // Icon size based on button size
@@ -124,7 +129,12 @@ export const Button = ({
               style={iconMargin} 
             />
           )}
-          <Text style={[{ color: textColor[variant] }, textStyle]}>
+          <Text
+            style={[
+              { color: textColor[variant], textDecorationLine: variant === 'underline' ? 'underline' : 'none' },
+              textStyle,
+            ]}
+          >
             {title}
           </Text>
           {icon && iconPosition === 'right' && (
@@ -139,7 +149,7 @@ export const Button = ({
       )}
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   button: {
@@ -155,9 +165,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
-  },
-    underlineText: {
-    textDecorationLine: 'underline',
   },
 });
 
