@@ -1,13 +1,14 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { Button, colors, typography } from '../components';
+import { Image, StyleSheet, View, Text, ScrollView } from 'react-native';
+import { Button, colors, typography, Logo } from '../components';
 import { router } from 'expo-router';
 
 export default function HomeScreen() {
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        This is for the logo
+
+      <View style={styles.logoContainer}>
+        <Logo size="large" />
       </View>
 
       <View style={styles.section}>
@@ -51,14 +52,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
+  logoContainer: {
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 30,
+  },
   title: {
     marginBottom: 10,
+    alignSelf: 'center',
   },
   section: {
     marginBottom: 30,
+    alignSelf: 'center',
   },
   buttonGroup: {
     marginVertical: 10,
+    alignSelf: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
