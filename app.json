@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "NEUVIS",
-    "slug": "NEUVIS",
+    "slug": "neuvis",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -36,6 +36,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a6c08694-bf61-4c12-acb7-728ceb5e24ed"
+      }
+    },
+    "owner": "neuvis_team"
   }
 }
