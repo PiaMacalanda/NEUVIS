@@ -1,56 +1,64 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
-import { Button, colors, typography } from '../components';
-import { router } from 'expo-router';
+import { Image, StyleSheet, View, Text, ScrollView } from 'react-native';
+import { Button } from '../components';
+import Header from '../components/Header';
+import { useRouter } from 'expo-router';
 
-export default function HomeScreen() {
+
+export default function NeuvisLanding() {
+  const router = useRouter();
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.section}>
-        This is for the logo
+      {/* Header Component */}
+      <Header />
+
+      {/* Hero Image */}
+      <View style={styles.heroContainer}>
+        <Image 
+          source={require('../assets/SampleID.png')}  
+          style={styles.heroImage} 
+          resizeMode="contain"
+        />
       </View>
 
-      <View style={styles.section}>
-        <Text style={[typography.header.h1, styles.title]}>NEUVIS</Text>
-        <Text style={typography.body.regular}>
-          New Era University Visitor Identification System
-        </Text>
+      {/* Section: Generate Visitor ID */}
+      <View style={styles.textContainer}>
+        <Text style={styles.text}>Scan a valid ID or manually enter visitor details.</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={typography.body.regular}>
-          Generate Visitor ID
-        </Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={typography.body.regular}>
-          This is for the Hero Image
-        </Text>
-      </View>
-
+      {/* Buttons */}
       <View style={styles.section}>
         <View style={styles.buttonGroup}>
-          <Button
-            title='Scan ID'
-            icon="scan-outline"
-            onPress={() => {}}
+          <Button 
+            title='Scan ID' 
+            icon="scan-outline" 
+            onPress={() => {}} 
           />
         </View>
 
         <View style={styles.buttonGroup}>
-          <Button
-            title='Manually Input Information'
-            icon="create-outline"
-            onPress={() => {}}
-          />
+          <Button 
+          title='Manually Input Information' 
+          icon="create-outline" 
+          onPress={() => {}} 
+        />
         </View>
 
         <View style={styles.buttonGroup}>
-          <Button
-            title='Visitor Logs'
-            icon="book-outline"
-            onPress={() => {}}
+          <Button 
+          title='Visitor Logs' 
+          icon="book-outline" 
+          onPress={() => {}} 
+        />
+        </View>
+
+        <View style={styles.buttonGroup}>
+          <Button 
+            title='Log Out' 
+            variant="outline" 
+            icon="log-out-outline" 
+            onPress={() => router.push('/')} // Redirect to home scree/index.tsx
           />
         </View>
       </View>
@@ -64,19 +72,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
-  title: {
-    marginBottom: 10,
+  heroContainer: {
+    alignItems: 'center',  
+    marginTop: 20, // Add space above hero image
+    marginBottom: 10, // Add spacing between image and text
+  },
+  heroImage: {
+    width: 200,  // Adjust width
+    height: 120, // Adjust height
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginBottom: 20, // Add spacing before buttons
+  },
+  text: {
+    fontSize: 16,
+    fontWeight: 'normal', // Regular font weight
+    textAlign: 'center',
   },
   section: {
     marginBottom: 30,
+    alignItems: 'center',
   },
   buttonGroup: {
-    marginVertical: 10,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
     marginVertical: 10,
   },
 });
