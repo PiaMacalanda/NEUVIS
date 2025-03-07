@@ -19,7 +19,7 @@ export default function ButtonView() {
           <Button
             title="Small"
             size="small"
-            onPress={() => router.push('/test')}
+            onPress={() => router.push('/neuvisLanding')}
           />
           <Button
             title="Medium"
