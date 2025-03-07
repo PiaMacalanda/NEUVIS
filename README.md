@@ -1,20 +1,52 @@
-# Welcome to your Expo app 👋
+# Welcome to NEUVIS - Virtual Identification System 🪪👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+NEUVIS is a Virtual Identification System designed to streamline visitor management in New Era University. Built with React Native, Expo, Supabase, and TypeScript, it enables security officers and administrators to verify, log, and track visitor check-ins and check-outs efficiently.
+ 
+## 📌 Tech Stack  
+- **React Native** - Mobile app framework  
+- **Expo** - Development environment  
+- **Supabase** - Backend services  
+- **TypeScript** - Strongly typed JavaScript  
 
 ## Get started
 
-1. Install dependencies
+1. Clone the Repository
+
+   ```bash
+   git clone https://github.com/PiaMacalanda/NEUVIS.git
+   cd NEUVIS
+   ```
+2. Install dependencies
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Install Expo Go on Your Mobile Device  
+**Why do we need Expo Go?**  
+Expo Go allows us to run and test our React Native app directly on a physical device without the need for a complicated build process. It enables **live reloading**, meaning any changes made in the code will reflect in real-time on the app without restarting the development server.  
+
+📲 **To install Expo Go:**  
+- **For Android:** [Download from Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)  
+- **For iOS:** [Download from the App Store](https://apps.apple.com/app/expo-go/id982107779)  
+
+Once installed, you'll be able to scan the QR code provided by `npx expo start` to run the app on your phone.  
+
+4. Set Up Environment Variables (working on🚧) 
+Create a `.env` file in the root directory and add: 
+
+```
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+5. Start the Development Server
 
    ```bash
     npx expo start
    ```
+- If using a **physical device**, open **Expo Go** and scan the QR code displayed in your terminal or browser.  
+- If using an **emulator**, make sure it's running before starting the project.  
 
 In the output, you'll find options to open the app in a
 
@@ -25,26 +57,16 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Get a fresh project
+## Additional Resources
+📚 Additional Resources
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation]()
+- [Supabase Documentation]()
+- [TypeScript Documentation]()
+- [Google Auth for Expo]()
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Project Team
+- Project Manager: Pia Macalanda
+- Design Analyst: Angelica Toquero
+- Software Developers: Jaime Dy, Aliyah Llana
+- Sofware Testers: Leo Rentazida, Lyrine Poliarco
