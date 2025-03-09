@@ -33,7 +33,7 @@ export default function NeuvisLanding() {
           <Button 
             title='Scan ID' 
             icon="scan-outline" 
-            onPress={() => {}} 
+            onPress={() => router.push('/Scanner')}
           />
         </View>
 
