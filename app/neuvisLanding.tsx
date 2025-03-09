@@ -4,14 +4,13 @@ import { Button } from '../components';
 import Header from '../components/Header';
 import { useRouter } from 'expo-router';
 
-
 export default function NeuvisLanding() {
   const router = useRouter();
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header Component */}
-      <Header />
+      {/* Header Component with Dynamic Role */}
+      <Header role="Security Guard" name="Main Entrance" />
 
       {/* Hero Image */}
       <View style={styles.heroContainer}>
@@ -31,7 +30,7 @@ export default function NeuvisLanding() {
       <View style={styles.section}>
         <View style={styles.buttonGroup}>
           <Button 
-            title='Scan ID' 
+            title="Scan ID" 
             icon="scan-outline" 
             onPress={() => {}} 
           />
@@ -39,26 +38,26 @@ export default function NeuvisLanding() {
 
         <View style={styles.buttonGroup}>
           <Button 
-          title='Manually Input Information' 
-          icon="create-outline" 
-          onPress={() => {}} 
-        />
+            title="Manually Input Information" 
+            icon="create-outline" 
+            onPress={() => {}} 
+          />
         </View>
 
         <View style={styles.buttonGroup}>
           <Button 
-          title='Visitor Logs' 
-          icon="book-outline" 
-          onPress={() => {}} 
-        />
+            title="Visitor Logs" 
+            icon="book-outline" 
+            onPress={() => {}} 
+          />
         </View>
 
         <View style={styles.buttonGroup}>
           <Button 
-            title='Log Out' 
+            title="Log Out" 
             variant="outline" 
             icon="log-out-outline" 
-            onPress={() => router.push('/')} // Redirect to home scree/index.tsx
+            onPress={() => router.push('/')} // Redirect to home screen/index.tsx
           />
         </View>
       </View>
@@ -74,20 +73,20 @@ const styles = StyleSheet.create({
   },
   heroContainer: {
     alignItems: 'center',  
-    marginTop: 20, // Add space above hero image
-    marginBottom: 10, // Add spacing between image and text
+    marginTop: 20, 
+    marginBottom: 10, 
   },
   heroImage: {
-    width: 200,  // Adjust width
-    height: 120, // Adjust height
+    width: 200,  
+    height: 120, 
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: 20, // Add spacing before buttons
+    marginBottom: 20, 
   },
   text: {
     fontSize: 16,
-    fontWeight: 'normal', // Regular font weight
+    fontWeight: 'normal',
     textAlign: 'center',
   },
   section: {
@@ -98,3 +97,4 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 });
+

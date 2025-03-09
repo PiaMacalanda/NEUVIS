@@ -3,7 +3,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import Logo from '../components/logo';
 import { Ionicons } from '@expo/vector-icons';
 
-const Header = () => {
+// Define props for flexibility
+interface HeaderProps {
+  role?: string; // e.g., "Administrator" or "Security Guard"
+  name?: string; // e.g., "Admin 1" or "Main Entrance"
+}
+
+const Header: React.FC<HeaderProps> = ({ role = "Security Guard", name = "Main Entrance" }) => {
   return (
     <View style={styles.container}>
       {/* Left Side: Logo & Title */}
@@ -17,12 +23,12 @@ const Header = () => {
         </View>
       </View>
 
-      {/* Right Side: Security Guard Info */}
+      {/* Right Side: Dynamic User Info */}
       <View style={styles.right}>
         <Ionicons name="person-outline" size={20} color="black" />
-        <View style={styles.guardInfo}>
-          <Text style={styles.guardTitle}>Security Guard</Text>
-          <Text style={styles.guardSubtitle}>Main Entrance</Text>
+        <View style={styles.userInfo}>
+          <Text style={styles.userTitle}>{role}</Text>
+          <Text style={styles.userSubtitle}>{name}</Text>
         </View>
       </View>
     </View>
@@ -57,14 +63,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  guardInfo: {
+  userInfo: {
     marginLeft: 5,
   },
-  guardTitle: {
+  userTitle: {
     fontSize: 14,
     fontWeight: 'bold',
   },
-  guardSubtitle: {
+  userSubtitle: {
     fontSize: 12,
     color: '#666',
   },
