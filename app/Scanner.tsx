@@ -4,7 +4,7 @@ import { Camera, CameraView } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-// List of available ID types
+
 const ID_TYPES = [
   'Phils ID',
   'Passport',
@@ -149,7 +149,7 @@ export default function Scanner() {
   );
 }
 
-// Component for progress bar at top of screen
+
 const ProgressBar = ({ progress }: { progress: number }) => (
   <View style={styles.progressBarContainer}>
     <View style={styles.progressBar}>
@@ -158,21 +158,21 @@ const ProgressBar = ({ progress }: { progress: number }) => (
   </View>
 );
 
-// Component for back button
+
 const BackButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity style={styles.backButton} onPress={onPress}>
     <Ionicons name="arrow-back" size={24} color="white" />
   </TouchableOpacity>
 );
 
-// Component for camera capture button
+
 const CaptureButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity style={styles.captureButton} onPress={onPress}>
     <Ionicons name="camera" size={24} color="white" />
   </TouchableOpacity>
 );
 
-// Component for document frame overlay
+
 const DocumentFrame = () => (
   <View style={styles.overlay}>
     <View style={styles.cornerTopLeft} />
@@ -182,7 +182,6 @@ const DocumentFrame = () => (
   </View>
 );
 
-// Component for ID selection buttons
 interface IDSelectionButtonsProps {
   primaryLabel: string;
   secondaryLabel: string;
@@ -233,7 +232,7 @@ const IDSelectionButtons = ({
   </View>
 );
 
-// Component for options modal
+
 interface OptionsModalProps {
   visible: boolean;
   onClose: () => void;
