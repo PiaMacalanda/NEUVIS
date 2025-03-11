@@ -1,11 +1,40 @@
 import { Stack } from 'expo-router';
-import React from 'react';
-import { Image, StyleSheet, View, Text, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Button, colors, typography, Logo } from '../components';
 import { useRouter } from 'expo-router';
+import { supabase } from './supabase';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if the user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        router.replace('/neuvisLanding'); // Redirect authenticated users
+      }
+    };
+    checkUser();
+  }, []);
+
+  // Google Sign-In Function
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      console.log('Sign-in successful');
+    }
+
+    setLoading(false);
+  };
 
   return (
     <>
@@ -35,16 +64,17 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.buttonGroup}>
             <Button
-              title='Sign in to Google Account'
+              title={loading ? "Signing in..." : "Sign in to Google Account"}
               variant="outline"
               icon="logo-google"
-              onPress={() => router.push('/neuvisLanding')}
+              onPress={signInWithGoogle}
+              disabled={loading} // Disable button while loading
             />
           </View>
 
           <View style={styles.buttonGroup}>
             <Button
-              title='Privacy & Policy'
+              title="Privacy & Policy"
               variant="underline"
               onPress={() => router.push('/privacy')}
             />
@@ -84,3 +114,4 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 });
+

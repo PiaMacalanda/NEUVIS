@@ -1,12 +1,21 @@
 import React from 'react';
-import { Image, StyleSheet, View, Text, ScrollView } from 'react-native';
+import { Image, StyleSheet, View, Text, ScrollView, Alert } from 'react-native';
 import { Button } from '../components';
 import Header from '../components/Header';
 import { useRouter } from 'expo-router';
-
+import { supabase } from './supabase'; // Import supabase instance
 
 export default function NeuvisLanding() {
   const router = useRouter();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Logout Failed', error.message);
+    } else {
+      router.replace('/'); // Redirect to home/index page
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -39,18 +48,18 @@ export default function NeuvisLanding() {
 
         <View style={styles.buttonGroup}>
           <Button 
-          title='Manually Input Information' 
-          icon="create-outline" 
-          onPress={() => {}} 
-        />
+            title='Manually Input Information' 
+            icon="create-outline" 
+            onPress={() => {}} 
+          />
         </View>
 
         <View style={styles.buttonGroup}>
           <Button 
-          title='Visitor Logs' 
-          icon="book-outline" 
-          onPress={() => {}} 
-        />
+            title='Visitor Logs' 
+            icon="book-outline" 
+            onPress={() => {}} 
+          />
         </View>
 
         <View style={styles.buttonGroup}>
@@ -58,7 +67,7 @@ export default function NeuvisLanding() {
             title='Log Out' 
             variant="outline" 
             icon="log-out-outline" 
-            onPress={() => router.push('/')} // Redirect to home scree/index.tsx
+            onPress={handleLogout} // Calls logout function
           />
         </View>
       </View>
@@ -74,20 +83,20 @@ const styles = StyleSheet.create({
   },
   heroContainer: {
     alignItems: 'center',  
-    marginTop: 20, // Add space above hero image
-    marginBottom: 10, // Add spacing between image and text
+    marginTop: 20, 
+    marginBottom: 10, 
   },
   heroImage: {
-    width: 200,  // Adjust width
-    height: 120, // Adjust height
+    width: 200,  
+    height: 120, 
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: 20, // Add spacing before buttons
+    marginBottom: 20, 
   },
   text: {
     fontSize: 16,
-    fontWeight: 'normal', // Regular font weight
+    fontWeight: 'normal', 
     textAlign: 'center',
   },
   section: {
