@@ -1,9 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal } from 'react-native';
+import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import TextRecognition from "@react-native-ml-kit/text-recognition";
 
+interface ImageType {
+  uri: string;
+  width: number;
+  height: number;
+  exif?: any;
+  base64?: string;
+}
+
+interface ProcessedDataType {
+    card_type: string;
+    id_number: string | null;
+    last_name: string | null;
+    first_name: string | null;
+    middle_name: string | null;
+}
 
 const ID_TYPES = [
   'Phils ID',
@@ -27,6 +43,8 @@ export default function Scanner() {
     secondaryOption: 'Other',
     showOptionsModal: false,
   });
+
+  const [processedData, setProcessedData] = useState<ProcessedDataType | null>(null);
   
   const cameraRef = useRef<any>(null);
   const router = useRouter();
@@ -59,15 +77,72 @@ export default function Scanner() {
       const photo = await cameraRef.current.takePictureAsync();
       console.log('Photo taken:', photo.uri);
 
+
+      await handleImageCaptured(photo);
+
       router.push({
-        pathname: '/Scanner',
-        params: { imageUri: photo.uri },
+        pathname: '/ScannerOutput',
+        params: { 
+          card_type: processedData?.card_type || null,
+          id_number: processedData?.id_number || null,
+          last_name: processedData?.last_name || null,
+          first_name: processedData?.first_name || null,
+          middle_name: processedData?.middle_name || null,
+        },
       });
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture');
     }
   };
+
+ const handleImageCaptured = async (photo: ImageType) => {
+    if(!photo || !photo.uri) return console.error('No image captured!');
+
+    const extractedText = await extractText(photo);
+
+    if (extractedText) {
+      setProcessedData(extractedText);
+  } else {
+      console.error('No data extracted from image!');
+  }
+  }
+
+  const extractText= async (photo: ImageType) => {
+    if(!photo || !photo.uri) {
+      console.error('Image does not exist!')
+      return null;
+    };
+
+    try{
+        if(idSelection.selectedOption == 'Phils ID'){
+            const idNoPattern = /\b(\d{4}-\d{4}-\d{4}-\d{4})\b/;
+            const lastNamePattern = /(?<=Apelyido\/(?:Last|Lost) (?:Name|Nome)\s*\n)([^\n]+)/;
+            const firstNamePattern = /(?<=Mga Pangalan\/Given Names\s*\n)([^\n]+)/;
+            const middleNamePattern = /(?<=Gitnang Apelyido\/(?:Middle Name|Middle Nome)\s*\n)([^\n]+)/;
+
+            const result = await TextRecognition.recognize(photo.uri);
+            console.log("OCR Raw output:\n", result);
+
+            const idNoMatch = result.text.match(idNoPattern);
+            const lastNameMatch = result.text.match(lastNamePattern);
+            const firstNameMatch = result.text.match(firstNamePattern);
+            const middleNameMatch = result.text.match(middleNamePattern);
+
+            const postProcessedData = {
+                card_type: "Philippine Identification Card",
+                id_number: idNoMatch ? idNoMatch[1] : null,
+                last_name: lastNameMatch ? lastNameMatch[0] : null,
+                first_name: firstNameMatch ? firstNameMatch[0] : null,
+                middle_name: middleNameMatch ? middleNameMatch[0] : null,
+            };
+
+            return postProcessedData;
+        }
+    } catch (error){
+        console.error('Error Extracting Text: ', error);
+    }
+  }
 
   const selectIdOption = (option: string) => {
     setIdSelection(prev => ({
@@ -120,25 +195,25 @@ export default function Scanner() {
     }
 
     return (
-      <CameraView style={styles.cameraView} ref={cameraRef} facing="back">
-        <ProgressBar progress={45} />
-        <BackButton onPress={() => router.push('/neuvisLanding')} />
-        <CaptureButton onPress={takePicture} />
-        <DocumentFrame />
-        <IDSelectionButtons 
-          primaryLabel={idSelection.primaryOption}
-          secondaryLabel={idSelection.secondaryOption}
-          selectedOption={idSelection.selectedOption}
-          onPrimaryPress={handlePrimaryButtonPress}
-          onSecondaryPress={handleSecondaryButtonPress}
-        />
-        <OptionsModal 
-          visible={idSelection.showOptionsModal}
-          onClose={() => setIdSelection(prev => ({ ...prev, showOptionsModal: false }))}
-        >
-          {renderOptionsList()}
-        </OptionsModal>
-      </CameraView>
+            <CameraView style={styles.cameraView} ref={cameraRef} facing="back">
+                <ProgressBar progress={45} />
+                <BackButton onPress={() => router.push('/neuvisLanding')} />
+                <CaptureButton onPress={takePicture} />
+                <DocumentFrame />
+                <IDSelectionButtons
+                  primaryLabel={idSelection.primaryOption}
+                  secondaryLabel={idSelection.secondaryOption}
+                  selectedOption={idSelection.selectedOption}
+                  onPrimaryPress={handlePrimaryButtonPress}
+                  onSecondaryPress={handleSecondaryButtonPress}
+                />
+                <OptionsModal
+                  visible={idSelection.showOptionsModal}
+                  onClose={() => setIdSelection(prev => ({ ...prev, showOptionsModal: false }))}
+                >
+                  {renderOptionsList()}
+                </OptionsModal>
+            </CameraView>
     );
   };
 
