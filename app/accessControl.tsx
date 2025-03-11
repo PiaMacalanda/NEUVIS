@@ -15,9 +15,9 @@ type UserAccessType = {
 export default function AccessControlScreen() {
   const router = useRouter();
   const [userAccess, setUserAccess] = useState<UserAccessType>({
+    admin1: { name: 'Maria Posada', role: 'Admin 1', type: 'Admin' },
     host1: { name: 'Juan dela Cruz', role: 'Security 1', gate: 'Main Gate', type: 'Security' },
     host2: { name: 'Cardo Dalisay', role: 'Security 2', gate: 'Back Gate', type: 'Security' },
-    admin1: { name: 'Maria Posada', role: 'Admin 1', type: 'Admin' },
   });
   const [newUserType, setNewUserType] = useState<UserType>('Security');
   const [newUserName, setNewUserName] = useState('');
@@ -57,6 +57,29 @@ export default function AccessControlScreen() {
         <Text style={[typography.header.h1, styles.title]}>Access Control</Text>
       </View>
 
+      {/* Admin Panel */}
+      <View style={styles.adminPanel}>
+        <Text style={styles.adminTitle}>Administrator</Text>
+        <View style={styles.adminPane}>
+          <Text style={styles.officerName}>{userAccess.admin1.name}</Text>
+          <Text style={styles.label}>Role</Text>
+          <Picker
+            selectedValue={userAccess.admin1.role}
+            onValueChange={(value) =>
+              setUserAccess((prev) => ({
+                ...prev,
+                admin1: { ...prev.admin1, role: value },
+              }))
+            }
+            style={styles.picker}
+          >
+            {adminRoles.map((role) => (
+              <Picker.Item key={role} label={role} value={role} />
+            ))}
+          </Picker>
+        </View>
+      </View>
+
       {/* Add User Section */}
       <View style={styles.addUserContainer}>
         <TextInput
@@ -72,17 +95,14 @@ export default function AccessControlScreen() {
         <Button title="Add User" onPress={addUser} />
       </View>
 
-      {Object.keys(userAccess).map((userId) => (
+      {Object.keys(userAccess).filter((id) => id !== 'admin1').map((userId) => (
         <View key={userId} style={styles.userPane}>
-          {/* Header Row with Name and Trash Icon */}
           <View style={styles.userPaneHeader}>
             <Text style={styles.officerName}>{userAccess[userId].name}</Text>
             <TouchableOpacity onPress={() => removeUser(userId)}>
-              <Ionicons name="trash-outline" size={24} color="white" />
+              <Ionicons name="trash-outline" size={24} color="black" />
             </TouchableOpacity>
           </View>
-
-          {/* Role Picker */}
           <Text style={styles.label}>Role</Text>
           <Picker
             selectedValue={userAccess[userId].role}
@@ -98,8 +118,6 @@ export default function AccessControlScreen() {
               <Picker.Item key={role} label={role} value={role} />
             ))}
           </Picker>
-
-          {/* Assigned Gate Picker (Only for Security) */}
           {userAccess[userId].type === 'Security' && (
             <>
               <Text style={styles.label}>Assigned Gate</Text>
@@ -137,42 +155,59 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 10,
   },
-  addUserContainer: {
+  adminPanel: {
+    backgroundColor: 'lightblue',
+    padding: 15,
+    borderRadius: 10,
     marginBottom: 20,
+  },
+  adminPane: {
+    backgroundColor: 'lightblue',
+    padding: 15,
+    borderRadius: 10,
+  },
+  adminTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 5,
+  },
+  addUserContainer: {
+    backgroundColor: '#d3d3d3',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  picker: {
+    backgroundColor: colors.background,
+    marginVertical: 5,
+  },
+  officerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.text.light,
-    borderRadius: 5,
+    borderColor: 'gray',
     padding: 10,
+    borderRadius: 5,
     marginBottom: 10,
     backgroundColor: 'white',
   },
   userPane: {
-    backgroundColor: colors.secondary,
+    backgroundColor: '#f0f0f0',
     padding: 15,
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   userPaneHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  officerName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
     marginBottom: 10,
-  },
-  label: {
-    marginTop: 10,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text.light,
-  },
-  picker: {
-    backgroundColor: colors.background,
-    marginVertical: 5,
   },
 });
