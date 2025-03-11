@@ -3,7 +3,7 @@ import { Image, StyleSheet, View, Text, ScrollView, Alert } from 'react-native';
 import { Button } from '../components';
 import Header from '../components/Header';
 import { useRouter } from 'expo-router';
-import { supabase } from './supabase'; // Import supabase instance
+
 
 export default function NeuvisLanding() {
   const router = useRouter();
@@ -19,8 +19,8 @@ export default function NeuvisLanding() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header Component */}
-      <Header />
+      {/* Header Component with Dynamic Role */}
+      <Header role="Security Guard" name="Main Entrance" />
 
       {/* Hero Image */}
       <View style={styles.heroContainer}>
@@ -40,7 +40,7 @@ export default function NeuvisLanding() {
       <View style={styles.section}>
         <View style={styles.buttonGroup}>
           <Button 
-            title='Scan ID' 
+            title="Scan ID" 
             icon="scan-outline" 
             onPress={() => {}} 
           />
@@ -48,26 +48,26 @@ export default function NeuvisLanding() {
 
         <View style={styles.buttonGroup}>
           <Button 
-            title='Manually Input Information' 
-            icon="create-outline" 
-            onPress={() => {}} 
-          />
+          title='Manually Input Information' 
+          icon="create-outline" 
+          onPress={() => {}} 
+        />
         </View>
 
         <View style={styles.buttonGroup}>
           <Button 
-            title='Visitor Logs' 
-            icon="book-outline" 
-            onPress={() => {}} 
-          />
+          title='Visitor Logs' 
+          icon="book-outline" 
+          onPress={() => {}} 
+        />
         </View>
 
         <View style={styles.buttonGroup}>
           <Button 
-            title='Log Out' 
+            title="Log Out" 
             variant="outline" 
             icon="log-out-outline" 
-            onPress={handleLogout} // Calls logout function
+            onPress={() => router.push('/')} // Redirect to home scree/index.tsx
           />
         </View>
       </View>
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    fontWeight: 'normal', 
+    fontWeight: 'normal', // Regular font weight
     textAlign: 'center',
   },
   section: {
@@ -107,3 +107,4 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 });
+
