@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView, Image } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +45,8 @@ export default function Scanner() {
   });
 
   const [processedData, setProcessedData] = useState<ProcessedDataType | null>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [showResultsOverlay, setShowResultsOverlay] = useState(false);
   
   const cameraRef = useRef<any>(null);
   const router = useRouter();
@@ -76,36 +78,29 @@ export default function Scanner() {
     try {
       const photo = await cameraRef.current.takePictureAsync();
       console.log('Photo taken:', photo.uri);
+      setCapturedPhoto(photo.uri);
 
-
-      await handleImageCaptured(photo);
-
-      router.push({
-        pathname: '/ScannerOutput',
-        params: { 
-          card_type: processedData?.card_type || null,
-          id_number: processedData?.id_number || null,
-          last_name: processedData?.last_name || null,
-          first_name: processedData?.first_name || null,
-          middle_name: processedData?.middle_name || null,
-        },
-      });
+      const extractedData = await handleImageCaptured(photo);
+      if (extractedData) {
+        setProcessedData(extractedData);
+        setShowResultsOverlay(true);
+      } else {
+        Alert.alert('Error', 'Failed to extract data from the image. Please try again.');
+      }
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture');
     }
   };
 
- const handleImageCaptured = async (photo: ImageType) => {
-    if(!photo || !photo.uri) return console.error('No image captured!');
+  const handleImageCaptured = async (photo: ImageType) => {
+    if(!photo || !photo.uri) {
+      console.error('No image captured!');
+      return null;
+    }
 
     const extractedText = await extractText(photo);
-
-    if (extractedText) {
-      setProcessedData(extractedText);
-  } else {
-      console.error('No data extracted from image!');
-  }
+    return extractedText;
   }
 
   const extractText= async (photo: ImageType) => {
@@ -141,6 +136,7 @@ export default function Scanner() {
         }
     } catch (error){
         console.error('Error Extracting Text: ', error);
+        return null;
     }
   }
 
@@ -172,6 +168,27 @@ export default function Scanner() {
         ...prev,
         selectedOption: prev.secondaryOption,
       }));
+    }
+  };
+
+  const handleRetake = () => {
+    setShowResultsOverlay(false);
+    setCapturedPhoto(null);
+    setProcessedData(null);
+  };
+
+  const handleConfirm = () => {
+    if (processedData) {
+      router.push({
+        pathname: '/ScannerOutput',
+        params: { 
+          card_type: processedData.card_type || null,
+          id_number: processedData.id_number || null,
+          last_name: processedData.last_name || null,
+          first_name: processedData.first_name || null,
+          middle_name: processedData.middle_name || null,
+        },
+      });
     }
   };
 
@@ -213,6 +230,15 @@ export default function Scanner() {
                 >
                   {renderOptionsList()}
                 </OptionsModal>
+                
+                {showResultsOverlay && processedData && (
+                  <ResultsOverlay 
+                    data={processedData} 
+                    imageUri={capturedPhoto}
+                    onRetake={handleRetake}
+                    onConfirm={handleConfirm}
+                  />
+                )}
             </CameraView>
     );
   };
@@ -224,6 +250,66 @@ export default function Scanner() {
   );
 }
 
+interface ResultsOverlayProps {
+  data: ProcessedDataType;
+  imageUri: string | null;
+  onRetake: () => void;
+  onConfirm: () => void;
+}
+
+const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm }: ResultsOverlayProps) => (
+  <View style={styles.resultsOverlay}>
+    <View style={styles.resultsContainer}>
+      <Text style={styles.resultsTitle}>Extracted Data</Text>
+      
+      {imageUri && (
+        <Image 
+          source={{ uri: imageUri }} 
+          style={styles.previewImage}
+          resizeMode="contain"
+        />
+      )}
+      
+      <View style={styles.dataContainer}>
+        <View style={styles.dataRow}>
+          <Text style={styles.dataLabel}>Card Type:</Text>
+          <Text style={styles.dataValue}>{data.card_type || 'Not recognized'}</Text>
+        </View>
+        <View style={styles.dataRow}>
+          <Text style={styles.dataLabel}>ID Number:</Text>
+          <Text style={styles.dataValue}>{data.id_number || 'Not recognized'}</Text>
+        </View>
+        <View style={styles.dataRow}>
+          <Text style={styles.dataLabel}>Last Name:</Text>
+          <Text style={styles.dataValue}>{data.last_name || 'Not recognized'}</Text>
+        </View>
+        <View style={styles.dataRow}>
+          <Text style={styles.dataLabel}>First Name:</Text>
+          <Text style={styles.dataValue}>{data.first_name || 'Not recognized'}</Text>
+        </View>
+        <View style={styles.dataRow}>
+          <Text style={styles.dataLabel}>Middle Name:</Text>
+          <Text style={styles.dataValue}>{data.middle_name || 'Not recognized'}</Text>
+        </View>
+      </View>
+      
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.retakeButton]} 
+          onPress={onRetake}
+        >
+          <Text style={styles.actionButtonText}>Retake</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.confirmButton]} 
+          onPress={onConfirm}
+        >
+          <Text style={styles.actionButtonText}>Confirm</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+);
 
 const ProgressBar = ({ progress }: { progress: number }) => (
   <View style={styles.progressBarContainer}>
@@ -510,5 +596,91 @@ const styles = StyleSheet.create({
     right: -15,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 20,
+  },
+  
+  resultsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  resultsContainer: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    marginTop: -160,
+  },
+  resultsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  previewImage: {
+    width: '34%',
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 15,
+    backgroundColor: '#000000',
+    shadowColor: '#000',
+    shadowOpacity: 1,
+  },
+  dataContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  dataRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dataLabel: {
+    flex: 1,
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  dataValue: {
+    flex: 2,
+    color: '#333',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+  },
+  actionButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  retakeButton: {
+    backgroundColor: '#808080',
+
+  },
+  confirmButton: {
+    backgroundColor: '#000000',
+    opacity: 0.9,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
