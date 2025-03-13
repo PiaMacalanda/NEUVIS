@@ -19,7 +19,7 @@ const ManualForm = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.form}>
-        {/* Name Field */}
+      
         <Text style={styles.label}>Name*</Text>
         <TextInput 
           style={styles.input} 
@@ -28,7 +28,7 @@ const ManualForm = () => {
           onChangeText={setName} 
         />
 
-        {/* Birthday Field */}
+   
         <Text style={styles.label}>Birthday*</Text>
         <TextInput 
           style={styles.input} 
@@ -37,7 +37,7 @@ const ManualForm = () => {
           onChangeText={setBirthday} 
         />
 
-        {/* Cellphone Number Field */}
+       
         <Text style={styles.label}>Cellphone Number*</Text>
         <TextInput 
           style={styles.input} 
@@ -47,7 +47,7 @@ const ManualForm = () => {
           onChangeText={setCellphone} 
         />
 
-        {/* Number of Visits */}
+      
         <Text style={styles.label}>Number of Visit</Text>
         <Text style={styles.subLabel}>As of MM/DD/YY</Text>
         <TextInput 
@@ -58,7 +58,7 @@ const ManualForm = () => {
           onChangeText={setNumVisits} 
         />
 
-        {/* ID Type */}
+        
         <Text style={styles.label}>ID Type*</Text>
         <TextInput 
           style={styles.input} 
@@ -67,7 +67,7 @@ const ManualForm = () => {
           onChangeText={setIdType} 
         />
 
-        {/* Purpose of Visit */}
+
         <Text style={styles.label}>Purpose of Visit</Text>
         <TextInput 
           style={styles.input} 
@@ -76,7 +76,7 @@ const ManualForm = () => {
           onChangeText={setPurpose} 
         />
 
-        {/* Submit Button */}
+       
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
