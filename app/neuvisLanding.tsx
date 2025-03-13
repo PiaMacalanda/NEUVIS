@@ -41,7 +41,7 @@ export default function NeuvisLanding() {
           <Button 
           title='Manually Input Information' 
           icon="create-outline" 
-          onPress={() => {}} 
+          onPress={() => router.push('/ManualForm')}
         />
         </View>
 

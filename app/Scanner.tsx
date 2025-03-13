@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView, Image } from 'react-native';
+import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView, Image, TextInput } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -192,6 +192,15 @@ export default function Scanner() {
     }
   };
 
+  const updateProcessedData = (field: keyof ProcessedDataType, value: string) => {
+    if (processedData) {
+      setProcessedData({
+        ...processedData,
+        [field]: value,
+      });
+    }
+  };
+
   const renderOptionsList = () => {
     return ID_TYPES.filter(idType => idType !== idSelection.primaryOption).map((idType, index, array) => (
       <React.Fragment key={idType}>
@@ -237,6 +246,7 @@ export default function Scanner() {
                     imageUri={capturedPhoto}
                     onRetake={handleRetake}
                     onConfirm={handleConfirm}
+                    onUpdateData={updateProcessedData}
                   />
                 )}
             </CameraView>
@@ -255,9 +265,10 @@ interface ResultsOverlayProps {
   imageUri: string | null;
   onRetake: () => void;
   onConfirm: () => void;
+  onUpdateData: (field: keyof ProcessedDataType, value: string) => void;
 }
 
-const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm }: ResultsOverlayProps) => (
+const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm, onUpdateData }: ResultsOverlayProps) => (
   <View style={styles.resultsOverlay}>
     <View style={styles.resultsContainer}>
       <Text style={styles.resultsTitle}>Extracted Data</Text>
@@ -273,23 +284,51 @@ const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm }: ResultsOverlayP
       <View style={styles.dataContainer}>
         <View style={styles.dataRow}>
           <Text style={styles.dataLabel}>Card Type:</Text>
-          <Text style={styles.dataValue}>{data.card_type || 'Not recognized'}</Text>
+          <TextInput
+            style={styles.dataInput}
+            value={data.card_type || ''}
+            onChangeText={(text) => onUpdateData('card_type', text)}
+          />
         </View>
         <View style={styles.dataRow}>
           <Text style={styles.dataLabel}>ID Number:</Text>
-          <Text style={styles.dataValue}>{data.id_number || 'Not recognized'}</Text>
+          <TextInput
+            style={styles.dataInput}
+            value={data.id_number || ''}
+            onChangeText={(text) => onUpdateData('id_number', text)}
+            placeholder="Not recognized"
+            placeholderTextColor="#999"
+          />
         </View>
         <View style={styles.dataRow}>
           <Text style={styles.dataLabel}>Last Name:</Text>
-          <Text style={styles.dataValue}>{data.last_name || 'Not recognized'}</Text>
+          <TextInput
+            style={styles.dataInput}
+            value={data.last_name || ''}
+            onChangeText={(text) => onUpdateData('last_name', text)}
+            placeholder="Not recognized"
+            placeholderTextColor="#999"
+          />
         </View>
         <View style={styles.dataRow}>
           <Text style={styles.dataLabel}>First Name:</Text>
-          <Text style={styles.dataValue}>{data.first_name || 'Not recognized'}</Text>
+          <TextInput
+            style={styles.dataInput}
+            value={data.first_name || ''}
+            onChangeText={(text) => onUpdateData('first_name', text)}
+            placeholder="Not recognized"
+            placeholderTextColor="#999"
+          />
         </View>
         <View style={styles.dataRow}>
           <Text style={styles.dataLabel}>Middle Name:</Text>
-          <Text style={styles.dataValue}>{data.middle_name || 'Not recognized'}</Text>
+          <TextInput
+            style={styles.dataInput}
+            value={data.middle_name || ''}
+            onChangeText={(text) => onUpdateData('middle_name', text)}
+            placeholder="Not recognized"
+            placeholderTextColor="#999"
+          />
         </View>
       </View>
       
@@ -646,6 +685,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    alignItems: 'center',
   },
   dataLabel: {
     flex: 1,
@@ -655,6 +695,16 @@ const styles = StyleSheet.create({
   dataValue: {
     flex: 2,
     color: '#333',
+  },
+  dataInput: {
+    flex: 2,
+    color: '#333',
+    padding: 5,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    backgroundColor: '#f9f9f9',
+    height: 36,
   },
   buttonContainer: {
     flexDirection: 'row',
