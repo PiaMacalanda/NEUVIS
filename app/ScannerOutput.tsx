@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Modal, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from './lib/supabaseClient';
 
 export default function ScannerOutput() {
     const params = useLocalSearchParams();
@@ -34,7 +35,8 @@ export default function ScannerOutput() {
         dateOfVisit: formatDate(today),
         idType: card_type,
         idNumber: id_number,
-        purposeOfVisit: ''
+        purposeOfVisit: '',
+        expiration: ''
     });
 
     const [errors, setErrors] = useState({
@@ -217,20 +219,62 @@ export default function ScannerOutput() {
         return !Object.values(newErrors).some(error => error);
     };
 
-    const handleSubmit = () => {
+    const formatDateTime = (date: Date): string => {
+        const options: Intl.DateTimeFormatOptions = { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Manila'
+        };
+        return date.toLocaleDateString('en-US', options);
+    };
+
+    const handleSubmit = async () => {
         if (validateForm()) {
-            console.log('Form submitted:', formData);
-            
-           
             setIsLoading(true);
+
+            const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const visitorID = `VST-${randomID}`;
             
-           
+            const time_of_visit = new Date();
+            const expiration = new Date();
+            const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
+            expirationpht.setHours(22, 0, 0, 0)
+
+            const formattedTimeOfVisit = formatDateTime(time_of_visit);
+            const formattedExpiration = formatDateTime(expirationpht);
+
+            const { error } = await supabase
+            .from('visits')
+            .insert([
+                { visit_id: visitorID, 
+                    card_type: formData['idType'],
+                    id_number: formData['idNumber'],
+                    name: formData['name'],
+                    phone_number: '0' + formData['cellphone'],
+                    purpose_of_visit: formData['purposeOfVisit'],
+                    time_of_visit: time_of_visit.toISOString(),
+                    expiration: expirationpht.toISOString(),
+                },
+            ])
+            .select()
+            
+            if(error) console.error(error);
+
+
             setTimeout(() => {
+                setIsLoading(false);
               
                 router.push({
                     pathname: '/IDgenerate',
                     params: {
-                        ...formData
+                        ...formData,
+                        visitorID,
+                        formattedTimeOfVisit,
+                        formattedExpiration,
                     }
                 });
             }, 2000); 

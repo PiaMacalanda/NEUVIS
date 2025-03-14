@@ -12,6 +12,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from './lib/supabaseClient';
+import { router } from 'expo-router';
 
 interface FormDataType {
   name: string;
@@ -19,7 +21,9 @@ interface FormDataType {
   cellphone: string;
   idType: string;
   idNumber: string;
-  purpose: string;
+  purposeOfVisit: string;
+  time_of_visit: string;
+  expiration: string;
 }
 
 const ManualForm: React.FC = () => {
@@ -28,36 +32,37 @@ const ManualForm: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [showDateModal, setShowDateModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
   const [formData, setFormData] = useState<FormDataType>({
     name: '',
-    dateofVisit: formatDate(today),
     cellphone: '',
-    idType: 'Phils ID',
+    dateofVisit: formatDate(today),
+    idType: 'Philippine Identification Card',
     idNumber: '',
-    purpose: ''
+    purposeOfVisit: '',
+    time_of_visit: '',
+    expiration: ''
   });
 
-  
+
   const [errors, setErrors] = useState({
     name: false,
     cellphone: false,
     idNumber: false,
-    purpose: false
+    purposeOfVisit: false
   });
   
   const [errorMessages, setErrorMessages] = useState({
     name: 'Name is required',
     cellphone: 'Cellphone number is required',
     idNumber: 'ID number is required',
-    purpose: 'Purpose of visit is required'
+    purposeOfVisit: 'Purpose of visit is required'
   });
   
   const [touched, setTouched] = useState({
     name: false,
     cellphone: false,
     idNumber: false,
-    purpose: false
+    purposeOfVisit: false
   });
 
   
@@ -250,13 +255,13 @@ const ManualForm: React.FC = () => {
     const cellphoneIsEmpty = digits.trim() === '';
     const cellphoneIsInvalidLength = digits.length > 0 && digits.length < 10;
     const idNumberIsEmpty = formData.idNumber.replace(/\s/g, '').trim() === ''; 
-    const purposeIsEmpty = formData.purpose.trim() === '';
+    const purposeIsEmpty = formData.purposeOfVisit.trim() === '';
     
     const newErrors = {
       name: nameIsEmpty,
       cellphone: cellphoneIsEmpty || cellphoneIsInvalidLength,
       idNumber: idNumberIsEmpty,
-      purpose: purposeIsEmpty
+      purposeOfVisit: purposeIsEmpty
     };
     
     const newErrorMessages = {
@@ -264,7 +269,7 @@ const ManualForm: React.FC = () => {
       cellphone: cellphoneIsEmpty ? 'Cellphone number is required' : 
                  cellphoneIsInvalidLength ? 'Cellphone number must be 10 digits' : '',
       idNumber: 'ID number is required',
-      purpose: 'Purpose of visit is required'
+      purposeOfVisit: 'Purpose of visit is required'
     };
     
     setErrorMessages(newErrorMessages);
@@ -273,26 +278,75 @@ const ManualForm: React.FC = () => {
       name: true,
       cellphone: true,
       idNumber: true,
-      purpose: true
+      purposeOfVisit: true
     });
     
     return !Object.values(newErrors).some(error => error);
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      console.log('Form submitted:', formData);
-      
-      setIsLoading(true);
-      
-      setTimeout(() => {
-        setIsLoading(false);
-        Alert.alert('Success', 'Your form has been submitted successfully!');
-      }, 2000); 
-    } else {
-      Alert.alert('Error', 'Please fill in all required fields correctly');
-    }
-  };
+    const formatDateTime = (date: Date): string => {
+        const options: Intl.DateTimeFormatOptions = { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Asia/Manila'
+        };
+        return date.toLocaleDateString('en-US', options);
+    };
+
+    const handleSubmit = async () => {
+        if (validateForm()) {
+            setIsLoading(true);
+
+            const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const visitorID = `VST-${randomID}`;
+            
+            const time_of_visit = new Date();
+            const expiration = new Date();
+            const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
+            expirationpht.setHours(22, 0, 0, 0)
+
+            const formattedTimeOfVisit = formatDateTime(time_of_visit);
+            const formattedExpiration = formatDateTime(expirationpht);
+
+            const { error } = await supabase
+            .from('visits')
+            .insert([
+                { visit_id: visitorID, 
+                    card_type: formData['idType'],
+                    id_number: formData['idNumber'],
+                    name: formData['name'],
+                    phone_number: '0' + formData['cellphone'],
+                    purpose_of_visit: formData['purposeOfVisit'],
+                    time_of_visit: time_of_visit.toISOString(),
+                    expiration: expirationpht.toISOString(),
+                },
+            ])
+            .select()
+            
+            if(error) console.error(error);
+
+
+            setTimeout(() => {
+                setIsLoading(false);
+              
+                router.push({
+                    pathname: '/IDgenerate',
+                    params: {
+                        ...formData,
+                        visitorID,
+                        formattedTimeOfVisit,
+                        formattedExpiration,
+                    }
+                });
+            }, 2000); 
+        } else {
+            Alert.alert('Error', 'Please fill in all required fields correctly');
+        }
+    };
 
   const selectIdOption = (option: string): void => {
     setFormData({
@@ -331,7 +385,7 @@ const ManualForm: React.FC = () => {
               style={styles.datePickerButton}
               onPress={() => setShowDateModal(true)}
             >
-              <Text style={styles.dateText}>{formData.dateofVisit}</Text>
+              <Text style={styles.dateText}>{formData.time_of_visit}</Text>
               <Ionicons name="calendar-outline" size={20} color="#666" />
             </TouchableOpacity>
           </View>
@@ -415,22 +469,22 @@ const ManualForm: React.FC = () => {
               style={[
                 styles.input,
                 styles.purposeInput,
-                (touched.purpose && errors.purpose) && styles.inputError
+                (touched.purposeOfVisit && errors.purposeOfVisit) && styles.inputError
               ]}
               placeholder="Enter purpose of visit"
-              value={formData.purpose}
-              onChangeText={(value) => handleChange('purpose', value)}
-              onBlur={() => handleBlur('purpose')}
+              value={formData.purposeOfVisit}
+              onChangeText={(value) => handleChange('purposeOfVisit', value)}
+              onBlur={() => handleBlur('purposeOfVisit')}
               multiline={true}
               textAlignVertical="top"
             />
-            {touched.purpose && errors.purpose && (
-              <Text style={styles.errorText}>{errorMessages.purpose}</Text>
+            {touched.purposeOfVisit && errors.purposeOfVisit && (
+              <Text style={styles.errorText}>{errorMessages.purposeOfVisit}</Text>
             )}
           </View>
 
-          {(errors.name || errors.cellphone || errors.idNumber || errors.purpose) && 
-           touched.name && touched.cellphone && touched.idNumber && touched.purpose && (
+          {(errors.name || errors.cellphone || errors.idNumber || errors.purposeOfVisit) && 
+           touched.name && touched.cellphone && touched.idNumber && touched.purposeOfVisit && (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={20} color="#ff3b30" />
               <Text style={styles.errorSummary}>Please fill all required fields</Text>
@@ -440,7 +494,7 @@ const ManualForm: React.FC = () => {
           <TouchableOpacity 
             style={[
               styles.submitButton,
-              (errors.name || errors.cellphone || errors.idNumber || errors.purpose) ? styles.submitButtonDisabled : null
+              (errors.name || errors.cellphone || errors.idNumber || errors.purposeOfVisit) ? styles.submitButtonDisabled : null
             ]} 
             onPress={handleSubmit}
             disabled={isLoading}

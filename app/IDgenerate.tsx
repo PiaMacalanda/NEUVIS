@@ -11,56 +11,22 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from './lib/supabaseClient';
 
 export default function IDgenerate() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [idData, setIdData] = useState({
     name: params.name as string || '',
     cellphone: params.cellphone as string || '',
-    dateOfVisit: params.dateOfVisit as string || '',
     idType: params.idType as string || '',
     idNumber: params.idNumber as string || '',
     purposeOfVisit: params.purposeOfVisit as string || '',
-    visitorID: '',
-    expirationTime: ''
+    visitorID: params.visitorId as string || '',
+    dateOfVisit: params.formattedTimeOfVisit as string || '',
+    expirationTime: params.formattedExpiration || ''
   });
-
-
-  useEffect(() => {
-   
-    setTimeout(() => {
- 
-      const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const visitorID = `VST-${randomID}`;
-      
-     
-      const expirationDate = new Date();
-      expirationDate.setHours(expirationDate.getHours() + 24);
-      const formattedExpiration = formatDateTime(expirationDate);
-      
-      setIdData({
-        ...idData,
-        visitorID,
-        expirationTime: formattedExpiration
-      });
-      
-      setIsLoading(false);
-    }, 2000);
-  }, []);
-
-  const formatDateTime = (date: Date): string => {
-    const options: Intl.DateTimeFormatOptions = { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    };
-    return date.toLocaleDateString('en-US', options);
-  };
 
   const handlePrint = () => {
    

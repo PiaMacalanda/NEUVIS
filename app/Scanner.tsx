@@ -133,7 +133,11 @@ export default function Scanner() {
             };
 
             return postProcessedData;
-        }
+        } else if(idSelection.selectedOption === 'Driver\s License'){
+            const idNoPattern = /\b[A-Za-z]\d{2}-\d{2}-\d{6}\b/;
+            const namePattern = /^[A-Za-z]+,\s[A-Za-z]+\s[A-Za-z]+$/;
+            
+          }
     } catch (error){
         console.error('Error Extracting Text: ', error);
         return null;
