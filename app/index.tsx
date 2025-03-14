@@ -3,6 +3,7 @@ import React from 'react';
 import { Image, StyleSheet, View, Text, ScrollView, SafeAreaView, StatusBar, Dimensions } from 'react-native';
 import { Button, colors, typography, Logo } from '../components';
 import { useRouter } from 'expo-router';
+import { Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -96,13 +97,15 @@ const styles = StyleSheet.create({
   },
   heroImageContainer: {
     width: '100%',
-    marginBottom: 36,
+    height: 'auto', 
     alignItems: 'center',
+    marginVertical: 20,
   },
   heroImage: {
-    width: width * 0.8,
-    height: width * 0.5,
-    marginVertical: 16,
+    width: '90%',
+    height: Platform.OS === 'android' ? 200 : undefined,
+    aspectRatio: 16 / 9,
+    maxWidth: Platform.OS === 'web' ? 400 : '90%',
   },
   actionSection: {
     width: '100%',
@@ -111,6 +114,7 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     width: '90%',
+    maxWidth: Platform.OS === 'web' ? 300 : '90%', // Limits size on web
     marginBottom: 16,
     alignSelf: 'center',
   },
