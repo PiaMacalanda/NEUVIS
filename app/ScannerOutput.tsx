@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Scro
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from './lib/supabaseClient';
+import * as FileSystem from 'expo-file-system';
 
 export default function ScannerOutput() {
     const params = useLocalSearchParams();
@@ -16,6 +17,7 @@ export default function ScannerOutput() {
     const last_name = params.last_name as string || '';
     const first_name = params.first_name as string || '';
     const middle_name = params.middle_name as string || '';
+    const image_uri = params.image_uri as string || '';
     
    
     const middleInitial = middle_name ? middle_name.charAt(0) + '.' : '';
@@ -232,6 +234,61 @@ export default function ScannerOutput() {
         return date.toLocaleDateString('en-US', options);
     };
 
+    const uploadImage = async (imageUri: string) => {
+        try {
+          if (!imageUri) {
+            console.error("No image URI provided");
+            return null;
+          }
+          
+          console.log("Starting upload with URI:", imageUri);
+          
+          const fileInfo = await FileSystem.getInfoAsync(imageUri);
+          if (!fileInfo.exists) {
+            console.error("File does not exist");
+            return null;
+          }
+          
+          const base64 = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          
+          const uniqueFileName = `id_image_${Date.now()}.jpg`;
+          
+          const { data, error } = await supabase.storage
+            .from('id-images')
+            .upload(uniqueFileName, decode(base64), {
+              contentType: 'image/jpeg',
+            });
+          
+          if (error) {
+            console.error("Supabase upload error:", error);
+            throw error;
+          }
+          
+          const { data: urlData } = supabase.storage
+            .from('id-images')
+            .getPublicUrl(uniqueFileName);
+          
+          console.log("Upload successful, public URL:", urlData.publicUrl);
+          return urlData.publicUrl;
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          return null;
+        }
+      };
+      
+      function decode(base64String) {
+        const binaryString = atob(base64String);
+        
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        return bytes;
+      }
+
     const handleSubmit = async () => {
         if (validateForm()) {
             setIsLoading(true);
@@ -247,6 +304,8 @@ export default function ScannerOutput() {
             const formattedTimeOfVisit = formatDateTime(time_of_visit);
             const formattedExpiration = formatDateTime(expirationpht);
 
+            const imageUrl = await uploadImage(image_uri);
+
             const { error } = await supabase
             .from('visits')
             .insert([
@@ -258,6 +317,7 @@ export default function ScannerOutput() {
                     purpose_of_visit: formData['purposeOfVisit'],
                     time_of_visit: time_of_visit.toISOString(),
                     expiration: expirationpht.toISOString(),
+                    image_url: imageUrl
                 },
             ])
             .select()

@@ -44,6 +44,8 @@ export default function Scanner() {
     showOptionsModal: false,
   });
 
+  const [imageTaken, setImageTaken] = useState<ImageType | null>(null);
+
   const [processedData, setProcessedData] = useState<ProcessedDataType | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [showResultsOverlay, setShowResultsOverlay] = useState(false);
@@ -99,6 +101,7 @@ export default function Scanner() {
       return null;
     }
 
+    setImageTaken(photo);
     const extractedText = await extractText(photo);
     return extractedText;
   }
@@ -137,7 +140,10 @@ export default function Scanner() {
             const idNoPattern = /\b[A-Za-z]\d{2}-\d{2}-\d{6}\b/;
             const namePattern = /^[A-Za-z]+,\s[A-Za-z]+\s[A-Za-z]+$/;
             
-          }
+            console.log("This scanner is not yet finished1");
+        } else {
+            console.log("Either this id scanning doesn/'t exist in the system or it is not created yet!");
+        }
     } catch (error){
         console.error('Error Extracting Text: ', error);
         return null;
@@ -191,8 +197,11 @@ export default function Scanner() {
           last_name: processedData.last_name || null,
           first_name: processedData.first_name || null,
           middle_name: processedData.middle_name || null,
+          image_uri: imageTaken?.uri || null
         },
       });
+
+      setImageTaken(null);
     }
   };
 
