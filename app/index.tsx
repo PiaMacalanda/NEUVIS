@@ -39,12 +39,13 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={styles.heroImage}>
-          <Image 
-            source={require('../assets/HeroImage.png')}  
-            style={styles.heroImage} 
-            resizeMode="contain"
-          />
+        <View style={styles.heroImageContainer}>
+        <Image 
+          source={{ uri: 'https://i.imgur.com/4Gx6MdV.gif' }}  
+          style={[styles.heroImage, { opacity: 0.9 }]} 
+          resizeMode="contain"
+        />
+
         </View>
 
         <View style={styles.section}>
@@ -94,6 +95,10 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 30,
     alignSelf: 'center',
+  },
+  heroImageContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
   heroImage: {
     width: '100%',
