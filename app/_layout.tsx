@@ -5,17 +5,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#fff',
-          },
+      <Stack screenOptions={{ 
+          headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#252525',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      />
+          headerTitleStyle: { fontWeight: 'bold' },
+      }}>
+        <Stack.Screen name="callback" options={{ headerShown: false }} /> {/* Hides header for callback */}
+      </Stack>
     </GestureHandlerRootView>
   );
 }
