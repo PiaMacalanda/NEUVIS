@@ -60,6 +60,24 @@ export default function HomeScreen() {
 
           <View style={styles.buttonGroup}>
             <Button
+              title="Go as Security Guard"
+              variant="outline"
+              icon="lock-closed"
+              onPress={() => router.push('/neuvisLanding')}// Call Google Sign-in function
+            />
+          </View>
+
+          <View style={styles.buttonGroup}>
+            <Button
+              title="Go as Admin"
+              variant="outline"
+              icon="document-lock"
+              onPress={() => router.push('/admin')}  // Call Google Sign-in function
+            />
+          </View>
+
+          <View style={styles.buttonGroup}>
+            <Button
               title="Privacy & Policy"
               variant="underline"
               onPress={() => router.push('/privacy')}
