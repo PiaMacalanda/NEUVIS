@@ -73,7 +73,13 @@ export default function AccessControlScreen() {
       setFormError('Please fill in all fields.');
       return;
     }
-
+    
+    // Check if email ends with @neu.edu.ph
+    if (!email.trim().endsWith('@neu.edu.ph')) {
+      setFormError('Only @neu.edu.ph email addresses are allowed.');
+      return;
+    }
+  
     try {
       // Include the required fields in your insert
       const { data, error } = await supabase.from('security').insert([{ 
@@ -82,13 +88,13 @@ export default function AccessControlScreen() {
         roles: selectedRole,
         assign_gate: selectedGate
       }]);
-
+  
       if (error) {
         console.error('Supabase Error:', error.message);
         setFormError(`Error adding new security personnel: ${error.message}`);
         return;
       }
-
+  
       setFormError(null);
       setFullName('');
       setEmail('');
