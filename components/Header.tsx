@@ -1,9 +1,15 @@
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Logo from '../components/logo';
+import Logo from './logo'; // Make sure this path is correct
 import { Ionicons } from '@expo/vector-icons';
 
-const Header = () => {
+interface HeaderProps {
+  role?: string;
+  name?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ role = "Security Guard 1", name = "Main Gate" }) => {
   return (
     <View style={styles.container}>
       {/* Left Side: Logo & Title */}
@@ -21,8 +27,8 @@ const Header = () => {
       <View style={styles.right}>
         <Ionicons name="person-outline" size={20} color="black" />
         <View style={styles.guardInfo}>
-          <Text style={styles.guardTitle}>Security Guard</Text>
-          <Text style={styles.guardSubtitle}>Main Entrance</Text>
+          <Text style={styles.guardTitle}>{role}</Text>
+          <Text style={styles.guardSubtitle}>{name}</Text>
         </View>
       </View>
     </View>
@@ -35,6 +41,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 5,
+
+    //paddingHorizontal: 10, // Optional: Add horizontal padding for spacing
   },
   left: {
     flexDirection: 'row',
