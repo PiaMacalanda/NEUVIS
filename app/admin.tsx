@@ -1,7 +1,8 @@
+// admin.tsx
 import React from 'react';
 import { StyleSheet, View, ScrollView, Text } from 'react-native';
-import { Button } from '../components';
-import Header from '../components/Header';
+import Button from '../components/buttons'; 
+import Header from "../components/Header";
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,26 +21,14 @@ const Admin = () => {
         <Text style={styles.welcomeSubtitle}>Welcome to NEUVIS Administration</Text>
       </View>
 
-      {/* Section: Admin Dashboard Options */}
+      {/* Section: Admin Dashboard Options - Centered properly */}
       <View style={styles.section}>
-        <View style={styles.buttonGroup}>
-          <Button title="Home" onPress={() => router.push('/adminHome')} />
-        </View>
-
-        <View style={styles.buttonGroup}>
-          <Button title="Data" onPress={() => router.push('/adminData')} />
-        </View>
-
-        <View style={styles.buttonGroup}>
-          <Button title="Saved Reports" onPress={() => router.push('/adminReport')} />
-        </View>
-
-        <View style={styles.buttonGroup}>
-          <Button title="Access Control" onPress={() => router.push('/accessControl')} />
-        </View>
-
-        <View style={styles.buttonGroup}>
-          <Button title="Logout" variant="outline" onPress={() => router.push('/')} />
+        <View style={styles.buttonsWrapper}>
+          <Button title="Home" onPress={() => router.push('/adminHome')} style={styles.button} />
+          <Button title="Data" onPress={() => router.push('/adminData')} style={styles.button} />
+          <Button title="Saved Reports" onPress={() => router.push('/adminReport')} style={styles.button} />
+          <Button title="Access Control" onPress={() => router.push('/accessControl')} style={styles.button} />
+          <Button title="Logout" onPress={() => router.push('/')} style={styles.button} />
         </View>
       </View>
 
@@ -77,9 +66,19 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
     alignItems: 'center',
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center', // This helps center the buttonsWrapper
   },
-  buttonGroup: {
-    marginVertical: 10,
+  buttonsWrapper: {
+    width: '110%',
+    alignItems: 'center', // This centers the buttons horizontally
+    justifyContent: 'center',
+  },
+  button: {
+    marginVertical: 10, // Space between buttons
+    alignSelf: 'center', // Helps center individual buttons
+    width: '10%', // Fixed width for all buttons
   },
   messageContainer: {
     marginTop: 30,
