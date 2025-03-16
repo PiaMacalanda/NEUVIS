@@ -29,7 +29,7 @@ export default function HomeScreen() {
 
       <ScrollView style={styles.container}>
         <View style={styles.logoContainer}>
-          <Logo size="large" />
+          <Logo size="small" />
         </View>
 
         <View style={styles.section}>
