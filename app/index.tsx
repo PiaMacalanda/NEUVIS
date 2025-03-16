@@ -51,7 +51,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.buttonGroup}>
             <Button
-              title="Sign in to Google Account"
+              title="Sign in to Google Account (🚧)"
               variant="outline"
               icon="logo-google"
               onPress={signInWithGoogle} // Call Google Sign-in function
@@ -62,7 +62,7 @@ export default function HomeScreen() {
             <Button
               title="Go as Security Guard"
               variant="outline"
-              icon="lock-closed"
+              icon="shield-checkmark"
               onPress={() => router.push('/neuvisLanding')}// Call Google Sign-in function
             />
           </View>
@@ -71,7 +71,7 @@ export default function HomeScreen() {
             <Button
               title="Go as Admin"
               variant="outline"
-              icon="document-lock"
+              icon="settings"
               onPress={() => router.push('/admin')}  // Call Google Sign-in function
             />
           </View>
@@ -82,6 +82,10 @@ export default function HomeScreen() {
               variant="underline"
               onPress={() => router.push('/privacy')}
             />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>© 2025 NEUVIS MDRPLT - All Rights Reserved</Text>
           </View>
         </View>
       </ScrollView>
@@ -120,11 +124,19 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: 150, // Adjust height as needed
+    height: 150,
     alignSelf: 'center',
   },
   buttonGroup: {
     marginVertical: 10,
     alignSelf: 'center',
+  },
+  footer: {
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: '#8a9aa8',
+    fontSize: 12,
   },
 });
