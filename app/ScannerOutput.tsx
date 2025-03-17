@@ -17,13 +17,15 @@ export default function ScannerOutput() {
     const last_name = params.last_name as string || '';
     const first_name = params.first_name as string || '';
     const middle_name = params.middle_name as string || '';
+    const full_name = params.full_name as string || '';
     const image_uri = params.image_uri as string || '';
     
    
     const middleInitial = middle_name ? middle_name.charAt(0) + '.' : '';
-    const fullName = middleInitial 
+    const concatenatedFullName = middleInitial 
         ? `${last_name}, ${first_name} ${middleInitial}`
         : `${last_name}, ${first_name}`;
+    const fullName = full_name ? full_name : concatenatedFullName;
     
 
     const [showDateModal, setShowDateModal] = useState(false);
@@ -278,68 +280,118 @@ export default function ScannerOutput() {
         }
       };
       
-      function decode(base64String) {
+    function decode(base64String:string) {
         const binaryString = atob(base64String);
-        
         const bytes = new Uint8Array(binaryString.length);
+        
         for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
+            bytes[i] = binaryString.charCodeAt(i);
         }
         
         return bytes;
-      }
+    }
+
+    const insertVisits = async (visitorID: number, visitID:string, time_of_visit: Date, expirationpht: Date, imageUrl: string | null) => {
+        const { error } = await supabase
+        .from('visits')
+        .insert([
+            {
+                visit_id: visitID,
+                purpose_of_visit: formData['purposeOfVisit'],
+                time_of_visit: time_of_visit.toISOString(),
+                expiration: expirationpht.toISOString(),
+                image_url: imageUrl
+            },
+        ])
+        .select()
+        
+        if(error) console.error('Error inserting visits: ',error);
+    }
+
+    const insertVisitor = async () => {
+        const { data: existingVisitor, error: searchError } = await supabase
+        .from('visitors')
+        .select('id')
+        .eq('id_number', formData['idNumber'])
+        .single();
+
+        if (searchError && searchError.code !== 'PGRST116') {
+            console.error('Error searching for existing visitor:', searchError);
+            return null;
+        }
+
+        if (existingVisitor) {
+            console.log('Visitor already exists with ID:', existingVisitor.id);
+            return existingVisitor.id;
+        }    
+
+        const { data, error } = await supabase
+        .from('visitors')
+        .insert([
+            { 
+                name: formData['name'],
+                card_type: formData['idType'],
+                id_number: formData['idNumber'],
+                phone_number: '0' + formData['cellphone'],
+            },
+        ])
+        .select()
+        
+
+        if(error) {
+            console.error('Error inserting visitor:', error);
+            return null;
+        }
+
+        if (data && data.length > 0) {
+            const newVisitorId = data[0].id;
+            console.log('New visitor ID:', newVisitorId);
+            return newVisitorId;
+        }
+
+        return null;
+    }
 
     const handleSubmit = async () => {
-        if (validateForm()) {
-            setIsLoading(true);
-
-            const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const visitorID = `VST-${randomID}`;
-            
-            const time_of_visit = new Date();
-            const expiration = new Date();
-            const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
-            expirationpht.setHours(22, 0, 0, 0)
-
-            const formattedTimeOfVisit = formatDateTime(time_of_visit);
-            const formattedExpiration = formatDateTime(expirationpht);
-
-            const imageUrl = await uploadImage(image_uri);
-
-            const { error } = await supabase
-            .from('visits')
-            .insert([
-                { visit_id: visitorID, 
-                    card_type: formData['idType'],
-                    id_number: formData['idNumber'],
-                    name: formData['name'],
-                    phone_number: '0' + formData['cellphone'],
-                    purpose_of_visit: formData['purposeOfVisit'],
-                    time_of_visit: time_of_visit.toISOString(),
-                    expiration: expirationpht.toISOString(),
-                    image_url: imageUrl
-                },
-            ])
-            .select()
-            
-            if(error) console.error(error);
-
-
-            setTimeout(() => {
-                setIsLoading(false);
-              
-                router.push({
-                    pathname: '/IDgenerate',
-                    params: {
-                        ...formData,
-                        visitorID,
-                        formattedTimeOfVisit,
-                        formattedExpiration,
-                    }
-                });
-            }, 2000); 
-        } else {
-            Alert.alert('Error', 'Please fill in all required fields correctly');
+        try{
+            if (validateForm()) {
+                setIsLoading(true);
+    
+                const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const visitID = `VST-${randomID}`;
+                
+                const time_of_visit = new Date();
+                const expiration = new Date();
+                const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
+                expirationpht.setHours(22, 0, 0, 0)
+    
+                const formattedTimeOfVisit = formatDateTime(time_of_visit);
+                const formattedExpiration = formatDateTime(expirationpht);
+    
+                const imageUrl = await uploadImage(image_uri);
+        
+                const visitorID = await insertVisitor();
+                await insertVisits(visitorID, visitID, time_of_visit, expirationpht, imageUrl);
+    
+                setTimeout(() => {
+                    router.push({
+                        pathname: '/IDgenerate',
+                        params: {
+                            ...formData,
+                            visitID,
+                            formattedTimeOfVisit,
+                            formattedExpiration,
+                        }
+                    });
+                }, 2000); 
+            } else {
+                Alert.alert('Error', 'Please fill in all required fields correctly');
+            }
+        } catch(error){
+            console.error('Submission error:', error);
+            Alert.alert('Error', 'An unexpected error occurred during submission');
+        } finally {
+            setIsLoading(false);
         }
     };
 

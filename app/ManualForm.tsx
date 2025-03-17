@@ -74,12 +74,12 @@ const ManualForm: React.FC = () => {
 
   const ID_TYPES = [
     'Phils ID',
-    'Passport',
-    'SSS ID',
+    'Driver\'s License',
     'UMID',
-    'Postal ID',
-    'Voter\'s ID',
-    'Driver\'s License'
+    // 'SSS ID',
+    // 'Passport',
+    // 'Postal ID',
+    // 'Voter\'s ID',
   ];
 
   function formatDate(date: Date): string {
@@ -219,7 +219,8 @@ const ManualForm: React.FC = () => {
       ...touched,
       [field]: true
     });
-    
+
+
     if (field === 'cellphone') {
       const digits = formData.cellphone.replace(/\s/g, '');
       const isEmpty = digits.trim() === '';
@@ -297,12 +298,72 @@ const ManualForm: React.FC = () => {
         return date.toLocaleDateString('en-US', options);
     };
 
+    const insertVisit = async (visitorID: number, visitID:string, time_of_visit: Date, expirationpht: Date) => {
+      const { error } = await supabase
+      .from('visits')
+      .insert([
+          {
+              visit_id: visitID,
+              purpose_of_visit: formData['purposeOfVisit'],
+              time_of_visit: time_of_visit.toISOString(),
+              expiration: expirationpht.toISOString(),
+          },
+      ])
+      .select()
+      
+      if(error) console.error('Error inserting visits: ',error);
+    }
+
+    const insertVisitor = async () => {
+        const { data: existingVisitor, error: searchError } = await supabase
+        .from('visitors')
+        .select('id')
+        .eq('id_number', formData['idNumber'])
+        .single();
+
+        if (searchError && searchError.code !== 'PGRST116') {
+            console.error('Error searching for existing visitor:', searchError);
+            return null;
+        }
+
+        if (existingVisitor) {
+            console.log('Visitor already exists with ID:', existingVisitor.id);
+            return existingVisitor.id;
+        }    
+
+        const { data, error } = await supabase
+        .from('visitors')
+        .insert([
+            { 
+                name: formData['name'],
+                card_type: formData['idType'],
+                id_number: formData['idNumber'],
+                phone_number: '0' + formData['cellphone'],
+            },
+        ])
+        .select()
+        
+
+        if(error) {
+            console.error('Error inserting visitor:', error);
+            return null;
+        }
+
+        if (data && data.length > 0) {
+            const newVisitorId = data[0].id;
+            console.log('New visitor ID:', newVisitorId);
+            return newVisitorId;
+        }
+
+        return null;
+    }
+
     const handleSubmit = async () => {
         if (validateForm()) {
             setIsLoading(true);
 
             const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const visitorID = `VST-${randomID}`;
+            const visitID = `VST-${randomID}`;
             
             const time_of_visit = new Date();
             const expiration = new Date();
@@ -312,23 +373,8 @@ const ManualForm: React.FC = () => {
             const formattedTimeOfVisit = formatDateTime(time_of_visit);
             const formattedExpiration = formatDateTime(expirationpht);
 
-            const { error } = await supabase
-            .from('visits')
-            .insert([
-                { visit_id: visitorID, 
-                    card_type: formData['idType'],
-                    id_number: formData['idNumber'],
-                    name: formData['name'],
-                    phone_number: '0' + formData['cellphone'],
-                    purpose_of_visit: formData['purposeOfVisit'],
-                    time_of_visit: time_of_visit.toISOString(),
-                    expiration: expirationpht.toISOString(),
-                },
-            ])
-            .select()
-            
-            if(error) console.error(error);
-
+            const visitorID = await insertVisitor();
+            await insertVisit(visitorID, visitID, time_of_visit, expirationpht);
 
             setTimeout(() => {
                 setIsLoading(false);
@@ -337,7 +383,7 @@ const ManualForm: React.FC = () => {
                     pathname: '/IDgenerate',
                     params: {
                         ...formData,
-                        visitorID,
+                        visitID,
                         formattedTimeOfVisit,
                         formattedExpiration,
                     }
