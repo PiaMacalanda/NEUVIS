@@ -49,7 +49,7 @@ export default function NeuvisLanding() {
           <Button 
           title='Visitor Logs' 
           icon="book-outline" 
-          onPress={() => {}} 
+          onPress={() => router.push('./VisitorsLogs')} 
         />
         </View>
 
