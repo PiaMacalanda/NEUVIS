@@ -36,10 +36,10 @@ const ManualForm: React.FC = () => {
     name: '',
     cellphone: '',
     dateofVisit: formatDate(today),
-    idType: 'Philippine Identification Card',
+    idType: 'Phils ID',
     idNumber: '',
     purposeOfVisit: '',
-    time_of_visit: '',
+    time_of_visit: formatDate(today), // Initialize with current date
     expiration: ''
   });
 
@@ -98,7 +98,8 @@ const ManualForm: React.FC = () => {
     setSelectedDate(newDate);
     setFormData({
       ...formData,
-      dateofVisit: formatDate(newDate)
+      dateofVisit: formatDate(newDate),
+      time_of_visit: formatDate(newDate) // Update time_of_visit as well
     });
     setShowDateModal(false);
   };
@@ -428,13 +429,10 @@ const ManualForm: React.FC = () => {
 
           <View style={styles.formField}>
             <Text style={styles.label}>Date of Visit</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => setShowDateModal(true)}
-            >
-              <Text style={styles.dateText}>{formData.time_of_visit}</Text>
+            <View style={styles.datePickerButton}>
+              <Text style={styles.dateText}>{formData.dateofVisit}</Text>
               <Ionicons name="calendar-outline" size={20} color="#666" />
-            </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.formField}>
@@ -550,103 +548,6 @@ const ManualForm: React.FC = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Custom Date Picker Modal */}
-      <Modal
-        visible={showDateModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowDateModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => setShowDateModal(false)}>
-                <Ionicons name="close" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.datePickerContainer}>
-              {/* Month Picker */}
-              <ScrollView style={styles.pickerColumn}>
-                {months.map((month, index) => (
-                  <TouchableOpacity 
-                    key={index}
-                    style={[
-                      styles.pickerItem,
-                      selectedDate.getMonth() === index ? styles.selectedPickerItem : null
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(index);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.pickerText}>{month}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              
-              {/* Day Picker */}
-              <ScrollView style={styles.pickerColumn}>
-                {Array.from(
-                  { length: getDaysInMonth(selectedDate.getMonth() + 1, selectedDate.getFullYear()) }, 
-                  (_, i) => i + 1
-                ).map(day => (
-                  <TouchableOpacity 
-                    key={day}
-                    style={[
-                      styles.pickerItem,
-                      selectedDate.getDate() === day ? styles.selectedPickerItem : null
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(day);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.pickerText}>{day}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              
-              {/* Year Picker */}
-              <ScrollView style={styles.pickerColumn}>
-                {years.map(year => (
-                  <TouchableOpacity 
-                    key={year}
-                    style={[
-                      styles.pickerItem,
-                      selectedDate.getFullYear() === year ? styles.selectedPickerItem : null
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setFullYear(year);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.pickerText}>{year}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.confirmButton}
-              onPress={() => {
-                handleDateSelection(
-                  selectedDate.getFullYear(),
-                  selectedDate.getMonth() + 1,
-                  selectedDate.getDate()
-                );
-              }}
-            >
-              <Text style={styles.confirmButtonText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Loading Modal */}
       <Modal

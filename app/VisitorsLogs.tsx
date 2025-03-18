@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView, Image } from 'react-native';
 import { supabase } from './lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -15,6 +15,8 @@ const VisitorsLogs: React.FC = () => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
+  const [showVisitorModal, setShowVisitorModal] = useState(false);
   
   // Date picker states
   const [showDateModal, setShowDateModal] = useState(false);
@@ -115,8 +117,6 @@ const VisitorsLogs: React.FC = () => {
       }
   };
 
-  console.log(visitors);
-
   const handleTimeOut = async (id: number) => {
     try {
       const now = new Date().toISOString();
@@ -134,6 +134,11 @@ const VisitorsLogs: React.FC = () => {
     }
   };
 
+  const handleViewVisitor = (visitor: Visitor) => {
+    setSelectedVisitor(visitor);
+    setShowVisitorModal(true);
+  };
+
   const filteredVisitors = visitors.filter(visitor => 
     visitor.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -142,10 +147,10 @@ const VisitorsLogs: React.FC = () => {
     <View style={styles.visitorRow}>
       <View style={styles.visitorInfo}>
         <Text style={styles.visitorName}>{item.name}</Text>
-        <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>Time In: {item.time_of_visit}</Text>
-          {item.time_out && <Text style={styles.timeText}>Time Out: {item.time_out}</Text>}
-        </View>
+      </View>
+      <View style={styles.timeInfo}>
+        <Text style={[styles.timeText, styles.timeInText]}>{item.time_of_visit}</Text>
+        {item.time_out && <Text style={[styles.timeText, styles.timeOutText]}>{item.time_out}</Text>}
       </View>
       <View style={styles.actionContainer}>
         {!item.time_out ? (
@@ -156,7 +161,10 @@ const VisitorsLogs: React.FC = () => {
             <Text style={styles.buttonText}>Time Out</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleViewVisitor(item)}
+          >
             <Text style={styles.buttonText}>View</Text>
           </TouchableOpacity>
         )}
@@ -326,6 +334,92 @@ const VisitorsLogs: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Visitor Details Modal - Adjusted to match the screenshots */}
+      <Modal
+        visible={showVisitorModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowVisitorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.visitorModalContent}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowVisitorModal(false)}
+            >
+              <Ionicons name="close" size={24} color="black" />
+            </TouchableOpacity>
+            
+            {selectedVisitor && (
+              <View style={styles.visitorDetailsContainer}>
+                {/* University Logo */}
+                <View style={styles.logoContainer}>
+                  <View style={styles.logoCircle}>
+                    {/* Placeholder for the logo */}
+                    <Text style={styles.universityInitials}>NEU</Text>
+                  </View>
+                  <Text style={styles.universityName}>New Era University</Text>
+                </View>
+                
+                {/* Visitor Name and ID */}
+                <View style={styles.visitorDetailsHeader}>
+                  <Text style={styles.visitorDetailsName}>{selectedVisitor.name}</Text>
+                  <Text style={styles.visitorId}>{selectedVisitor.visit_id}</Text>
+                </View>
+
+                <View style={styles.detailsContent}>
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Cellphone #:</Text>
+                    <Text style={styles.detailsValue}>+63 9123 456</Text>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Type of ID Received:</Text>
+                    <Text style={styles.detailsValue}></Text>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>ID Number:</Text>
+                    <Text style={styles.detailsValue}></Text>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Entry:</Text>
+                    <Text style={styles.detailsValue}>Main Entrance</Text>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Purpose of Visit:</Text>
+                    <Text style={styles.detailsValue}></Text>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Number of Visit:</Text>
+                    <View style={styles.visitCountContainer}>
+                      <Text style={styles.visitCountValue}>3</Text>
+                      <TouchableOpacity>
+                        <Text style={styles.viewLogLink}>View Visit Log</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.timeSection}>
+                    <View style={styles.timeRow}>
+                      <Text style={styles.timeLabel}>Time In:</Text>
+                      <Text style={styles.timeInValue}>{selectedVisitor.time_of_visit}</Text>
+                    </View>
+                    <View style={styles.timeRow}>
+                      <Text style={styles.timeLabel}>Time Out:</Text>
+                      <Text style={styles.timeOutValue}>{selectedVisitor.time_out || ''}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -438,19 +532,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   visitorInfo: {
-    flex: 7,
+    flex: 3,
   },
   visitorName: {
     fontWeight: '500',
     fontSize: 15,
-    marginBottom: 4,
   },
-  timeContainer: {
-    marginTop: 2,
+  timeInfo: {
+    flex: 4,
+    alignItems: 'center',
   },
   timeText: {
     fontSize: 13,
-    color: '#666',
+    textAlign: 'center',
+  },
+  timeInText: {
+    color: '#4CD964', // Green color for time in
+  },
+  timeOutText: {
+    color: '#FF3B30', // Red color for time out
   },
   actionContainer: {
     flex: 2,
@@ -556,6 +656,129 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  
+  // Updated Visitor Details Modal Styles to match screenshots
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  visitorModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    width: '85%',
+    maxHeight: '80%',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 10,
+  },
+  visitorDetailsContainer: {
+    width: '100%',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4682B4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  universityInitials: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  universityName: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  visitorDetailsHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  visitorDetailsName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  visitorId: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  detailsContent: {
+    width: '100%',
+  },
+  detailsSection: {
+    flexDirection: 'row',
+    width: '100%',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  detailsLabel: {
+    flex: 1.5,
+    fontSize: 14,
+    color: '#555',
+  },
+  detailsValue: {
+    flex: 2,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  visitCountContainer: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  visitCountValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 10,
+  },
+  viewLogLink: {
+    color: '#4682B4',
+    textDecorationLine: 'underline',
+  },
+  timeSection: {
+    width: '100%',
+    marginTop: 16,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  timeLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  timeInValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4CD964',
+  },
+  timeOutValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FF3B30',
   },
 });
 
