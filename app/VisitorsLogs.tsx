@@ -94,26 +94,28 @@ const VisitorsLogs: React.FC = () => {
         .order('time_of_visit', { ascending: false });
       
       if (error) throw error;
-      
+
       // Fix for the "Cannot read property 'name' of null" error
       // Transform data with null check for visitors
-      const formattedData = data
-        .filter(item => item.visitors !== null) // Filter out items with null visitors
-        .map(item => ({
-          id: item.id,
-          name: item.visitors[0].name,
-          time_of_visit: formatDateTime(item.time_of_visit),
-          time_out: item.expiration ? formatDateTime(item.expiration) : undefined,
-          visit_id: item.visit_id
-        }));
-      
-      setVisitors(formattedData);
-    } catch (error) {
-      console.error('Error fetching visitors:', error);
-    } finally {
-      setLoading(false);
-    }
+        const formattedData = data
+          .filter(item => item.visitors !== null)
+          .map(item => ({
+            id: item.id,
+            name: item.visitors?.name || 'Unknown Visitor',
+            time_of_visit: formatDateTime(item.time_of_visit),
+            time_out: item.expiration ? formatDateTime(item.expiration) : undefined,
+            visit_id: item.visit_id,
+          }));
+            
+        setVisitors(formattedData);
+      } catch (error) {
+        console.error('Error fetching visitors:', error);
+      } finally {
+        setLoading(false);
+      }
   };
+
+  console.log(visitors);
 
   const handleTimeOut = async (id: number) => {
     try {

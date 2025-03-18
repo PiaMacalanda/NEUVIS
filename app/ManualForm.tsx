@@ -304,6 +304,7 @@ const ManualForm: React.FC = () => {
       .insert([
           {
               visit_id: visitID,
+              visitor_id: visitorID,
               purpose_of_visit: formData['purposeOfVisit'],
               time_of_visit: time_of_visit.toISOString(),
               expiration: expirationpht.toISOString(),

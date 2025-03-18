@@ -296,6 +296,7 @@ export default function ScannerOutput() {
         .from('visits')
         .insert([
             {
+                visitor_id: visitorID,
                 visit_id: visitID,
                 purpose_of_visit: formData['purposeOfVisit'],
                 time_of_visit: time_of_visit.toISOString(),
