@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, Modal } from 'react-native';
 import Button from '../components/buttons';
 import Header from '../components/Header';
 import { useRouter } from 'expo-router';
@@ -14,7 +14,6 @@ type VisitorData = {
   id_number: string;
   phone_number: string;
   purpose_of_visit: string;
-  visit_id: string;
   gate: string;
   host: string;
   time_in: string;
@@ -46,18 +45,19 @@ export default function AdminDataScreen() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState<VisitorData | null>(null);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
-  // Placeholder data
+  // Placeholder data - moved visit_id values to id_number
   const [tableData, setTableData] = useState<VisitorData[]>([
     {
       id: 1,
       name: 'Justin Bieber',
-      id_number: '123456',
+      id_number: 'V001',
       phone_number: '78676887',
       purpose_of_visit: 'Cashier',
-      visit_id: 'V001',
       gate: 'main',
-      host: 'SG001',
+      host: 'Albert Dimagiba',
       time_in: '8:20 AM',
       time_out: '4:45 PM',
       date: new Date(2025, 2, 10) // March 10, 2025
@@ -65,12 +65,11 @@ export default function AdminDataScreen() {
     {
       id: 2,
       name: 'John Doe',
-      id_number: '654321',
+      id_number: 'V002',
       phone_number: '55512345',
       purpose_of_visit: 'Meeting',
-      visit_id: 'V002',
       gate: 'side',
-      host: 'SG002',
+      host: 'Roberto Nagiba',
       time_in: '9:30 AM',
       time_out: '2:15 PM',
       date: new Date(2025, 2, 11) // March 11, 2025
@@ -78,15 +77,26 @@ export default function AdminDataScreen() {
     {
       id: 3,
       name: 'Jane Smith',
-      id_number: '987654',
+      id_number: 'V003',
       phone_number: '77788899',
       purpose_of_visit: 'Interview',
-      visit_id: 'V003',
       gate: 'main',
-      host: 'SG001',
+      host: 'Albert Dimagiba',
       time_in: '10:00 AM',
       time_out: '11:30 AM',
       date: new Date(2025, 2, 12) // March 12, 2025
+    },
+    {
+      id: 4,
+      name: 'Justin Bieber',
+      id_number: 'V004',
+      phone_number: '78676887',
+      purpose_of_visit: 'Cashier',
+      gate: 'main',
+      host: 'Albert Dimagiba',
+      time_in: '8:30 AM',
+      time_out: '4:30 PM',
+      date: new Date(2025, 2, 15) // March 15, 2025
     },
   ]);
 
@@ -94,6 +104,15 @@ export default function AdminDataScreen() {
   const gates = ['all', ...new Set(tableData.map(item => item.gate))];
   const purposes = ['all', ...new Set(tableData.map(item => item.purpose_of_visit))];
   const hosts = ['all', ...new Set(tableData.map(item => item.host))];
+  
+  // Calculate visitor frequency
+  const visitorFrequencies = tableData.reduce((acc, item) => {
+    if (!acc[item.name]) {
+      acc[item.name] = 0;
+    }
+    acc[item.name]++;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Handle date change
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -111,7 +130,6 @@ export default function AdminDataScreen() {
       item.id_number.toLowerCase().includes(searchLower) ||
       item.phone_number.toLowerCase().includes(searchLower) ||
       item.purpose_of_visit.toLowerCase().includes(searchLower) ||
-      item.visit_id.toLowerCase().includes(searchLower) ||
       item.gate.toLowerCase().includes(searchLower) ||
       item.host.toLowerCase().includes(searchLower) ||
       item.date.toLocaleDateString().toLowerCase().includes(searchLower);
@@ -172,6 +190,12 @@ export default function AdminDataScreen() {
       date: null
     });
     setSearchQuery('');
+  };
+
+  // Show visitor details
+  const showVisitorDetails = (visitor: VisitorData) => {
+    setSelectedVisitor(visitor);
+    setDetailsModalVisible(true);
   };
 
   return (
@@ -327,16 +351,6 @@ export default function AdminDataScreen() {
                     color="white" 
                   />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('visit_id')}>
-                  <Text style={styles.headerText}>Visit ID</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'visit_id' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.headerCell} onPress={() => sortData('gate')}>
                   <Text style={styles.headerText}>Gate</Text>
                   <Ionicons 
@@ -387,6 +401,9 @@ export default function AdminDataScreen() {
                     color="white" 
                   />
                 </TouchableOpacity>
+                <View style={styles.headerCell}>
+                  <Text style={styles.headerText}>Actions</Text>
+                </View>
               </View>
               
               {sortedData.map((item, index) => (
@@ -407,9 +424,6 @@ export default function AdminDataScreen() {
                     <Text>{item.purpose_of_visit}</Text>
                   </View>
                   <View style={styles.cell}>
-                    <Text>{item.visit_id}</Text>
-                  </View>
-                  <View style={styles.cell}>
                     <Text>{item.gate}</Text>
                   </View>
                   <View style={styles.cell}>
@@ -424,6 +438,14 @@ export default function AdminDataScreen() {
                   <View style={styles.cell}>
                     <Text>{item.date.toLocaleDateString()}</Text>
                   </View>
+                  <View style={styles.actionCell}>
+                    <TouchableOpacity 
+                      style={styles.moreButton}
+                      onPress={() => showVisitorDetails(item)}
+                    >
+                      <Text style={styles.moreButtonText}>More</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
               
@@ -436,6 +458,85 @@ export default function AdminDataScreen() {
           </ScrollView>
         </View>
       </View>
+
+      {/* Details Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={detailsModalVisible}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Visitor Details</Text>
+              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            {selectedVisitor && (
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Name:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>ID Number:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.id_number}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phone:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.phone_number}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Purpose:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.purpose_of_visit}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Gate:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.gate}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Host:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.host}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time In:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.time_in}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time Out:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.time_out}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Date:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.date.toLocaleDateString()}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Visit Count:</Text>
+                  <Text style={styles.detailValue}>{visitorFrequencies[selectedVisitor.name]}</Text>
+                </View>
+                
+                <View style={styles.visitHistoryHeader}>
+                  <Text style={styles.visitHistoryTitle}>Visit History</Text>
+                </View>
+                
+                {tableData.filter(item => item.name === selectedVisitor.name).map((visit) => (
+                  <View key={visit.id} style={styles.visitHistoryItem}>
+                    <Text style={styles.visitHistoryDate}>
+                      {visit.date.toLocaleDateString()} ({visit.time_in} - {visit.time_out})
+                    </Text>
+                    <Text style={styles.visitHistoryPurpose}>
+                      Purpose: {visit.purpose_of_visit}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -494,7 +595,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableContainer: {
-    width: '95%', // Increased from 90% to 95%
+    width: '95%',
     marginBottom: 20,
     borderRadius: 8,
     overflow: 'hidden',
@@ -541,6 +642,22 @@ const styles = StyleSheet.create({
     padding: 12,
     width: 120,
     justifyContent: 'center',
+  },
+  actionCell: {
+    padding: 12,
+    width: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  moreButtonText: {
+    color: 'white',
+    fontWeight: '500',
   },
   expandedFilters: {
     backgroundColor: '#f0f0f0',
@@ -612,5 +729,81 @@ const styles = StyleSheet.create({
   noDataText: {
     fontSize: 16,
     color: '#95a5a6',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '85%',
+    maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  detailsContainer: {
+    marginTop: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  detailLabel: {
+    width: 100,
+    fontWeight: '500',
+    color: '#555',
+  },
+  detailValue: {
+    flex: 1,
+    color: '#333',
+  },
+  visitHistoryHeader: {
+    marginTop: 20,
+    marginBottom: 10,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  visitHistoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  visitHistoryItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  visitHistoryDate: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  visitHistoryPurpose: {
+    fontSize: 14,
+    color: '#666',
   },
 });

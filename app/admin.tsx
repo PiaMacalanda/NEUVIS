@@ -25,7 +25,7 @@ const Admin = () => {
       <View style={styles.section}>
         <View style={styles.buttonsWrapper}>
           <Button title="Home" onPress={() => router.push('/adminHome')} style={styles.button} />
-          <Button title="Data" onPress={() => router.push('/adminData')} style={styles.button} />
+          <Button title="Visitor Logs Data" onPress={() => router.push('/adminData')} style={styles.button} />
           <Button title="Saved Reports" onPress={() => router.push('/adminReport')} style={styles.button} />
           <Button title="Access Control" onPress={() => router.push('/accessControl')} style={styles.button} />
           <Button title="Logout" onPress={() => router.push('/')} style={styles.button} />
