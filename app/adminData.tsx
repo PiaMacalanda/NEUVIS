@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, Modal } from 'react-native';
 import Button from '../components/buttons';
 import Header from '../components/Header';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { supabase } from './lib/supabaseClient';
 
 // Define types for our data
 type VisitorData = {
@@ -14,7 +15,6 @@ type VisitorData = {
   id_number: string;
   phone_number: string;
   purpose_of_visit: string;
-  visit_id: string;
   gate: string;
   host: string;
   time_in: string;
@@ -46,54 +46,108 @@ export default function AdminDataScreen() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState<VisitorData | null>(null);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [tableData, setTableData] = useState<VisitorData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Placeholder data
-  const [tableData, setTableData] = useState<VisitorData[]>([
-    {
-      id: 1,
-      name: 'Justin Bieber',
-      id_number: '123456',
-      phone_number: '78676887',
-      purpose_of_visit: 'Cashier',
-      visit_id: 'V001',
-      gate: 'main',
-      host: 'SG001',
-      time_in: '8:20 AM',
-      time_out: '4:45 PM',
-      date: new Date(2025, 2, 10) // March 10, 2025
-    },
-    {
-      id: 2,
-      name: 'John Doe',
-      id_number: '654321',
-      phone_number: '55512345',
-      purpose_of_visit: 'Meeting',
-      visit_id: 'V002',
-      gate: 'side',
-      host: 'SG002',
-      time_in: '9:30 AM',
-      time_out: '2:15 PM',
-      date: new Date(2025, 2, 11) // March 11, 2025
-    },
-    {
-      id: 3,
-      name: 'Jane Smith',
-      id_number: '987654',
-      phone_number: '77788899',
-      purpose_of_visit: 'Interview',
-      visit_id: 'V003',
-      gate: 'main',
-      host: 'SG001',
-      time_in: '10:00 AM',
-      time_out: '11:30 AM',
-      date: new Date(2025, 2, 12) // March 12, 2025
-    },
-  ]);
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch from visits table
+        const { data: visitsData, error: visitsError } = await supabase
+          .from('visits')
+          .select('*');
+  
+        if (visitsError) throw visitsError;
+  
+        // Fetch from visitors table
+        const { data: visitorsData, error: visitorsError } = await supabase
+          .from('visitors')
+          .select('*');
+  
+        if (visitorsError) throw visitorsError;
+  
+        // Fetch from security table
+        const { data: securityData, error: securityError } = await supabase
+          .from('security')
+          .select('*');
+  
+        if (securityError) throw securityError;
+  
+        // Improved join logic
+        const combinedData = visitsData.map(visit => {
+          // Try to find the corresponding visitor using a more reliable field
+          // This assumes there's a visitor_id in the visits table that matches id in visitors
+          // If not, you need to determine what field to use for joining
+          const visitor = visitorsData.find(v => {
+            // Try different matching strategies
+            // Option 1: Direct match on some ID field
+            if (visit.visitor_id && v.id && visit.visitor_id === v.id) return true;
+            
+            // Option 2: Match visitor ID from visit_id (if visit_id contains visitor ID)
+            if (visit.visit_id && v.id) {
+              // Assuming visit_id format is something like "VST-{visitor_id}"
+              const visitorIdFromVisit = visit.visit_id.split('-')[1];
+              return visitorIdFromVisit === v.id;
+            }
+            
+            // Option 3: Match using ID number (if available in both tables)
+            if (visit.visit_id && v.id_number) {
+              return v.id_number.includes(visit.visit_id) || 
+                     visit.visit_id.includes(v.id_number);
+            }
+            
+            return false;
+          });
+          
+          // Find security guard (host) based on assign_gate
+          const security = securityData.find(s => s.assign_gate === `Gate ${visit.id % 2 + 1}`);
+  
+          // Parse timestamps
+          const visitTime = new Date(visit.time_of_visit);
+          const timeOutDate = new Date(visit.expiration);
+          
+          return {
+            id: visit.id,
+            name: visitor ? visitor.name : 'Unknown Visitor',
+            id_number: visit.visit_id || 'Unknown ID',
+            phone_number: visitor ? visitor.phone_number : 'Unknown Phone',
+            purpose_of_visit: visit.purpose_of_visit || 'Unknown Purpose',
+            gate: security ? security.assign_gate : `Gate ${visit.id % 2 + 1}`,
+            host: security ? security.full_name : 'Security Staff',
+            time_in: visitTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time_out: timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            date: visitTime
+          };
+        });
+  
+        setTableData(combinedData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, []);
 
   // Get unique gates, purposes, and hosts for filtering
   const gates = ['all', ...new Set(tableData.map(item => item.gate))];
   const purposes = ['all', ...new Set(tableData.map(item => item.purpose_of_visit))];
   const hosts = ['all', ...new Set(tableData.map(item => item.host))];
+  
+  // Calculate visitor frequency
+  const visitorFrequencies = tableData.reduce((acc, item) => {
+    if (!acc[item.name]) {
+      acc[item.name] = 0;
+    }
+    acc[item.name]++;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Handle date change
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -111,7 +165,6 @@ export default function AdminDataScreen() {
       item.id_number.toLowerCase().includes(searchLower) ||
       item.phone_number.toLowerCase().includes(searchLower) ||
       item.purpose_of_visit.toLowerCase().includes(searchLower) ||
-      item.visit_id.toLowerCase().includes(searchLower) ||
       item.gate.toLowerCase().includes(searchLower) ||
       item.host.toLowerCase().includes(searchLower) ||
       item.date.toLocaleDateString().toLowerCase().includes(searchLower);
@@ -172,6 +225,12 @@ export default function AdminDataScreen() {
       date: null
     });
     setSearchQuery('');
+  };
+
+  // Show visitor details
+  const showVisitorDetails = (visitor: VisitorData) => {
+    setSelectedVisitor(visitor);
+    setDetailsModalVisible(true);
   };
 
   return (
@@ -281,161 +340,245 @@ export default function AdminDataScreen() {
         </View>
       )}
       
-      {/* Data Table */}
-      <View style={styles.tableContainerWrapper}>
-        <View style={styles.tableContainer}>
-          <ScrollView horizontal contentContainerStyle={styles.tableScrollContent}>
-            <View style={styles.tableFullWidth}>
-              <View style={styles.tableHeader}>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('name')}>
-                  <Text style={styles.headerText}>Name</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'name' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('id_number')}>
-                  <Text style={styles.headerText}>ID</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'id_number' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('phone_number')}>
-                  <Text style={styles.headerText}>Phone</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'phone_number' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('purpose_of_visit')}>
-                  <Text style={styles.headerText}>Purpose</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'purpose_of_visit' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('visit_id')}>
-                  <Text style={styles.headerText}>Visit ID</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'visit_id' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('gate')}>
-                  <Text style={styles.headerText}>Gate</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'gate' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('host')}>
-                  <Text style={styles.headerText}>Host</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'host' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('time_in')}>
-                  <Text style={styles.headerText}>Time In</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'time_in' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('time_out')}>
-                  <Text style={styles.headerText}>Time Out</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'time_out' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerCell} onPress={() => sortData('date')}>
-                  <Text style={styles.headerText}>Date</Text>
-                  <Ionicons 
-                    name={sortConfig.key === 'date' 
-                      ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
-                      : 'swap-vertical'} 
-                    size={16} 
-                    color="white" 
-                  />
-                </TouchableOpacity>
-              </View>
-              
-              {sortedData.map((item, index) => (
-                <View 
-                  key={item.id} 
-                  style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
-                >
-                  <View style={styles.cell}>
-                    <Text>{item.name}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.id_number}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.phone_number}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.purpose_of_visit}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.visit_id}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.gate}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.host}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.time_in}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.time_out}</Text>
-                  </View>
-                  <View style={styles.cell}>
-                    <Text>{item.date.toLocaleDateString()}</Text>
-                  </View>
-                </View>
-              ))}
-              
-              {sortedData.length === 0 && (
-                <View style={styles.noDataRow}>
-                  <Text style={styles.noDataText}>No matching records found</Text>
-                </View>
-              )}
-            </View>
-          </ScrollView>
+      {/* Loading indicator */}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text>Loading data...</Text>
         </View>
-      </View>
+      ) : (
+        /* Data Table */
+        <View style={styles.tableContainerWrapper}>
+          <View style={styles.tableContainer}>
+            <ScrollView horizontal contentContainerStyle={styles.tableScrollContent}>
+              <View style={styles.tableFullWidth}>
+                <View style={styles.tableHeader}>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('name')}>
+                    <Text style={styles.headerText}>Name</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'name' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('id_number')}>
+                    <Text style={styles.headerText}>ID</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'id_number' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('phone_number')}>
+                    <Text style={styles.headerText}>Phone</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'phone_number' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('purpose_of_visit')}>
+                    <Text style={styles.headerText}>Purpose</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'purpose_of_visit' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('gate')}>
+                    <Text style={styles.headerText}>Gate</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'gate' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('host')}>
+                    <Text style={styles.headerText}>Host</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'host' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('time_in')}>
+                    <Text style={styles.headerText}>Time In</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'time_in' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('time_out')}>
+                    <Text style={styles.headerText}>Time Out</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'time_out' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.headerCell} onPress={() => sortData('date')}>
+                    <Text style={styles.headerText}>Date</Text>
+                    <Ionicons 
+                      name={sortConfig.key === 'date' 
+                        ? (sortConfig.direction === 'ascending' ? 'arrow-down' : 'arrow-up') 
+                        : 'swap-vertical'} 
+                      size={16} 
+                      color="white" 
+                    />
+                  </TouchableOpacity>
+                  <View style={styles.headerCell}>
+                    <Text style={styles.headerText}>Actions</Text>
+                  </View>
+                </View>
+                
+                {sortedData.map((item, index) => (
+                  <View 
+                    key={item.id} 
+                    style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
+                  >
+                    <View style={styles.cell}>
+                      <Text>{item.name}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.id_number}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.phone_number}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.purpose_of_visit}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.gate}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.host}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.time_in}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.time_out}</Text>
+                    </View>
+                    <View style={styles.cell}>
+                      <Text>{item.date.toLocaleDateString()}</Text>
+                    </View>
+                    <View style={styles.actionCell}>
+                      <TouchableOpacity 
+                        style={styles.moreButton}
+                        onPress={() => showVisitorDetails(item)}
+                      >
+                        <Text style={styles.moreButtonText}>More</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+                
+                {sortedData.length === 0 && (
+                  <View style={styles.noDataRow}>
+                    <Text style={styles.noDataText}>No matching records found</Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* Details Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={detailsModalVisible}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Visitor Details</Text>
+              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            {selectedVisitor && (
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Name:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>ID Number:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.id_number}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phone:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.phone_number}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Purpose:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.purpose_of_visit}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Gate:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.gate}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Host:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.host}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time In:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.time_in}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time Out:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.time_out}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Date:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.date.toLocaleDateString()}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Visit Count:</Text>
+                  <Text style={styles.detailValue}>{visitorFrequencies[selectedVisitor.name]}</Text>
+                </View>
+                
+                <View style={styles.visitHistoryHeader}>
+                  <Text style={styles.visitHistoryTitle}>Visit History</Text>
+                </View>
+                
+                {tableData.filter(item => item.name === selectedVisitor.name).map((visit) => (
+                  <View key={visit.id} style={styles.visitHistoryItem}>
+                    <Text style={styles.visitHistoryDate}>
+                      {visit.date.toLocaleDateString()} ({visit.time_in} - {visit.time_out})
+                    </Text>
+                    <Text style={styles.visitHistoryPurpose}>
+                      Purpose: {visit.purpose_of_visit}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -494,7 +637,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableContainer: {
-    width: '95%', // Increased from 90% to 95%
+    width: '95%',
     marginBottom: 20,
     borderRadius: 8,
     overflow: 'hidden',
@@ -542,6 +685,22 @@ const styles = StyleSheet.create({
     width: 120,
     justifyContent: 'center',
   },
+  actionCell: {
+    padding: 12,
+    width: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  moreButtonText: {
+    color: 'white',
+    fontWeight: '500',
+  },
   expandedFilters: {
     backgroundColor: '#f0f0f0',
     marginHorizontal: 20,
@@ -571,6 +730,11 @@ const styles = StyleSheet.create({
   picker: {
     height: 40,
     width: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   datePickerButton: {
     flex: 1,
@@ -612,5 +776,81 @@ const styles = StyleSheet.create({
   noDataText: {
     fontSize: 16,
     color: '#95a5a6',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '85%',
+    maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  detailsContainer: {
+    marginTop: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  detailLabel: {
+    width: 100,
+    fontWeight: '500',
+    color: '#555',
+  },
+  detailValue: {
+    flex: 1,
+    color: '#333',
+  },
+  visitHistoryHeader: {
+    marginTop: 20,
+    marginBottom: 10,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  visitHistoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  visitHistoryItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  visitHistoryDate: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  visitHistoryPurpose: {
+    fontSize: 14,
+    color: '#666',
   },
 });
