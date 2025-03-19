@@ -8,3 +8,5 @@ if(!SUPABASE_URL || !SUPABASE_ANON_KEY) console.error('No API Key found!');
 
 // Create Supabase client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export default supabase;

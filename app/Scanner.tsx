@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView, Image, TextInput } from 'react-native';
+import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, Image, TextInput, ActivityIndicator } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,19 +19,20 @@ interface ProcessedDataType {
     last_name: string | null;
     first_name: string | null;
     middle_name: string | null;
+    full_name: string | null;
 }
 
 const ID_TYPES = [
   'Phils ID',
-  'Passport',
-  'SSS ID',
+  'Driver\'s License',
   'UMID',
-  'Postal ID',
-  'Voter\'s ID',
-  'Driver\'s License'
+  // 'Passport',
+  // 'Postal ID',
+  // 'Voter\'s ID',
 ];
 
 export default function Scanner() {
+  
   const [cameraState, setCameraState] = useState({
     isStarted: false,
     hasPermission: null as boolean | null,
@@ -49,6 +50,7 @@ export default function Scanner() {
   const [processedData, setProcessedData] = useState<ProcessedDataType | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [showResultsOverlay, setShowResultsOverlay] = useState(false);
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   
   const cameraRef = useRef<any>(null);
   const router = useRouter();
@@ -75,6 +77,7 @@ export default function Scanner() {
   };
 
   const takePicture = async () => {
+    setIsPhotoProcessing(true);
     if (!cameraRef.current) return;
 
     try {
@@ -92,6 +95,8 @@ export default function Scanner() {
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture');
+    } finally {
+      setIsPhotoProcessing(false);
     }
   };
 
@@ -133,15 +138,61 @@ export default function Scanner() {
                 last_name: lastNameMatch ? lastNameMatch[0] : null,
                 first_name: firstNameMatch ? firstNameMatch[0] : null,
                 middle_name: middleNameMatch ? middleNameMatch[0] : null,
+                full_name: null
             };
 
             return postProcessedData;
-        } else if(idSelection.selectedOption === 'Driver\s License'){
-            const idNoPattern = /\b[A-Za-z]\d{2}-\d{2}-\d{6}\b/;
-            const namePattern = /^[A-Za-z]+,\s[A-Za-z]+\s[A-Za-z]+$/;
+        } 
+        
+        else if(idSelection.selectedOption === 'Driver\'s License'){
+            const idNoPattern = /\b[A-Z0-9]{3}-\d{2}-\d{6}\b/;
+            const namePattern = /\b[A-Z]+(?:\s+[A-Z]+)*,\s*[A-Z]+(?:\s+[A-Z]+)*(?:\s+[A-Z]+)?\b/;
             
-            console.log("This scanner is not yet finished1");
-        } else {
+            const result = await TextRecognition.recognize(photo.uri);
+            console.log("OCR Raw output:\n", result);
+
+            const idNoMatch = result.text.match(idNoPattern);
+            const fullNameMatch = result.text.match(namePattern);
+
+            const postProcessedData = {
+                card_type: "Driver\'s License",
+                id_number: idNoMatch ? idNoMatch[0] : null,
+                last_name: null,
+                first_name: null,
+              middle_name: null,
+              full_name: fullNameMatch ? fullNameMatch[0] : null
+          };
+
+          return postProcessedData;
+        } 
+        
+        else if(idSelection.selectedOption === 'UMID'){
+          const idNoPattern = /\b(CRN-\d{4}-\d{7}-\d)\b/; // Highly likely for the OCR to read the ID incorrectly
+          const lastNamePattern = /(?<=SURNAME\s*\n)([^\n]+)/i;
+          const firstNamePattern = /(?<=GIVEN NAME\s*\n)([^\n]+)/i;
+          const middleNamePattern = /(?<=MIDDLE NAME\s*\n)([^\n]+)/i;
+
+          const result = await TextRecognition.recognize(photo.uri);
+          console.log("OCR Raw output:\n", result);
+
+          const idNoMatch = result.text.match(idNoPattern);
+          const lastNameMatch = result.text.match(lastNamePattern);
+          const firstNameMatch = result.text.match(firstNamePattern);
+          const middleNameMatch = result.text.match(middleNamePattern);
+
+          const postProcessedData = {
+              card_type: "UMID",
+              id_number: idNoMatch ? idNoMatch[1] : null,
+              last_name: lastNameMatch ? lastNameMatch[0] : null,
+              first_name: firstNameMatch ? firstNameMatch[0] : null,
+              middle_name: middleNameMatch ? middleNameMatch[0] : null,
+              full_name: null
+          };
+
+          return postProcessedData;
+        } 
+        
+        else {
             console.log("Either this id scanning doesn/'t exist in the system or it is not created yet!");
         }
     } catch (error){
@@ -197,6 +248,7 @@ export default function Scanner() {
           last_name: processedData.last_name || null,
           first_name: processedData.first_name || null,
           middle_name: processedData.middle_name || null,
+          full_name: processedData.full_name || null,
           image_uri: imageTaken?.uri || null
         },
       });
@@ -237,7 +289,7 @@ export default function Scanner() {
             <CameraView style={styles.cameraView} ref={cameraRef} facing="back">
                 <ProgressBar progress={45} />
                 <BackButton onPress={() => router.push('/neuvisLanding')} />
-                <CaptureButton onPress={takePicture} />
+                <CaptureButton onPress={takePicture} disabled={isPhotoProcessing} />
                 <DocumentFrame />
                 <IDSelectionButtons
                   primaryLabel={idSelection.primaryOption}
@@ -253,6 +305,8 @@ export default function Scanner() {
                   {renderOptionsList()}
                 </OptionsModal>
                 
+                <LoadingOverlay visible={isPhotoProcessing} />
+
                 {showResultsOverlay && processedData && (
                   <ResultsOverlay 
                     data={processedData} 
@@ -280,6 +334,21 @@ interface ResultsOverlayProps {
   onConfirm: () => void;
   onUpdateData: (field: keyof ProcessedDataType, value: string) => void;
 }
+
+const LoadingOverlay: React.FC<{visible: boolean}> = ({visible}) => {
+  return (
+    <Modal
+        transparent={true}
+        visible={visible}
+        animationType="fade"
+    >
+      <View style={styles.loadingModalContainer}>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Processing, please wait...</Text>
+      </View>
+    </Modal>
+  )
+};
 
 const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm, onUpdateData }: ResultsOverlayProps) => (
   <View style={styles.resultsOverlay}>
@@ -313,36 +382,51 @@ const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm, onUpdateData }: R
             placeholderTextColor="#999"
           />
         </View>
+        {!data.full_name ? (
+        <>  
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Last Name:</Text>
+            <TextInput
+              style={styles.dataInput}
+              value={data.last_name || ''}
+              onChangeText={(text) => onUpdateData('last_name', text)}
+              placeholder="Not recognized"
+              placeholderTextColor="#999"
+            />
+          </View>
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>First Name:</Text>
+            <TextInput
+              style={styles.dataInput}
+              value={data.first_name || ''}
+              onChangeText={(text) => onUpdateData('first_name', text)}
+              placeholder="Not recognized"
+              placeholderTextColor="#999"
+            />
+          </View>
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Middle Name:</Text>
+            <TextInput
+              style={styles.dataInput}
+              value={data.middle_name || ''}
+              onChangeText={(text) => onUpdateData('middle_name', text)}
+              placeholder="Not recognized"
+              placeholderTextColor="#999"
+            />
+          </View>
+        </>
+        ) : (
         <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>Last Name:</Text>
+          <Text style={styles.dataLabel}>Full Name:</Text>
           <TextInput
             style={styles.dataInput}
-            value={data.last_name || ''}
-            onChangeText={(text) => onUpdateData('last_name', text)}
+            value={data.full_name || ''}
+            onChangeText={(text) => onUpdateData('full_name', text)}
             placeholder="Not recognized"
             placeholderTextColor="#999"
           />
         </View>
-        <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>First Name:</Text>
-          <TextInput
-            style={styles.dataInput}
-            value={data.first_name || ''}
-            onChangeText={(text) => onUpdateData('first_name', text)}
-            placeholder="Not recognized"
-            placeholderTextColor="#999"
-          />
-        </View>
-        <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>Middle Name:</Text>
-          <TextInput
-            style={styles.dataInput}
-            value={data.middle_name || ''}
-            onChangeText={(text) => onUpdateData('middle_name', text)}
-            placeholder="Not recognized"
-            placeholderTextColor="#999"
-          />
-        </View>
+        )}
       </View>
       
       <View style={styles.buttonContainer}>
@@ -379,9 +463,13 @@ const BackButton = ({ onPress }: { onPress: () => void }) => (
 );
 
 
-const CaptureButton = ({ onPress }: { onPress: () => void }) => (
-  <TouchableOpacity style={styles.captureButton} onPress={onPress}>
-    <Ionicons name="camera" size={24} color="white" />
+const CaptureButton = ({ onPress, disabled }: { onPress: () => void, disabled: boolean }) => (
+  <TouchableOpacity style={styles.captureButton} onPress={onPress} disabled={disabled}>
+    {disabled ? 
+      <Ionicons name="ban" size={24} color="white" />
+      :
+      <Ionicons name="camera" size={24} color="white" />
+    }
   </TouchableOpacity>
 );
 
@@ -746,4 +834,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  loadingModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  loadingText: {
+    color: 'white',
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: '500',
+  }
 });

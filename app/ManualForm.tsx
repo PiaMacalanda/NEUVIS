@@ -36,10 +36,10 @@ const ManualForm: React.FC = () => {
     name: '',
     cellphone: '',
     dateofVisit: formatDate(today),
-    idType: 'Philippine Identification Card',
+    idType: 'Phils ID',
     idNumber: '',
     purposeOfVisit: '',
-    time_of_visit: '',
+    time_of_visit: formatDate(today), // Initialize with current date
     expiration: ''
   });
 
@@ -74,12 +74,12 @@ const ManualForm: React.FC = () => {
 
   const ID_TYPES = [
     'Phils ID',
-    'Passport',
-    'SSS ID',
+    'Driver\'s License',
     'UMID',
-    'Postal ID',
-    'Voter\'s ID',
-    'Driver\'s License'
+    // 'SSS ID',
+    // 'Passport',
+    // 'Postal ID',
+    // 'Voter\'s ID',
   ];
 
   function formatDate(date: Date): string {
@@ -98,7 +98,8 @@ const ManualForm: React.FC = () => {
     setSelectedDate(newDate);
     setFormData({
       ...formData,
-      dateofVisit: formatDate(newDate)
+      dateofVisit: formatDate(newDate),
+      time_of_visit: formatDate(newDate) // Update time_of_visit as well
     });
     setShowDateModal(false);
   };
@@ -219,7 +220,8 @@ const ManualForm: React.FC = () => {
       ...touched,
       [field]: true
     });
-    
+
+
     if (field === 'cellphone') {
       const digits = formData.cellphone.replace(/\s/g, '');
       const isEmpty = digits.trim() === '';
@@ -297,12 +299,73 @@ const ManualForm: React.FC = () => {
         return date.toLocaleDateString('en-US', options);
     };
 
+    const insertVisit = async (visitorID: number, visitID:string, time_of_visit: Date, expirationpht: Date) => {
+      const { error } = await supabase
+      .from('visits')
+      .insert([
+          {
+              visit_id: visitID,
+              visitor_id: visitorID,
+              purpose_of_visit: formData['purposeOfVisit'],
+              time_of_visit: time_of_visit.toISOString(),
+              expiration: expirationpht.toISOString(),
+          },
+      ])
+      .select()
+      
+      if(error) console.error('Error inserting visits: ',error);
+    }
+
+    const insertVisitor = async () => {
+        const { data: existingVisitor, error: searchError } = await supabase
+        .from('visitors')
+        .select('id')
+        .eq('id_number', formData['idNumber'])
+        .single();
+
+        if (searchError && searchError.code !== 'PGRST116') {
+            console.error('Error searching for existing visitor:', searchError);
+            return null;
+        }
+
+        if (existingVisitor) {
+            console.log('Visitor already exists with ID:', existingVisitor.id);
+            return existingVisitor.id;
+        }    
+
+        const { data, error } = await supabase
+        .from('visitors')
+        .insert([
+            { 
+                name: formData['name'],
+                card_type: formData['idType'],
+                id_number: formData['idNumber'],
+                phone_number: '0' + formData['cellphone'],
+            },
+        ])
+        .select()
+        
+
+        if(error) {
+            console.error('Error inserting visitor:', error);
+            return null;
+        }
+
+        if (data && data.length > 0) {
+            const newVisitorId = data[0].id;
+            console.log('New visitor ID:', newVisitorId);
+            return newVisitorId;
+        }
+
+        return null;
+    }
+
     const handleSubmit = async () => {
         if (validateForm()) {
             setIsLoading(true);
 
             const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const visitorID = `VST-${randomID}`;
+            const visitID = `VST-${randomID}`;
             
             const time_of_visit = new Date();
             const expiration = new Date();
@@ -312,23 +375,8 @@ const ManualForm: React.FC = () => {
             const formattedTimeOfVisit = formatDateTime(time_of_visit);
             const formattedExpiration = formatDateTime(expirationpht);
 
-            const { error } = await supabase
-            .from('visits')
-            .insert([
-                { visit_id: visitorID, 
-                    card_type: formData['idType'],
-                    id_number: formData['idNumber'],
-                    name: formData['name'],
-                    phone_number: '0' + formData['cellphone'],
-                    purpose_of_visit: formData['purposeOfVisit'],
-                    time_of_visit: time_of_visit.toISOString(),
-                    expiration: expirationpht.toISOString(),
-                },
-            ])
-            .select()
-            
-            if(error) console.error(error);
-
+            const visitorID = await insertVisitor();
+            await insertVisit(visitorID, visitID, time_of_visit, expirationpht);
 
             setTimeout(() => {
                 setIsLoading(false);
@@ -337,7 +385,7 @@ const ManualForm: React.FC = () => {
                     pathname: '/IDgenerate',
                     params: {
                         ...formData,
-                        visitorID,
+                        visitID,
                         formattedTimeOfVisit,
                         formattedExpiration,
                     }
@@ -381,13 +429,10 @@ const ManualForm: React.FC = () => {
 
           <View style={styles.formField}>
             <Text style={styles.label}>Date of Visit</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => setShowDateModal(true)}
-            >
-              <Text style={styles.dateText}>{formData.time_of_visit}</Text>
+            <View style={styles.datePickerButton}>
+              <Text style={styles.dateText}>{formData.dateofVisit}</Text>
               <Ionicons name="calendar-outline" size={20} color="#666" />
-            </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.formField}>
@@ -503,103 +548,6 @@ const ManualForm: React.FC = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Custom Date Picker Modal */}
-      <Modal
-        visible={showDateModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowDateModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => setShowDateModal(false)}>
-                <Ionicons name="close" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.datePickerContainer}>
-              {/* Month Picker */}
-              <ScrollView style={styles.pickerColumn}>
-                {months.map((month, index) => (
-                  <TouchableOpacity 
-                    key={index}
-                    style={[
-                      styles.pickerItem,
-                      selectedDate.getMonth() === index ? styles.selectedPickerItem : null
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(index);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.pickerText}>{month}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              
-              {/* Day Picker */}
-              <ScrollView style={styles.pickerColumn}>
-                {Array.from(
-                  { length: getDaysInMonth(selectedDate.getMonth() + 1, selectedDate.getFullYear()) }, 
-                  (_, i) => i + 1
-                ).map(day => (
-                  <TouchableOpacity 
-                    key={day}
-                    style={[
-                      styles.pickerItem,
-                      selectedDate.getDate() === day ? styles.selectedPickerItem : null
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(day);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.pickerText}>{day}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              
-              {/* Year Picker */}
-              <ScrollView style={styles.pickerColumn}>
-                {years.map(year => (
-                  <TouchableOpacity 
-                    key={year}
-                    style={[
-                      styles.pickerItem,
-                      selectedDate.getFullYear() === year ? styles.selectedPickerItem : null
-                    ]}
-                    onPress={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setFullYear(year);
-                      setSelectedDate(newDate);
-                    }}
-                  >
-                    <Text style={styles.pickerText}>{year}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.confirmButton}
-              onPress={() => {
-                handleDateSelection(
-                  selectedDate.getFullYear(),
-                  selectedDate.getMonth() + 1,
-                  selectedDate.getDate()
-                );
-              }}
-            >
-              <Text style={styles.confirmButtonText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Loading Modal */}
       <Modal
