@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, SafeAreaView, Image, TextInput } from 'react-native';
+import { StyleSheet, View, Alert, TouchableOpacity, Text, Modal, Image, TextInput } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,12 +26,13 @@ const ID_TYPES = [
   'Phils ID',
   'Driver\'s License',
   'UMID',
-  'Passport',
+  // 'Passport',
   // 'Postal ID',
   // 'Voter\'s ID',
 ];
 
 export default function Scanner() {
+  
   const [cameraState, setCameraState] = useState({
     isStarted: false,
     hasPermission: null as boolean | null,
@@ -49,6 +50,7 @@ export default function Scanner() {
   const [processedData, setProcessedData] = useState<ProcessedDataType | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [showResultsOverlay, setShowResultsOverlay] = useState(false);
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
   
   const cameraRef = useRef<any>(null);
   const router = useRouter();
@@ -75,6 +77,7 @@ export default function Scanner() {
   };
 
   const takePicture = async () => {
+    setIsPhotoProcessing(true);
     if (!cameraRef.current) return;
 
     try {
@@ -92,6 +95,8 @@ export default function Scanner() {
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture');
+    } finally {
+      setIsPhotoProcessing(false);
     }
   };
 
@@ -284,7 +289,7 @@ export default function Scanner() {
             <CameraView style={styles.cameraView} ref={cameraRef} facing="back">
                 <ProgressBar progress={45} />
                 <BackButton onPress={() => router.push('/neuvisLanding')} />
-                <CaptureButton onPress={takePicture} />
+                <CaptureButton onPress={takePicture} disabled={isPhotoProcessing} />
                 <DocumentFrame />
                 <IDSelectionButtons
                   primaryLabel={idSelection.primaryOption}
@@ -300,6 +305,8 @@ export default function Scanner() {
                   {renderOptionsList()}
                 </OptionsModal>
                 
+                <LoadingOverlay visible={isPhotoProcessing} />
+
                 {showResultsOverlay && processedData && (
                   <ResultsOverlay 
                     data={processedData} 
@@ -327,6 +334,21 @@ interface ResultsOverlayProps {
   onConfirm: () => void;
   onUpdateData: (field: keyof ProcessedDataType, value: string) => void;
 }
+
+const LoadingOverlay: React.FC<{visible: boolean}> = ({visible}) => {
+  return (
+    <Modal
+    transparent={true}
+    animationType="fade"
+    visible={visible}
+    onRequestClose={() => {}}
+    >
+      <View style={styles.loadingBox}>
+        <Text style={styles.loadingText}>Photo is being processed...</Text>
+      </View>
+    </Modal>
+  )
+};
 
 const ResultsOverlay = ({ data, imageUri, onRetake, onConfirm, onUpdateData }: ResultsOverlayProps) => (
   <View style={styles.resultsOverlay}>
@@ -441,9 +463,13 @@ const BackButton = ({ onPress }: { onPress: () => void }) => (
 );
 
 
-const CaptureButton = ({ onPress }: { onPress: () => void }) => (
-  <TouchableOpacity style={styles.captureButton} onPress={onPress}>
-    <Ionicons name="camera" size={24} color="white" />
+const CaptureButton = ({ onPress, disabled }: { onPress: () => void, disabled: boolean }) => (
+  <TouchableOpacity style={styles.captureButton} onPress={onPress} disabled={disabled}>
+    {disabled ? 
+      <Ionicons name="ban" size={24} color="white" />
+      :
+      <Ionicons name="camera" size={24} color="white" />
+    }
   </TouchableOpacity>
 );
 
@@ -806,6 +832,17 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+  loadingBox: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
     fontSize: 16,
   },
 });
