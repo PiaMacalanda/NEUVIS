@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { supabase } from './lib/supabaseClient';
+import { supabase } from '../app/lib/supabaseClient';
 
 // Define types for our data
 type VisitorData = {

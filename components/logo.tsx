@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 
 interface LogoProps {
-  size: 'small' | 'large';
+  size: 'small' | 'large' | 'smallest';
   style?: StyleProp<ViewStyle>;
 }
 
@@ -13,7 +13,9 @@ export const Logo = ({ size = 'small', style }: LogoProps) => {
         source={require('../assets/NEULogo.png')}
         style={[
           styles.image,
-          size === 'small' ? styles.smallImage : styles.largeImage
+          size === 'small' ? styles.smallImage : 
+          size === 'smallest' ? styles.smallestImage :
+          styles.largeImage 
         ]}
         resizeMode="contain"
       />
@@ -32,6 +34,10 @@ const styles = StyleSheet.create({
   smallImage: {
     width: 80,
     height: 80,
+  },
+  smallestImage: {
+    width: 40,
+    height: 40,
   },
   largeImage: {
     width: 150,

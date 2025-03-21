@@ -165,9 +165,8 @@ export default function AdminHomeScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Header role="Administrator" name="Statistical Report" />
-      </View>
+      {/* Custom Header for Administrator */}
+      <Header role="Administrator" name="Admin 1" />
       
       {/* Filter Options */}
       <View style={styles.filterContainer}>
@@ -292,11 +291,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  headerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 15,
   },
   filterContainer: {
     flexDirection: 'row',

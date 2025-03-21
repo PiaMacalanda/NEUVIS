@@ -10,7 +10,7 @@ export default function Layout() {
           headerTintColor: '#252525',
           headerTitleStyle: { fontWeight: 'bold' },
       }}>
-        <Stack.Screen name="callback" options={{ headerShown: false }} /> {/* Hides header for callback */}
+        <Stack.Screen name="callback" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
   );

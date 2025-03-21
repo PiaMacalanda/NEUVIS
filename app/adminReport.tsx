@@ -164,9 +164,8 @@ const AdminReport: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* Use the imported Header component with the right props */}
-      <View style={styles.headerContainer}>
         <Header role="Administrator" name="Admin Reports" />
-      </View>
+      
 
       <ScrollView style={styles.reportsContainer}>
         {loading ? (
@@ -278,11 +277,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.lightGray,
-  },
-  headerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 15,
   },
   reportsContainer: {
     flex: 1,

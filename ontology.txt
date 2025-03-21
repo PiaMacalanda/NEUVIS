@@ -1,0 +1,50 @@
+NEUVIS
+│── .eas/
+│   └── workflows/
+│       └── deploy.yml
+│── .expo/
+│── .idea/
+│── .vscode/
+│── app/
+│   │── DemoScreen/
+│   │── lib/
+│   │── _layout.tsx
+│   │── accessControl.tsx
+│   │── admin.tsx
+│   │── adminData.tsx
+│   │── adminHome.tsx
+│   │── adminReport.tsx
+│   │── callback.tsx
+│   │── IDGenerate.tsx
+│   │── index.tsx
+│   │── ManualForm.tsx
+│   │── neuvisLanding.tsx
+│   │── privacy.tsx
+│   │── Scanner.tsx
+│   │── ScannerOutput.tsx
+│   │── VisitorsLogs.tsx
+│── assets/
+│   │── fonts/
+│   │── images/
+│   │   │── HeroImage.png
+│   │   │── NEULogo.png
+│   │   └── SampleID.png
+│── components/
+│   │── buttons.tsx
+│   │── colors.ts
+│   │── Header.tsx
+│   │── index.ts
+│   │── logo.tsx
+│   │── spacing.ts
+│   │── typography.ts
+│── node_modules/
+│── .env
+│── .gitignore
+│── app.json
+│── eas.json
+│── expo-env.d.ts
+│── metro.config.js
+│── package.json
+│── package-lock.json
+│── README.md
+└── tsconfig.json

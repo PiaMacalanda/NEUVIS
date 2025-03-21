@@ -222,7 +222,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20,
   },
   sectionTitle: {
     fontSize: 18,

@@ -1,96 +1,192 @@
-// admin.tsx
-import React from 'react';
-import { StyleSheet, View, ScrollView, Text } from 'react-native';
-import Button from '../components/buttons'; 
+import React, { useEffect } from 'react';
+import { 
+  StyleSheet, 
+  View, 
+  ScrollView, 
+  Text, 
+  SafeAreaView, 
+  StatusBar, 
+  TouchableOpacity,
+  GestureResponderEvent
+} from 'react-native';
 import Header from "../components/Header";
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const Admin = () => {
   const router = useRouter();
+  const navigation = useNavigation();
+  
+  useEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       {/* Custom Header for Administrator */}
       <Header role="Administrator" name="Admin 1" />
 
-      {/* Admin Welcome Section */}
-      <View style={styles.welcomeContainer}>
-        <Ionicons name="shield-outline" size={50} color="black" />
-        <Text style={styles.welcomeTitle}>Hello Admin</Text>
-        <Text style={styles.welcomeSubtitle}>Welcome to NEUVIS Administration</Text>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#252525" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
-      {/* Section: Admin Dashboard Options - Centered properly */}
-      <View style={styles.section}>
-        <View style={styles.buttonsWrapper}>
-          <Button title="Home" onPress={() => router.push('/adminHome')} style={styles.button} />
-          <Button title="Visitor Logs Data" onPress={() => router.push('/adminData')} style={styles.button} />
-          <Button title="Saved Reports" onPress={() => router.push('/adminReport')} style={styles.button} />
-          <Button title="Access Control" onPress={() => router.push('/accessControl')} style={styles.button} />
-          <Button title="Logout" onPress={() => router.push('/')} style={styles.button} />
+        {/* Admin Welcome Section */}
+        <View style={styles.welcomeContainer}>
+          <Ionicons name="shield-checkmark" size={50} color="#252525" />
+          <Text style={styles.welcomeTitle}>Hello Admin</Text>
+          <Text style={styles.welcomeSubtitle}>Welcome to NEUVIS Administration</Text>
         </View>
-      </View>
 
-      {/* New Section: Additional Message with Icon */}
-      <View style={styles.messageContainer}>
-        <Ionicons name="information-circle-outline" size={24} color="gray" />
-        <Text style={styles.messageText}>
-          Ensure all visitor logs are reviewed before logging out.
-        </Text>
-      </View>
-    </ScrollView>
+        {/* Admin Dashboard Cards */}
+        <View style={styles.cardsContainer}>
+          <TouchableCard 
+            icon="home-outline" 
+            title="Home" 
+            onPress={() => router.push('/adminHome')} 
+          />
+          <TouchableCard 
+            icon="list-outline" 
+            title="Visitor Logs" 
+            onPress={() => router.push('/adminData')} 
+          />
+          <TouchableCard 
+            icon="document-text-outline" 
+            title="Saved Reports" 
+            onPress={() => router.push('/adminReport')} 
+          />
+          <TouchableCard 
+            icon="key-outline" 
+            title="Access Control" 
+            onPress={() => router.push('/accessControl')} 
+          />
+        </View>
+
+        {/* Info Message with Icon */}
+        <View style={styles.messageContainer}>
+          <Ionicons name="information-circle" size={22} color="#252525" />
+          <Text style={styles.messageText}>
+            Ensure all visitor logs are reviewed daily for security compliance.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-// Styles
+// Define TypeScript interface for TouchableCard props
+interface TouchableCardProps {
+   icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  onPress: (event: GestureResponderEvent) => void;
+}
+
+// TouchableCard Component with proper TypeScript types
+const TouchableCard: React.FC<TouchableCardProps> = ({ icon, title, onPress }) => {
+  return (
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.iconContainer}>
+        <Ionicons name={icon} size={26} color="#252525" />
+      </View>
+      <Text style={styles.cardText}>{title}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// Enhanced Styles with improved spacing and margins
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
   welcomeContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 15,
+    marginBottom: 30,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   welcomeTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 14,
+    color: '#252525',
   },
   welcomeSubtitle: {
-    fontSize: 14,
-    color: 'gray',
+    fontSize: 15,
+    color: '#666',
+    marginTop: 6,
   },
-  section: {
-    marginTop: 20,
-    alignItems: 'center',
-    width: '100%',
+  cardsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center', // This helps center the buttonsWrapper
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 3,
+    marginBottom: 25,
   },
-  buttonsWrapper: {
-    width: '110%',
-    alignItems: 'center', // This centers the buttons horizontally
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    height: 120,
+    width: '48%',
+    alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  button: {
-    marginVertical: 10, // Space between buttons
-    alignSelf: 'center', // Helps center individual buttons
-    width: '50%', // Fixed width for all buttons
+  cardText: {
+    color: '#252525',
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  iconContainer: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 40,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   messageContainer: {
-    marginTop: 30,
-    alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   messageText: {
-    marginLeft: 8,
+    marginLeft: 12,
     fontSize: 14,
-    color: 'gray',
-    textAlign: 'center',
+    color: '#444',
+    flex: 1,
+    lineHeight: 20,
   },
 });
 

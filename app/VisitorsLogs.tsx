@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView, Image } from 'react-native';
-import { supabase } from './lib/supabaseClient';
+import { supabase } from '../app/lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Visitor {
