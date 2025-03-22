@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#252525',
+    backgroundColor: '#4a89dc',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalHeader: {
-    backgroundColor: '#252525',
+    backgroundColor: '#4a89dc',
     padding: 20,
     alignItems: 'center',
   },

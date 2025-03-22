@@ -1,12 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
-
-// Import components
-import Header from '../components/Header';
+import Footer from '@/components/Footer';
 
 export default function PrivacyPolicy() {
   const router = useRouter();
@@ -17,7 +13,6 @@ export default function PrivacyPolicy() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="auto" />
     
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>Privacy Policy for NEUVIS</Text>
@@ -62,6 +57,8 @@ export default function PrivacyPolicy() {
         <Text style={styles.contact}>New Era University</Text>
         <Text style={styles.contact}>No. 9 Central Avenue, New Era, Quezon City</Text>
         <Text style={styles.contact}>Email: privacy@neu.edu.ph</Text>
+
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

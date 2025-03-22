@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, View, Text, ScrollView } from 'react-native';
-import { Button, Logo } from '../components';
+import { Image, StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Logo } from '../components';
 import { useRouter } from 'expo-router';
 import { supabase } from './lib/supabaseClient';
+import { Ionicons } from '@expo/vector-icons';
+import Footer from '../components/Footer';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -40,53 +42,53 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.heroImageContainer}>
-        <Image 
-          source={{ uri: 'https://i.imgur.com/4Gx6MdV.gif' }}  
-          style={[styles.heroImage, { opacity: 0.9 }]} 
-          resizeMode="contain"
-        />
-
+          <Image 
+            source={{ uri: 'https://i.imgur.com/4Gx6MdV.gif' }}  
+            style={[styles.heroImage, { opacity: 0.9 }]} 
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.section}>
+          {/* <View style={styles.buttonGroup}>
+            <TouchableOpacity 
+              style={styles.googleButton}
+              onPress={signInWithGoogle}
+            >
+              <Ionicons name="logo-google" size={20} color="#333" style={styles.buttonIcon} />
+              <Text style={styles.googleButtonText}>Sign in with Google Account (🚧)</Text>
+            </TouchableOpacity>
+          </View> */}
+
           <View style={styles.buttonGroup}>
-            <Button
-              title="Sign in to Google Account (🚧)"
-              variant="outline"
-              icon="logo-google"
-              onPress={signInWithGoogle} // Call Google Sign-in function
-            />
+            <TouchableOpacity 
+              style={styles.routeButton}
+              onPress={() => router.push('/security-login')}
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.routeButtonText}>Security Guard Login</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.buttonGroup}>
-            <Button
-              title="Go as Security Guard"
-              variant="outline"
-              icon="shield-checkmark"
-              onPress={() => router.push('/neuvisLanding')}// Call Google Sign-in function
-            />
+            <TouchableOpacity 
+              style={styles.routeButton}
+              onPress={() => router.push('/admin-login')}
+            >
+              <Ionicons name="settings-outline" size={20} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.routeButtonText}>Administrator Login</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.buttonGroup}>
-            <Button
-              title="Go as Admin"
-              variant="outline"
-              icon="settings"
-              onPress={() => router.push('/admin')}  // Call Google Sign-in function
-            />
-          </View>
-
-          <View style={styles.buttonGroup}>
-            <Button
-              title="Privacy & Policy"
-              variant="underline"
+            <TouchableOpacity 
+              style={styles.underlineButton}
               onPress={() => router.push('/privacy')}
-            />
+            >
+              <Text style={styles.underlineButtonText}>Privacy & Policy</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>© 2025 NEUVIS MDRPLT - All Rights Reserved</Text>
-          </View>
+          <Footer />
         </View>
       </ScrollView>
     </>
@@ -130,13 +132,50 @@ const styles = StyleSheet.create({
   buttonGroup: {
     marginVertical: 10,
     alignSelf: 'center',
+    width: '100%',
+    maxWidth: 400,
   },
-  footer: {
-    marginTop: 40,
+  buttonIcon: {
+    marginRight: 10,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  googleButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  routeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4a89dc',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    elevation: 2,
+  },
+  routeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  underlineButton: {
+    paddingVertical: 8,
     alignItems: 'center',
   },
-  footerText: {
-    color: '#8a9aa8',
-    fontSize: 12,
+  underlineButtonText: {
+    color: '#4a89dc',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });

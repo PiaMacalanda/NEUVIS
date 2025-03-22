@@ -48,3 +48,7 @@ NEUVIS
 │── package-lock.json
 │── README.md
 └── tsconfig.json
+
+> npm install
+> expo install @react-native-community/datetimepicker
+> npx expo start -c                         
