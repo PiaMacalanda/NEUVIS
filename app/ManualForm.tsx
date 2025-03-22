@@ -431,7 +431,7 @@ const ManualForm: React.FC = () => {
             <Text style={styles.label}>Date of Visit</Text>
             <View style={styles.datePickerButton}>
               <Text style={styles.dateText}>{formData.dateofVisit}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#666" />
+              <Ionicons name="calendar-outline" size={20} color="#252525" />
             </View>
           </View>
 
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   },
   idTypeText: {
     fontSize: 14,
-    color: '#666',
+    color: '#252525',
   },
   selectedIdTypeText: {
     color: '#22c55e',
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   phonePrefixText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666',
+    color: '#252525',
   },
   phoneInput: {
     flex: 1,

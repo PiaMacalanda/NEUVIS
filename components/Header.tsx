@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({
             <Text style={styles.guardTitle} numberOfLines={1}>{role}</Text>
             <Text style={styles.guardSubtitle} numberOfLines={1}>{name}</Text>
           </View>
-          <Ionicons name="chevron-down" size={16} color="#666" />
+          <Ionicons name="chevron-down" size={16} color="#252525" />
         </TouchableOpacity>
       </View>
 
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
   },
   right: {
     flexDirection: 'row',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   guardSubtitle: {
     fontSize: 10,
-    color: '#666',
+    color: '#252525',
   },
   modalOverlay: {
     flex: 1,

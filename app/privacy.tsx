@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 14,
-    color: '#666',
+    color: '#252525',
     marginBottom: 20,
   },
   sectionTitle: {

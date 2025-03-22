@@ -92,7 +92,7 @@ export default function NeuvisLanding() {
                 style={styles.refreshButton}
                 onPress={fetchSimpleStats}
               >
-                <Ionicons name="refresh-outline" size={16} color="#666" />
+                <Ionicons name="refresh-outline" size={16} color="#252525" />
               </TouchableOpacity>
             </View>
           )}
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   },
   heroSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#252525',
     textAlign: 'center',
     maxWidth: '80%',
   },
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     marginTop: 4,
   },
   statDivider: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#252525',
   },
   footer: {
     marginTop: 20,

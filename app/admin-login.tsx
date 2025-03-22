@@ -56,7 +56,7 @@ export default function AdminLoginScreen() {
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: email.length > 0 ? '#252525' : '#B0B0B0' }]}
                 placeholder="Admin Email"
@@ -73,7 +73,7 @@ export default function AdminLoginScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: password.length > 0 ? '#252525' : '#B0B0B0' }]}
                 placeholder="Password"
@@ -89,7 +89,7 @@ export default function AdminLoginScreen() {
                 <Ionicons 
                   name={secureTextEntry ? "eye-outline" : "eye-off-outline"} 
                   size={20} 
-                  color="#666" 
+                  color="#252525" 
                 />
               </TouchableOpacity>
             </View>
@@ -120,7 +120,7 @@ export default function AdminLoginScreen() {
           </View>
           
           <View style={styles.secureInfoContainer}>
-            <Ionicons name="shield-checkmark-outline" size={18} color="#666" />
+            <Ionicons name="shield-checkmark-outline" size={18} color="#252525" />
             <Text style={styles.secureInfoText}>Secure, encrypted connection</Text>
           </View>
           
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 30,
-    color: '#666',
+    color: '#252525',
   },
   formContainer: {
     width: '100%',
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   secureInfoText: {
     marginLeft: 5,
-    color: '#666',
+    color: '#252525',
     fontSize: 12,
   },
 });

@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   welcomeSubtitle: {
     fontSize: 15,
-    color: '#666',
+    color: '#252525',
     marginTop: 6,
   },
   cardsContainer: {

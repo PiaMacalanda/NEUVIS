@@ -72,7 +72,7 @@ export default function SecuritySignupScreen() {
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="person-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Full Name"
@@ -82,7 +82,7 @@ export default function SecuritySignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="card-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="card-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Employee ID"
@@ -92,7 +92,7 @@ export default function SecuritySignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -104,7 +104,7 @@ export default function SecuritySignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Password"
@@ -116,13 +116,13 @@ export default function SecuritySignupScreen() {
                 <Ionicons 
                   name={secureTextEntry ? "eye-outline" : "eye-off-outline"} 
                   size={20} 
-                  color="#666" 
+                  color="#252525" 
                 />
               </TouchableOpacity>
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Confirm Password"
@@ -134,7 +134,7 @@ export default function SecuritySignupScreen() {
                 <Ionicons 
                   name={confirmSecureTextEntry ? "eye-outline" : "eye-off-outline"} 
                   size={20} 
-                  color="#666" 
+                  color="#252525" 
                 />
               </TouchableOpacity>
             </View>
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginPromptText: {
-    color: '#666',
+    color: '#252525',
     fontSize: 14,
   },
   loginLink: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     textAlign: 'center',
   },
   termsLink: {

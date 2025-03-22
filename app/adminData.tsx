@@ -242,7 +242,7 @@ export default function AdminDataScreen() {
       {/* Search and Filter */}
       <View style={styles.filterContainer}>
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color="#252525" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
@@ -318,7 +318,7 @@ export default function AdminDataScreen() {
                 style={styles.clearDateButton} 
                 onPress={() => setFilterConfig({...filterConfig, date: null})}
               >
-                <Ionicons name="close-circle" size={20} color="#666" />
+                <Ionicons name="close-circle" size={20} color="#252525" />
               </TouchableOpacity>
             )}
           </View>
@@ -851,6 +851,6 @@ const styles = StyleSheet.create({
   },
   visitHistoryPurpose: {
     fontSize: 14,
-    color: '#666',
+    color: '#252525',
   },
 });

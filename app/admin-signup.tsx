@@ -75,7 +75,7 @@ export default function AdminSignupScreen() {
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="person-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Full Name"
@@ -85,7 +85,7 @@ export default function AdminSignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="business-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="business-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Department"
@@ -95,7 +95,7 @@ export default function AdminSignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="briefcase-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="briefcase-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Position/Role"
@@ -105,7 +105,7 @@ export default function AdminSignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="card-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="card-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Employee ID"
@@ -115,7 +115,7 @@ export default function AdminSignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email (@neu.edu.ph)"
@@ -127,7 +127,7 @@ export default function AdminSignupScreen() {
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Password"
@@ -139,13 +139,13 @@ export default function AdminSignupScreen() {
                 <Ionicons 
                   name={secureTextEntry ? "eye-outline" : "eye-off-outline"} 
                   size={20} 
-                  color="#666" 
+                  color="#252525" 
                 />
               </TouchableOpacity>
             </View>
             
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Confirm Password"
@@ -157,13 +157,13 @@ export default function AdminSignupScreen() {
                 <Ionicons 
                   name={confirmSecureTextEntry ? "eye-outline" : "eye-off-outline"} 
                   size={20} 
-                  color="#666" 
+                  color="#252525" 
                 />
               </TouchableOpacity>
             </View>
             
             <View style={styles.noteContainer}>
-              <Ionicons name="information-circle-outline" size={18} color="#666" />
+              <Ionicons name="information-circle-outline" size={18} color="#252525" />
               <Text style={styles.noteText}>
                 Admin access requires approval from system administrators
               </Text>
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 30,
-    color: '#666',
+    color: '#252525',
   },
   formContainer: {
     width: '100%',
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     marginLeft: 8,
-    color: '#666',
+    color: '#252525',
     fontSize: 12,
   },
   signupButton: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginPromptText: {
-    color: '#666',
+    color: '#252525',
     fontSize: 14,
   },
   loginLink: {
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     textAlign: 'center',
   },
   termsLink: {

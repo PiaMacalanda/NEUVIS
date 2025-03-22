@@ -439,7 +439,7 @@ export default function ScannerOutput() {
                             onPress={() => setShowDateModal(true)}
                         >
                             <Text style={styles.dateText}>{formData.dateOfVisit}</Text>
-                            <Ionicons name="calendar-outline" size={20} color="#666" />
+                            <Ionicons name="calendar-outline" size={20} color="#252525" />
                         </TouchableOpacity>
                     </View>
 
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     phonePrefixText: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#666',
+        color: '#252525',
     },
     phoneInput: {
         flex: 1,
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     },
     disabledInput: {
         backgroundColor: '#f5f5f5',
-        color: '#666',
+        color: '#252525',
     },
     datePickerButton: {
         height: 50,

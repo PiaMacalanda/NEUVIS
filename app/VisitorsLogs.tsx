@@ -201,7 +201,7 @@ const VisitorsLogs: React.FC = () => {
           onPress={() => setShowDateModal(true)}
         >
           <Text style={styles.dateText}>{formattedDate}</Text>
-          <Ionicons name="calendar-outline" size={20} color="#666" />
+          <Ionicons name="calendar-outline" size={20} color="#252525" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.reportButton}>
           <Text style={styles.reportButtonText}>View Report</Text>
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#666',
+    color: '#252525',
   },
   footer: {
     position: 'absolute',
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   },
   visitorId: {
     fontSize: 14,
-    color: '#666',
+    color: '#252525',
     textAlign: 'center',
   },
   detailsContent: {

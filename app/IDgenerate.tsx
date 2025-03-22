@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#252525',
     marginTop: 5,
   },
   cardContainer: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   scanText: {
     fontSize: 10,
-    color: '#666',
+    color: '#252525',
     marginTop: 8,
     fontWeight: 'bold',
   },
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     marginTop: 8,
   },
   infoValue: {
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     textAlign: 'center',
   },
   actionsContainer: {
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 20,
     fontSize: 14,
-    color: '#666',
+    color: '#252525',
     paddingBottom: 20,
   },
 });

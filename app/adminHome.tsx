@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     marginBottom: 5,
     textAlign: 'center',
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#252525',
     marginTop: 5,
   },
   chartValue: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noDataText: {
-    color: '#666',
+    color: '#252525',
     fontSize: 14,
   },
 });
