@@ -18,6 +18,8 @@ export default function AdminLoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
+  const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
   const router = useRouter();
 
   // For UI demo only - will be replaced with actual authentication
@@ -56,22 +58,31 @@ export default function AdminLoginScreen() {
             <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: email.length > 0 ? '#252525' : '#B0B0B0' }]}
                 placeholder="Admin Email"
+                placeholderTextColor="#B0B0B0"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setEmailTextColor(text.length > 0 ? '#252525' : '#B0B0B0');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+
             </View>
             
             <View style={styles.inputContainer}>
               <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: password.length > 0 ? '#252525' : '#B0B0B0' }]}
                 placeholder="Password"
+                placeholderTextColor="#B0B0B0"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setPasswordTextColor(text.length > 0 ? '#252525' : '#B0B0B0');
+                }}
                 secureTextEntry={secureTextEntry}
               />
               <TouchableOpacity onPress={toggleSecureEntry} style={styles.securityIcon}>
@@ -176,6 +187,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
+    color: '#B0B0B0',
   },
   securityIcon: {
     padding: 10,

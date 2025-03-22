@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
+    color: '#B0B0B0',
   },
   securityIcon: {
     padding: 10,
