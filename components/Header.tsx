@@ -39,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({
       {/* Right Side: Notifications & Profile */}
       <View style={styles.right}>
         {/* Notification Icon */}
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.iconButton}
           onPress={onNotificationPress}
         >
@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
               </Text>
             </View>
           )}
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         
         {/* Profile Button */}
         <TouchableOpacity 
