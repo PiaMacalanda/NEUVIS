@@ -4,6 +4,7 @@ import Logo from './logo';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useRouter } from 'expo-router';
+import { useAuth } from '@/app/context/AuthContext';
 
 interface HeaderProps {
   role?: string;
@@ -14,12 +15,14 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  role = "Security Guard 1", 
+  role = "Security Guard 1",
   name = "Main Gate",
   onProfilePress,
   onNotificationPress,
   notifications = 0
 }) => {
+  const { signOut } = useAuth();
+
   const insets = useSafeAreaInsets();
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
@@ -109,7 +112,7 @@ const Header: React.FC<HeaderProps> = ({
               
               <TouchableOpacity  
                 style={[styles.modalOption, styles.logoutOption]}
-                onPress={() => router.replace('/')}>
+                onPress={signOut}>
                 <Ionicons name="log-out-outline" size={20} color="#e74c3c" />
                 <Text style={[styles.modalOptionText, styles.logoutText]}>Log Out</Text>
               </TouchableOpacity>

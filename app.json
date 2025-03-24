@@ -42,14 +42,13 @@
       ],
       [
         "@react-native-community/datetimepicker"
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "SUPABASE_URL": "@env:SUPABASE_URL",
-      "SUPABASE_ANON_KEY": "@env:SUPABASE_ANON_KEY",
       "router": {
         "origin": false
       },
