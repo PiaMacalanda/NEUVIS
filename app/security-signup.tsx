@@ -14,6 +14,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '../components';
 import Footer from '../components/Footer';
+import { useAuth } from './context/AuthContext';
 
 export default function SecuritySignupScreen() {
   const [fullName, setFullName] = useState('');
@@ -23,23 +24,38 @@ export default function SecuritySignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [confirmSecureTextEntry, setConfirmSecureTextEntry] = useState(true);
+  const { signUp, user, session } = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
   
   const router = useRouter();
 
   // For UI demo only - will be replaced with actual registration
-  const handleSignup = () => {
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords don't match");
-      return;
-    }
+  const handleSignup = async () => {
+    setLoading(true);
     
-    // For development purposes - navigate back to login
-    Alert.alert(
-      "Account Created", 
-      "Your account has been created successfully. Please login.",
-      [{ text: "OK", onPress: () => router.push('/security-login') }]
-    );
+    try {
+      if (password !== confirmPassword) {
+        Alert.alert("Error", "Passwords don't match");
+        return;
+      }
+      
+      const {error} = await signUp(email, password, fullName, 'security');
+      
+      if(!error){
+        Alert.alert(
+          "Account Created", 
+          "Your account has been created successfully. Please login.",
+          [{ text: "OK", onPress: () => router.push('/security-login') }]
+        );
+      }
+    } catch (error){
+      console.error("Unexpected error in handleSignup:", (error as Error).message);
+      Alert.alert("Sign-up Error", (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   const toggleSecureEntry = () => {
     setSecureTextEntry(!secureTextEntry);

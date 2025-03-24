@@ -11,26 +11,43 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from './context/AuthContext';
 import { Logo } from '../components';
 import Footer from '../components/Footer';
 
 export default function AdminLoginScreen() {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // For UI demo only - will be replaced with actual authentication
-  const handleLogin = () => {
-    // For development - easy access to admin dashboard
-    router.push('/admin');
+  const handleLogin = async (): Promise<void> => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const { error } = await signIn(email, password, 'admin');
+      if (error) throw error;
+      router.replace('./adminHome');
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleSecureEntry = () => {
     setSecureTextEntry(!secureTextEntry);
   };
+  
 
   return (
     <KeyboardAvoidingView

@@ -4,10 +4,12 @@ import Header from '../components/Header';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../app/lib/supabaseClient';
+import { useAuth } from './context/AuthContext';
 
 export default function NeuvisLanding() {
   const router = useRouter();
   const navigation = useNavigation();
+  const { user, session } = useAuth();
   const [stats, setStats] = useState({
     todayCount: 0,
     totalCount: 0, // Here naman, ts was expecting just number but got number | null
@@ -58,7 +60,7 @@ export default function NeuvisLanding() {
       setStats(prev => ({ ...prev, loading: false }));
     }
   };
-
+  
   return (
     <View style={styles.mainContainer}>
       {/* Header Component */}

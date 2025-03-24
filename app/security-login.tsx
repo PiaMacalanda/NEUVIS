@@ -12,25 +12,41 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from './context/AuthContext';
 import { Logo } from '../components';
 import Footer from '../components/Footer';
 
 export default function SecurityLoginScreen() {
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
   const router = useRouter();
-
-  // For UI demo only - will be replaced with actual authentication
-  const handleLogin = () => {
-    // For development - easy access to security dashboard
-    router.push('/neuvisLanding');
-  };
+  const { signIn } = useAuth();
 
   const toggleSecureEntry = () => {
     setSecureTextEntry(!secureTextEntry);
+  };
+
+  const handleLogin = async (): Promise<void> => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const { error } = await signIn(email, password, 'security');
+      if (error) throw error;
+      router.replace('./neuvisLanding');
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,7 +75,7 @@ export default function SecurityLoginScreen() {
               <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: email.length > 0 ? '#252525' : '#B0B0B0' }]}
-                placeholder="Admin Email"
+                placeholder="Security Email"
                 placeholderTextColor="#B0B0B0"
                 value={email}
                 onChangeText={(text) => {
