@@ -36,7 +36,7 @@ export default function AdminLoginScreen() {
     try {
       const { error } = await signIn(email, password, 'admin');
       if (error) throw error;
-      router.replace('./adminHome');
+      router.replace('/admin');
     } catch (error) {
       console.error('Login error:', error);
     } finally {
@@ -48,7 +48,6 @@ export default function AdminLoginScreen() {
     setSecureTextEntry(!secureTextEntry);
   };
   
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -86,7 +85,6 @@ export default function AdminLoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-
             </View>
             
             <View style={styles.inputContainer}>
