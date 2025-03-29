@@ -1,72 +1,114 @@
-# Welcome to NEUVIS - Virtual Identification System 🪪👋
+# Welcome to NEUVIS - Virtual Identification System 🧪👋
 
 NEUVIS is a Virtual Identification System designed to streamline visitor management in New Era University. Built with React Native, Expo, Supabase, and TypeScript, it enables security officers and administrators to verify, log, and track visitor check-ins and check-outs efficiently.
- 
+
 ## 📌 Tech Stack  
 - **React Native** - Mobile app framework  
 - **Expo** - Development environment  
 - **Supabase** - Backend services  
 - **TypeScript** - Strongly typed JavaScript  
 
-## Get started
+## Get Started
 
-1. Clone the Repository
-
+1. **Clone the Repository**
    ```bash
    git clone https://github.com/PiaMacalanda/NEUVIS.git
    cd NEUVIS
    ```
-2. Install dependencies
 
+2. **Install Dependencies**
    ```bash
    npm install
    ```
 
-3. Install Expo Go on Your Mobile Device  
-**Why do we need Expo Go?**  
-Expo Go allows us to run and test our React Native app directly on a physical device without the need for a complicated build process. It enables **live reloading**, meaning any changes made in the code will reflect in real-time on the app without restarting the development server.  
-
-📲 **To install Expo Go:**  
-- **For Android:** [Download from Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)  
-- **For iOS:** [Download from the App Store](https://apps.apple.com/app/expo-go/id982107779)  
-
-Once installed, you'll be able to scan the QR code provided by `npx expo start` to run the app on your phone.  
-
-4. Set Up Environment Variables (working on🚧) 
-Create a `.env` file in the root directory and add: 
-
-```
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-5. Start the Development Server
-
-   ```bash
-    npx expo start
+3. **Set Up Environment Variables** (working on🚧)  
+   Create a `.env` file in the root directory and add:  
+   ```plaintext
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
-- If using a **physical device**, open **Expo Go** and scan the QR code displayed in your terminal or browser.  
-- If using an **emulator**, make sure it's running before starting the project.  
 
-In the output, you'll find options to open the app in a
+4. **Start the Development Server with Expo Dev Build**
+   ```bash
+   npx expo start -c
+   ```
+   - The `-c` flag clears the cache to ensure a fresh start.
+   - Make sure you have the **Expo Dev Build** installed on your Android device.
+   - Connect your device via USB or ensure it is on the same network as your development machine.
+   - If the automatic build does not work, manually input the **Metro bundler URL** displayed in the terminal into the **Expo Dev Build** app.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+5. **GitHub Repository**
+   [NEUVIS Repository](https://github.com/PiaMacalanda/NEUVIS)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🛠 Collaborative Development Guide
 
-## Additional Resources
-📚 Additional Resources
+### Creating a Branch
+Always create a new branch when working on a new feature or fixing a bug to keep the `main` branch stable.
+```bash
+git checkout -b feature-branch-name
+```
+Example:
+```bash
+git checkout -b add-login-feature
+```
+
+### Committing Changes
+Make meaningful commit messages describing what you changed.
+```bash
+git add .
+git commit -m "Added login functionality with Google Auth"
+```
+
+### Pushing Changes
+Push your branch to the remote repository.
+```bash
+git push origin feature-branch-name
+```
+Example:
+```bash
+git push origin add-login-feature
+```
+
+### Creating a Pull Request (PR)
+1. Go to the GitHub repository: [NEUVIS Repository](https://github.com/PiaMacalanda/NEUVIS)
+2. Click on the **Pull Requests** tab.
+3. Click **New pull request**.
+4. Select your feature branch and compare it with `main`.
+5. Click **Create pull request**, provide a description, and submit.
+6. Wait for a team member to review and approve before merging.
+
+### Merging to Main
+Only merge changes into `main` after a successful PR review.
+```bash
+git checkout main
+git pull origin main
+git merge feature-branch-name
+```
+
+### Keeping Your Branch Updated
+Before pushing your changes, sync your branch with `main` to avoid conflicts.
+```bash
+git checkout main
+git pull origin main
+git checkout feature-branch-name
+git merge main
+```
+
+## 📚 Additional Resources
 - [Expo Documentation](https://docs.expo.dev/)
-- [React Native Documentation]()
-- [Supabase Documentation]()
-- [TypeScript Documentation]()
-- [Google Auth for Expo]()
+- [React Native Documentation](https://reactnative.dev/docs/getting-started)
+- [Supabase Documentation](https://supabase.io/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Google Auth for Expo](https://docs.expo.dev/guides/authentication/#google)
 
-## Project Team
-- Project Manager: Pia Macalanda
-- Design Analyst: Angelica Toquero
-- Software Developers: Jaime Dy, Aliyah Llana
-- Sofware Testers: Leo Rentazida, Lyrine Poliarco
+## 👨‍💻 Project Team
+- **Pia Macalanda** - Lead Developer & Scrum Master - [GitHub](https://github.com/PiaMacalanda)
+- **Jaime III Dy** - Backend Developer & Security Specialist - [GitHub](https://github.com/JaimeDyIII)
+- **Angelica Toquero** - Backend Developer - [GitHub](https://github.com/AngelicaToquero)
+- **Aliyah Llana** - UI/UX Designer - [GitHub](https://github.com/AliyahAira)
+- **Leo Rentazida** - UI/UX Designer - [GitHub](https://github.com/leorentazida)
+- **Lyrine Poliarco** - Database Analyst - [GitHub](https://github.com/LyrinePoliarco)
+- **Testers** - ALL  
+
+Happy coding! ✨💻
+
