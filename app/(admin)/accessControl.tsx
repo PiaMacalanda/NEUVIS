@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '../components/Header';
+import Header from '../../components/Header';
 import { colors } from '@/components/colors';
 
 const roles = ['SC001', 'SC002', 'SC003'];
@@ -123,7 +123,6 @@ export default function AccessControlScreen() {
   return (
     <ScrollView style={styles.container}>
       <Header role="Administrator" name="Access Control Panel" />
-
       <View style={styles.form}>
         <Text style={styles.sectionTitle}>Add Security Personnel</Text>
         <TextInput 
@@ -261,13 +260,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    padding: 15
   },
   form: {
     backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15
+    padding: 20,
+    borderRadius: 12,
+    margin: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   input: {
     borderWidth: 1,

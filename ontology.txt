@@ -1,54 +1,64 @@
 NEUVIS
-│── .eas/
-│   └── workflows/
+├── .eas
+│   └── workflows
 │       └── deploy.yml
-│── .expo/
-│── .idea/
-│── .vscode/
-│── app/
-│   │── DemoScreen/
-│   │── lib/
-│   │── _layout.tsx
-│   │── accessControl.tsx
-│   │── admin.tsx
-│   │── adminData.tsx
-│   │── adminHome.tsx
-│   │── adminReport.tsx
-│   │── callback.tsx
-│   │── IDGenerate.tsx
-│   │── index.tsx
-│   │── ManualForm.tsx
-│   │── neuvisLanding.tsx
-│   │── privacy.tsx
-│   │── Scanner.tsx
-│   │── ScannerOutput.tsx
-│   │── VisitorsLogs.tsx
-│── assets/
-│   │── fonts/
-│   │── images/
-│   │   │── HeroImage.png
-│   │   │── NEULogo.png
-│   │   └── SampleID.png
-│── components/
-│   │── buttons.tsx
-│   │── colors.ts
-│   │── Header.tsx
-│   │── index.ts
-│   │── logo.tsx
-│   │── spacing.ts
-│   │── typography.ts
-│── node_modules/
-│── .env
-│── .gitignore
-│── app.json
-│── eas.json
-│── expo-env.d.ts
-│── metro.config.js
-│── package.json
-│── package-lock.json
-│── README.md
+├── .expo
+├── .idea
+├── .vscode
+│   └── settings.json
+├── app
+│   ├── (admin)
+│   │   ├── accessControl.tsx
+│   │   ├── admin.tsx
+│   │   ├── adminData.tsx
+│   │   ├── adminHome.tsx
+│   │   └── adminReport.tsx
+│   ├── (authentication)
+│   │   ├── admin-login.tsx
+│   │   ├── admin-signup.tsx
+│   │   ├── security-login.tsx
+│   │   └── security-signup.tsx
+│   ├── (security)
+│   │   ├── IDgenerate.tsx
+│   │   ├── ManualForm.tsx
+│   │   ├── neuvisLanding.tsx
+│   │   ├── Scanner.tsx
+│   │   ├── ScannerOutput.tsx
+│   │   └── VisitorsLogs.tsx
+│   └── (static)
+│       ├── privacy.tsx
+│       └── privacyStyles.tsx
+├── context
+│   └── AuthContext.tsx
+├── lib
+│   ├── supabaseClient.ts
+│   ├── _layout.tsx
+│   ├── callback.tsx
+│   └── index.tsx
+├── assets
+│   ├── fonts
+│   ├── images
+│   ├── HeroImage.png
+│   ├── NEULogo.png
+│   └── SampleID.png
+├── components
+│   ├── buttons.tsx
+│   ├── colors.ts
+│   ├── Footer.tsx
+│   ├── Header.tsx
+│   ├── index.ts
+│   ├── logo.tsx
+│   ├── spacing.ts
+│   └── typography.ts
+├── node_modules
+├── .env
+├── .gitignore
+├── app.json
+├── eas.json
+├── expo-env.d.ts
+├── metro.config.js
+├── ontology.txt
+├── package-lock.json
+├── package.json
+├── README.md
 └── tsconfig.json
-
-> npm install
-> expo install @react-native-community/datetimepicker
-> npx expo start -c                         

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, Modal } from 'react-native';
-import Button from '../components/buttons';
-import Header from '../components/Header';
+import Button from '../../components/buttons';
+import Header from '../../components/Header';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { supabase } from '../app/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 // Define types for our data
 type VisitorData = {

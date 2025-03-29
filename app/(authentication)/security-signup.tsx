@@ -12,36 +12,50 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Logo } from '../components';
-import Footer from '../components/Footer';
+import { Logo } from '../../components';
+import Footer from '../../components/Footer';
+import { useAuth } from '../context/AuthContext';
 
-export default function AdminSignupScreen() {
+export default function SecuritySignupScreen() {
   const [fullName, setFullName] = useState('');
-  const [department, setDepartment] = useState('');
-  const [position, setPosition] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [confirmSecureTextEntry, setConfirmSecureTextEntry] = useState(true);
+  const { signUp, user, session } = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
   
   const router = useRouter();
 
   // For UI demo only - will be replaced with actual registration
-  const handleSignup = () => {
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords don't match");
-      return;
-    }
+  const handleSignup = async () => {
+    setLoading(true);
     
-    // For development - show confirmation and redirect
-    Alert.alert(
-      "Request Submitted", 
-      "Your admin access request has been submitted for approval. You will receive an email once your account is approved.",
-      [{ text: "OK", onPress: () => router.push('/admin-login') }]
-    );
+    try {
+      if (password !== confirmPassword) {
+        Alert.alert("Error", "Passwords don't match");
+        return;
+      }
+      
+      const {error} = await signUp(email, password, fullName, 'security');
+      
+      if(!error){
+        Alert.alert(
+          "Account Created", 
+          "Your account has been created successfully. Please login.",
+          [{ text: "OK", onPress: () => router.push('/security-login') }]
+        );
+      }
+    } catch (error){
+      console.error("Unexpected error in handleSignup:", (error as Error).message);
+      Alert.alert("Sign-up Error", (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   const toggleSecureEntry = () => {
     setSecureTextEntry(!secureTextEntry);
@@ -70,8 +84,7 @@ export default function AdminSignupScreen() {
             <Logo size="small" />
           </View>
           
-          <Text style={styles.title}>Admin Access Request</Text>
-          <Text style={styles.subtitle}>Please provide your NEU credentials</Text>
+          <Text style={styles.title}>Security Guard Registration</Text>
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
@@ -81,26 +94,6 @@ export default function AdminSignupScreen() {
                 placeholder="Full Name"
                 value={fullName}
                 onChangeText={setFullName}
-              />
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Ionicons name="business-outline" size={20} color="#252525" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Department"
-                value={department}
-                onChangeText={setDepartment}
-              />
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Ionicons name="briefcase-outline" size={20} color="#252525" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Position/Role"
-                value={position}
-                onChangeText={setPosition}
               />
             </View>
             
@@ -118,7 +111,7 @@ export default function AdminSignupScreen() {
               <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Email (@neu.edu.ph)"
+                placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -162,23 +155,16 @@ export default function AdminSignupScreen() {
               </TouchableOpacity>
             </View>
             
-            <View style={styles.noteContainer}>
-              <Ionicons name="information-circle-outline" size={18} color="#252525" />
-              <Text style={styles.noteText}>
-                Admin access requires approval from system administrators
-              </Text>
-            </View>
-            
             <TouchableOpacity 
               style={styles.signupButton}
               onPress={handleSignup}
             >
-              <Text style={styles.signupButtonText}>Submit Request</Text>
+              <Text style={styles.signupButtonText}>Create Account</Text>
             </TouchableOpacity>
             
             <View style={styles.loginPrompt}>
-              <Text style={styles.loginPromptText}>Already have access? </Text>
-              <TouchableOpacity onPress={() => router.push('/admin-login')}>
+              <Text style={styles.loginPromptText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/security-login')}>
                 <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>
             </View>
@@ -186,7 +172,7 @@ export default function AdminSignupScreen() {
           
           <View style={styles.termsContainer}>
             <Text style={styles.termsText}>
-              By requesting access, you agree to our{' '}
+              By creating an account, you agree to our{' '}
               <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
               <Text style={styles.termsLink}>Privacy Policy</Text>
             </Text>
@@ -224,14 +210,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 5,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
     marginBottom: 30,
-    color: '#252525',
+    color: '#333',
   },
   formContainer: {
     width: '100%',
@@ -259,19 +239,6 @@ const styles = StyleSheet.create({
   },
   securityIcon: {
     padding: 10,
-  },
-  noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f6ff',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  noteText: {
-    marginLeft: 8,
-    color: '#252525',
-    fontSize: 12,
   },
   signupButton: {
     backgroundColor: '#4a89dc',

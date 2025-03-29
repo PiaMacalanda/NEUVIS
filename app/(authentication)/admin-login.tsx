@@ -7,28 +7,23 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
-  Image,
   ScrollView
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from './context/AuthContext';
-import { Logo } from '../components';
-import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
+import { Logo } from '../../components';
+import Footer from '../../components/Footer';
 
-export default function SecurityLoginScreen() {
-  const [loading, setLoading] = useState(false);
+export default function AdminLoginScreen() {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { signIn } = useAuth();
-
-  const toggleSecureEntry = () => {
-    setSecureTextEntry(!secureTextEntry);
-  };
 
   const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
@@ -39,9 +34,9 @@ export default function SecurityLoginScreen() {
     setLoading(true);
     
     try {
-      const { error } = await signIn(email, password, 'security');
+      const { error } = await signIn(email, password, 'admin');
       if (error) throw error;
-      router.replace('./neuvisLanding');
+      router.replace('/admin');
     } catch (error) {
       console.error('Login error:', error);
     } finally {
@@ -49,6 +44,10 @@ export default function SecurityLoginScreen() {
     }
   };
 
+  const toggleSecureEntry = () => {
+    setSecureTextEntry(!secureTextEntry);
+  };
+  
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -68,14 +67,15 @@ export default function SecurityLoginScreen() {
             <Logo size="small" />
           </View>
           
-          <Text style={styles.title}>Security Guard Login</Text>
+          <Text style={styles.title}>Administrator Login</Text>
+          <Text style={styles.subtitle}>Secure access for NEU administrators only</Text>
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { color: email.length > 0 ? '#252525' : '#B0B0B0' }]}
-                placeholder="Security Email"
+                placeholder="Admin Email"
                 placeholderTextColor="#B0B0B0"
                 value={email}
                 onChangeText={(text) => {
@@ -128,10 +128,15 @@ export default function SecurityLoginScreen() {
             
             <TouchableOpacity 
               style={styles.signupButton}
-              onPress={() => router.push('/security-signup')}
+              onPress={() => router.push('/admin-signup')}
             >
-              <Text style={styles.signupButtonText}>Create New Account</Text>
+              <Text style={styles.signupButtonText}>Request Admin Access</Text>
             </TouchableOpacity>
+          </View>
+          
+          <View style={styles.secureInfoContainer}>
+            <Ionicons name="shield-checkmark-outline" size={18} color="#252525" />
+            <Text style={styles.secureInfoText}>Secure, encrypted connection</Text>
           </View>
           
           <Footer />
@@ -160,14 +165,20 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginTop: 60,
-    marginBottom: 30,
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 5,
     color: '#333',
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#252525',
   },
   formContainer: {
     width: '100%',
@@ -243,5 +254,17 @@ const styles = StyleSheet.create({
     color: '#4a89dc',
     fontSize: 16,
     fontWeight: '600',
+  },
+  secureInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  secureInfoText: {
+    marginLeft: 5,
+    color: '#252525',
+    fontSize: 12,
   },
 });

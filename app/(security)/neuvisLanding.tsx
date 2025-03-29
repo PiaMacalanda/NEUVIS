@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Image, StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import Header from '../components/Header';
+import Header from '../../components/Header';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../app/lib/supabaseClient';
-import { useAuth } from './context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 export default function NeuvisLanding() {
   const router = useRouter();

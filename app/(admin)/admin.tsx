@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   GestureResponderEvent
 } from 'react-native';
-import Header from "../components/Header";
+import Header from "../../components/Header";
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
