@@ -29,30 +29,34 @@ export default function SecuritySignupScreen() {
   
   const router = useRouter();
 
-  // For UI demo only - will be replaced with actual registration
   const handleSignup = async () => {
     setLoading(true);
-    
+
     try {
-      if (password !== confirmPassword) {
-        Alert.alert("Error", "Passwords don't match");
-        return;
-      }
-      
-      const {error} = await signUp(email, password, fullName, 'security');
-      
-      if(!error){
+        if (password !== confirmPassword) {
+            Alert.alert("Error", "Passwords don't match");
+            return;
+        }
+
+        const { error } = await signUp(email, password, fullName, 'security');
+
+        if (error) {
+            console.error("Sign-up failed:", error.message);
+            Alert.alert("Sign-up Error", error.message);
+            return;
+        }
+
         Alert.alert(
-          "Account Created", 
-          "Your account has been created successfully. Please login.",
-          [{ text: "OK", onPress: () => router.push('/security-login') }]
+            "Verify Email",
+            "Verify your email to be signed up successfully.",
+            [{ text: "OK", onPress: () => router.push('/verify') }]
         );
-      }
-    } catch (error){
-      console.error("Unexpected error in handleSignup:", (error as Error).message);
-      Alert.alert("Sign-up Error", (error as Error).message);
+
+    } catch (error) {
+        console.error("Unexpected error in handleSignup:", (error as Error).message);
+        Alert.alert("Sign-up Error", (error as Error).message);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
   

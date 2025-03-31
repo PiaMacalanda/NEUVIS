@@ -3,7 +3,8 @@ import supabase from '../lib/supabaseClient';
 import * as SecureStore from 'expo-secure-store';
 import { Alert } from 'react-native';
 import { Session, User, Provider } from '@supabase/supabase-js';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
+import VisitorsLogs from '../(security)/VisitorsLogs';
 
 interface AuthContextProps {
     user: User | null;
@@ -36,12 +37,12 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
+    const pathname = usePathname();
 
     useEffect(() => {
         const loadSession = async () => {
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 access_token: sessionData.access_token,
                 refresh_token: sessionData.refresh_token,
               });
-              
+
               if (error) {
                 await SecureStore.deleteItemAsync('supabase-session');
                 setUser(null);
@@ -95,8 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         );
-    
-        // Cleanup subscription
+
         return () => {
           if (authListener && authListener.subscription) {
             authListener.subscription.unsubscribe();
@@ -105,11 +105,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, []);
       
 
+    useEffect(() => {
+        // Throw user to landing if authenticated and in login/signup pages
+        if (!session || !user?.user_metadata) return;
+    
+        const role = user.user_metadata.role;
+        const authScreens = ['/', '/security-login', '/security-signup', '/admin-login', '/admin-signup'];
+    
+        if (authScreens.includes(pathname)) {
+            if (role === 'security') {
+                router.replace('/neuvisLanding');
+            } else if (role === 'admin') {
+                router.replace('/admin');
+            }
+        }
+    }, [session, user?.user_metadata?.role, pathname]);
+
+    useEffect(() => {
+        // Throw user to the correct role page if in the wrong role page
+        if (!session || !user) return;
+
+        if (!user) {
+            console.error("User doesn't exist");
+            return;
+        }
+    
+        const role = user.user_metadata?.role;
+
+        const adminScreens = ['/admin', '/adminData', '/adminHome', '/adminReport']; // lagay niyo admin screens here
+        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', './Scanner', '/IDGenerate', '/ManualForm']; // lagay niyo securiy screens here
+
+        if (adminScreens.includes(pathname)){
+            if (role === 'security'){
+                router.replace('/neuvisLanding');
+            }
+        } else if (securityScreens.includes(pathname)){
+            if (role === 'admin'){
+                router.replace('/admin');
+            }
+        }
+    }, [session, user?.user_metadata?.role, pathname]);
+
     const signUp = async (email: string, password: string, full_name: string, role: string) => {
         setLoading(true);
-
+        
         try {
-            const { data, error } = await supabase.auth.signUp({ email, password})
+            if(!email.endsWith('@neu.edu.ph')) throw new Error ('Use your institutional email');
+
+            const { data, error } = await supabase.auth.signUp({ 
+                email, 
+                password,
+                options: {
+                    emailRedirectTo: 'myapp://emailVerified',
+                    data: { full_name, role }
+                }
+            })
             
             if (error) {
                 console.error('Sign-up failed:', error.message);
@@ -184,41 +234,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(true);
     
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-            
+            if (!email.endsWith('@neu.edu.ph')) throw new Error('Use your institutional email');
+    
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
-            
-            if (data.user) {
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('role')
-                    .eq('id', data.user.id)
-                    .single();
-                    
-                if (userError) throw userError;
-                
-                if (requiredRole && userData.role !== requiredRole) {
-                    throw new Error(`Access denied. This login requires ${requiredRole} privileges.`);
-                }
-                
-                return { 
-                    data, 
-                    userData, 
-                    role: userData.role,
-                    error: null 
-                };
+    
+            const user = data.user;
+            if (!user) throw new Error('User not found');
+    
+            if (!user.email_confirmed_at) {
+                throw new Error('Please verify your email before signing in.');
             }
-            
+    
+            const { data: existingUser, error: userError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+    
+            if (userError && userError.code !== 'PGRST116') throw userError;
+    
+            let userData: { role: string } | undefined;
+            let role: string | undefined;
+    
+            if (!existingUser) {
+                console.log('User is verified but not in database. Inserting...');
+                const full_name = user.user_metadata?.full_name || 'Unknown';
+                role = user.user_metadata?.role || 'user';
+
+                if(!role){
+                    Alert.alert('User role not found!');
+                    throw new Error("User role not found!");
+                }
+    
+                const insertError = await insertUserToUsersTable(email, user.id, full_name, role);
+                if (insertError) throw insertError;
+    
+                userData = { role };
+            } else {
+                userData = { role: existingUser.role };
+                role = existingUser.role;
+            }
+    
+            if (requiredRole && role !== requiredRole) {
+                throw new Error(`Access denied. This login requires ${requiredRole} privileges.`);
+            }
+    
             return { 
                 data, 
-                userData: undefined,
-                role: undefined,
+                userData, 
+                role, 
                 error: null 
             };
         } catch (error) {
+            console.error(error);
             Alert.alert('Error signing in', (error as Error).message);
             return { 
                 data: null, 
@@ -230,6 +299,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setLoading(false);
         }
     };
+    
 
     const signOut = async (): Promise<void> => {
         setLoading(true);
@@ -269,3 +339,4 @@ export const useAuth = (): AuthContextProps => {
     }
     return context;
 };
+
