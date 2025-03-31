@@ -82,6 +82,15 @@ export default function HomeScreen() {
 
           <View style={styles.buttonGroup}>
             <TouchableOpacity 
+              style={styles.routeButton}
+              onPress={() => router.push('/(superadmin)/superadmin')}
+            >
+              <Text style={styles.routeButtonText}>Superadmin Page</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity 
               style={styles.underlineButton}
               onPress={() => router.push('/privacy')}
             >

@@ -22,7 +22,7 @@ export default function AdminLoginScreen() {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); 
   const router = useRouter();
 
   const handleLogin = async (): Promise<void> => {
@@ -120,7 +120,7 @@ export default function AdminLoginScreen() {
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
             
-            <View style={styles.dividerContainer}>
+            {/* <View style={styles.dividerContainer}>
               <View style={styles.divider} />
               <Text style={styles.dividerText}>OR</Text>
               <View style={styles.divider} />
@@ -131,7 +131,7 @@ export default function AdminLoginScreen() {
               onPress={() => router.push('/admin-signup')}
             >
               <Text style={styles.signupButtonText}>Request Admin Access</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
           
           <View style={styles.secureInfoContainer}>

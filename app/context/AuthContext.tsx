@@ -117,6 +117,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 router.replace('/neuvisLanding');
             } else if (role === 'admin') {
                 router.replace('/admin');
+            } else if (role === 'superadmin'){
+                router.replace('/(superadmin)/superadmin');
             }
         }
     }, [session, user?.user_metadata?.role, pathname]);
@@ -146,6 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, [session, user?.user_metadata?.role, pathname]);
 
+
     const signUp = async (email: string, password: string, full_name: string, role: string) => {
         setLoading(true);
         
@@ -167,18 +170,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return { data: null, error };
             }
 
-            if(data?.user){
-                const insertError = await insertUserToUsersTable(email, data.user.id, full_name, role);
-                if (insertError) {
-                    console.error('Error inserting user into database:', insertError.message);
-                    return { data: null, error: insertError };                
-                }            
-            } else {
-                console.error("User data not returned from authentication");
-                Alert.alert('Sign-up Error', 'Failed to create user account. Please try again.');
-                return { data: null, error: new Error('User data not returned') };
-            }
-            
             return { data, error: null };
         } catch (error) {
             console.error('Unexpected error during sign-up:', (error as Error).message);
@@ -229,7 +220,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return error as Error;
         }
     };
-    
+
+
     const signIn = async (email: string, password: string, requiredRole?: 'admin' | 'security') => {
         setLoading(true);
     
@@ -237,8 +229,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (!email.endsWith('@neu.edu.ph')) throw new Error('Use your institutional email');
     
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-    
+
+            if (error) {
+                if (error.message.toLowerCase().includes('email not confirmed')) {
+                    Alert.alert(
+                        'Error during sign-in', 
+                        'Email is not verified. Please check your inbox or resend verification email.',
+                        [{ text: "OK", onPress: () => router.push('/(authentication)/verify') }]
+                    );
+
+                    console.error(error);
+                    return { data: null, userData: undefined, role: undefined, error: error as Error };
+                }
+
+                throw error;
+            }  
+
             const user = data.user;
             if (!user) throw new Error('User not found');
     
