@@ -167,18 +167,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return { data: null, error };
             }
 
-            if(data?.user){
-                const insertError = await insertUserToUsersTable(email, data.user.id, full_name, role);
-                if (insertError) {
-                    console.error('Error inserting user into database:', insertError.message);
-                    return { data: null, error: insertError };                
-                }            
-            } else {
-                console.error("User data not returned from authentication");
-                Alert.alert('Sign-up Error', 'Failed to create user account. Please try again.');
-                return { data: null, error: new Error('User data not returned') };
-            }
-            
             return { data, error: null };
         } catch (error) {
             console.error('Unexpected error during sign-up:', (error as Error).message);
