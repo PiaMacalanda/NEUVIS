@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView } from 'react-native';
 import { supabase } from '../lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
+import Logo from '../../components/logo';
 
 interface Visitor {
   id: number;
@@ -9,6 +10,18 @@ interface Visitor {
   time_of_visit: string;
   time_out?: string;
   visit_id: string;
+  purpose_of_visit?: string;
+  phone_number?: string;
+  card_type?: string;
+  id_number?: string;
+  visit_count?: number;
+  visitors?: {
+    id: number;
+    name: string;
+    phone_number?: string;
+    card_type?: string;
+    id_number?: string;
+  };
 }
 
 const VisitorsLogs: React.FC = () => {
@@ -17,6 +30,7 @@ const VisitorsLogs: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [showVisitorModal, setShowVisitorModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('ongoing'); // 'ongoing' or 'completed'
   
   // Date picker states
   const [showDateModal, setShowDateModal] = useState(false);
@@ -24,20 +38,20 @@ const VisitorsLogs: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(today);
   const [formattedDate, setFormattedDate] = useState(formatDate(today));
 
-  // Date picker data
+  // Years for date picker
   const years = Array.from({ length: 10 }, (_, i) => today.getFullYear() - 5 + i);
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
-  
+ 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month, 0).getDate();
   };
 
   useEffect(() => {
     fetchVisitors();
-  }, [formattedDate]);
+  }, [formattedDate, activeTab]);
 
   // Format date for display
   function formatDate(date: Date): string {
@@ -76,45 +90,64 @@ const VisitorsLogs: React.FC = () => {
   const fetchVisitors = async () => {
     try {
       setLoading(true);
-      
+
       // Get start and end of selected date
       const startOfDay = new Date(new Date(selectedDate).setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(new Date(selectedDate).setHours(23, 59, 59, 999)).toISOString();
       
-      // Modified query to properly handle the visitor data
-      const { data, error } = await supabase
+      // Modified query to fetch more visitor details
+      let query = supabase
         .from('visits')
         .select(`
           id,
           time_of_visit,
-          expiration,
+          time_out,
           visit_id,
-          visitors(id, name)
+          purpose_of_visit,
+          visitors(
+            id, 
+            name, 
+            phone_number, 
+            card_type, 
+            id_number
+          )
         `)
         .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
-        .order('time_of_visit', { ascending: false });
+        .lte('created_at', endOfDay);
+      
+      // Filter based on active tab
+      if (activeTab === 'ongoing') {
+        query = query.is('time_out', null);
+      } else {
+        query = query.not('time_out', 'is', null);
+      }
+      
+      const { data, error } = await query.order('time_of_visit', { ascending: false });
       
       if (error) throw error;
 
-      // Fix for the "Cannot read property 'name' of null" error
-      // Transform data with null check for visitors
-        const formattedData = data
-          .filter(item => item.visitors !== null)
-          .map(item => ({
-            id: item.id,
-            name: item.visitors?.name || 'Unknown Visitor',
-            time_of_visit: formatDateTime(item.time_of_visit),
-            time_out: item.expiration ? formatDateTime(item.expiration) : undefined,
-            visit_id: item.visit_id,
-          }));
+      // Transform data with comprehensive visitor details
+      const formattedData = data
+        .filter(item => item.visitors !== null)
+        .map(item => ({
+          id: item.id,
+          name: item.visitors?.name || 'Unknown Visitor',
+          time_of_visit: formatDateTime(item.time_of_visit),
+          time_out: item.time_out ? formatDateTime(item.time_out) : undefined,
+          visit_id: item.visit_id,
+          purpose_of_visit: item.purpose_of_visit || '',
+          phone_number: item.visitors?.phone_number || '',
+          card_type: item.visitors?.card_type || '',
+          id_number: item.visitors?.id_number || '',
+          visit_count: 3 // This would ideally be dynamically fetched
+        }));
             
-        setVisitors(formattedData);
-      } catch (error) {
-        console.error('Error fetching visitors:', error);
-      } finally {
-        setLoading(false);
-      }
+      setVisitors(formattedData);
+    } catch (error) {
+      console.error('Error fetching visitors:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTimeOut = async (id: number) => {
@@ -122,13 +155,15 @@ const VisitorsLogs: React.FC = () => {
       const now = new Date().toISOString();
       const { error } = await supabase
         .from('visits')
-        .update({ expiration: now })
+        .update({ time_out: now })
         .eq('id', id);
       
       if (error) throw error;
       
       // Refresh the list
       fetchVisitors();
+      // Switch to completed tab to show the logged out visitor
+      setActiveTab('completed');
     } catch (error) {
       console.error('Error updating time out:', error);
     }
@@ -153,7 +188,7 @@ const VisitorsLogs: React.FC = () => {
         {item.time_out && <Text style={[styles.timeText, styles.timeOutText]}>{item.time_out}</Text>}
       </View>
       <View style={styles.actionContainer}>
-        {!item.time_out ? (
+        {activeTab === 'ongoing' ? (
           <TouchableOpacity 
             style={[styles.actionButton, styles.timeOutButton]} 
             onPress={() => handleTimeOut(item.id)}
@@ -174,39 +209,65 @@ const VisitorsLogs: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => {}} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={18} color="#000" />
-          <Text style={styles.backText}>Home</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Visitor Logs</Text>
-      </View>
-      
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search Visitor"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity style={styles.searchButton}>
-          <Ionicons name="search" size={20} color="#000" />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.datePickerContainer}>
-        <Text>Pick Date</Text>
-        <TouchableOpacity
-          style={styles.datePickerButton}
-          onPress={() => setShowDateModal(true)}
+      {/* Tab Navigation - Moved to the top */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.tabButton, 
+            activeTab === 'ongoing' && styles.activeTabButton
+          ]}
+          onPress={() => setActiveTab('ongoing')}
         >
-          <Text style={styles.dateText}>{formattedDate}</Text>
-          <Ionicons name="calendar-outline" size={20} color="#252525" />
+          <Text style={[
+            styles.tabButtonText,
+            activeTab === 'ongoing' && styles.activeTabButtonText
+          ]}>Ongoing Visits</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.reportButton}>
-          <Text style={styles.reportButtonText}>View Report</Text>
+        
+        <TouchableOpacity 
+          style={[
+            styles.tabButton, 
+            activeTab === 'completed' && styles.activeTabButton
+          ]}
+          onPress={() => setActiveTab('completed')}
+        >
+          <Text style={[
+            styles.tabButtonText,
+            activeTab === 'completed' && styles.activeTabButtonText
+          ]}>Completed Visits</Text>
         </TouchableOpacity>
       </View>
+      
+      {/* Search and date picker - Only visible in completed tab */}
+      {activeTab === 'completed' && (
+        <>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search Visitor"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <TouchableOpacity style={styles.searchButton}>
+              <Ionicons name="search" size={20} color="#000" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.datePickerContainer}>
+            <Text>Date</Text>
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={() => setShowDateModal(true)}
+            >
+              <Text style={styles.dateText}>{formattedDate}</Text>
+              <Ionicons name="calendar-outline" size={20} color="#252525" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reportButton}>
+              <Text style={styles.reportButtonText}>View Report</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
       
       <View style={styles.tableHeader}>
         <Text style={[styles.headerText, styles.nameColumn]}>Visitor Name</Text>
@@ -216,7 +277,7 @@ const VisitorsLogs: React.FC = () => {
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4682B4" />
+          <ActivityIndicator size="large" color="#000000" />
         </View>
       ) : (
         <FlatList
@@ -226,19 +287,18 @@ const VisitorsLogs: React.FC = () => {
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No visitors found for this date</Text>
+              <Text style={styles.emptyText}>
+                {activeTab === 'ongoing' 
+                  ? 'No ongoing visits found for this date' 
+                  : 'No completed visits found for this date'}
+              </Text>
             </View>
           }
         />
       )}
       
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.scanButton}>
-          <Text style={styles.scanButtonText}>Scan QR</Text>
-        </TouchableOpacity>
-      </View>
       
-      {/* Custom Date Picker Modal */}
+      {/* Date Picker Modal */}
       <Modal
         visible={showDateModal}
         transparent={true}
@@ -335,7 +395,7 @@ const VisitorsLogs: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Visitor Details Modal - Adjusted to match the screenshots */}
+      {/* Visitor Details Modal */}
       <Modal
         visible={showVisitorModal}
         transparent={true}
@@ -355,10 +415,7 @@ const VisitorsLogs: React.FC = () => {
               <View style={styles.visitorDetailsContainer}>
                 {/* University Logo */}
                 <View style={styles.logoContainer}>
-                  <View style={styles.logoCircle}>
-                    {/* Placeholder for the logo */}
-                    <Text style={styles.universityInitials}>NEU</Text>
-                  </View>
+                  <Logo size="small" style={styles.logoCircle} />
                   <Text style={styles.universityName}>New Era University</Text>
                 </View>
                 
@@ -370,18 +427,18 @@ const VisitorsLogs: React.FC = () => {
 
                 <View style={styles.detailsContent}>
                   <View style={styles.detailsSection}>
-                    <Text style={styles.detailsLabel}>Cellphone #:</Text>
-                    <Text style={styles.detailsValue}>+63 9123 456</Text>
+                    <Text style={styles.detailsLabel}>Phone no:</Text>
+                    <Text style={styles.detailsValue}>{selectedVisitor.phone_number || 'N/A'}</Text>
                   </View>
                   
                   <View style={styles.detailsSection}>
-                    <Text style={styles.detailsLabel}>Type of ID Received:</Text>
-                    <Text style={styles.detailsValue}></Text>
+                    <Text style={styles.detailsLabel}>ID Type</Text>
+                    <Text style={styles.detailsValue}>{selectedVisitor.card_type || 'N/A'}</Text>
                   </View>
                   
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>ID Number:</Text>
-                    <Text style={styles.detailsValue}></Text>
+                    <Text style={styles.detailsValue}>{selectedVisitor.id_number || 'N/A'}</Text>
                   </View>
                   
                   <View style={styles.detailsSection}>
@@ -391,15 +448,24 @@ const VisitorsLogs: React.FC = () => {
                   
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Purpose of Visit:</Text>
-                    <Text style={styles.detailsValue}></Text>
+                    <Text style={styles.detailsValue}>{selectedVisitor.purpose_of_visit || 'N/A'}</Text>
                   </View>
                   
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Number of Visit:</Text>
                     <View style={styles.visitCountContainer}>
-                      <Text style={styles.visitCountValue}>3</Text>
+                      <Text style={styles.visitCountValue}>{selectedVisitor.visit_count || 1}</Text>
                       <TouchableOpacity>
                         <Text style={styles.viewLogLink}>View Visit Log</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Captured ID:</Text>
+                    <View style={styles.visitCountContainer}>         
+                      <TouchableOpacity>
+                        <Text style={styles.viewLogLink}>View Image</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -409,9 +475,10 @@ const VisitorsLogs: React.FC = () => {
                       <Text style={styles.timeLabel}>Time In:</Text>
                       <Text style={styles.timeInValue}>{selectedVisitor.time_of_visit}</Text>
                     </View>
+                    
                     <View style={styles.timeRow}>
                       <Text style={styles.timeLabel}>Time Out:</Text>
-                      <Text style={styles.timeOutValue}>{selectedVisitor.time_out || ''}</Text>
+                      <Text style={styles.timeOutValue}>{selectedVisitor.time_out || 'Not Checked Out'}</Text>
                     </View>
                   </View>
                 </View>
@@ -420,6 +487,10 @@ const VisitorsLogs: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      <View style={styles.footer}>
+        
+      </View>
     </SafeAreaView>
   );
 };
@@ -428,27 +499,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backText: {
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 16,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -479,11 +529,7 @@ const styles = StyleSheet.create({
   datePickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
   },
   dateText: {
     marginRight: 10,
@@ -494,8 +540,34 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   reportButtonText: {
-    color: '#4682B4',
+    color: '#000000',
     fontWeight: '500',
+  },
+  // Tab Navigation Styles - Modified to be at the top
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginVertical: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  activeTabButton: {
+    backgroundColor: '#000000',
+  },
+  tabButtonText: {
+    fontWeight: '500',
+    color: '#000000',
+  },
+  activeTabButtonText: {
+    color: '#fff',
   },
   tableHeader: {
     flexDirection: 'row',
@@ -557,7 +629,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    backgroundColor: '#4682B4',
+    backgroundColor: '#000000',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 4,
@@ -588,16 +660,8 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  scanButton: {
-    backgroundColor: '#333',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-  },
-  scanButtonText: {
-    color: 'white',
-    fontWeight: '500',
-  },
+
+
   // Date Picker Modal Styles
   modalContainer: {
     flex: 1,
@@ -658,7 +722,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   
-  // Updated Visitor Details Modal Styles to match screenshots
+  // Visitor Details Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -690,10 +754,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logoCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#4682B4',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -716,7 +776,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 11,
   },
   visitorId: {
     fontSize: 14,

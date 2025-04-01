@@ -169,7 +169,7 @@ export default function SecuritySignupScreen() {
             
             <View style={styles.loginPrompt}>
               <Text style={styles.loginPromptText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/security-login')}>
+              <TouchableOpacity onPress={() => router.push('/neuvisLanding')}>
                 <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>
             </View>
