@@ -1,4 +1,3 @@
-// This could be removed
 import React, { useState } from 'react';
 import { 
   StyleSheet, 
@@ -15,33 +14,54 @@ import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
+import { useAuth } from '../context/AuthContext';
+import LoadingOverlay from '../../components/LoadingOverlay';
+
 
 export default function AdminSignupScreen() {
   const [fullName, setFullName] = useState('');
-  const [department, setDepartment] = useState('');
-  const [position, setPosition] = useState('');
-  const [employeeId, setEmployeeId] = useState('');
+  // const [department, setDepartment] = useState('');
+  // const [position, setPosition] = useState('');
+  // const [employeeId, setEmployeeId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [confirmSecureTextEntry, setConfirmSecureTextEntry] = useState(true);
-  
+  const [loading, setLoading] = useState(false);
+  const {loading: adminCreationLoading, signUp} = useAuth();
   const router = useRouter();
 
-  // For UI demo only - will be replaced with actual registration
-  const handleSignup = () => {
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords don't match");
-      return;
+
+const handleAdminCreation = async () => {
+  setLoading(true);
+
+    try {
+        if (password !== confirmPassword) {
+            Alert.alert("Error", "Passwords don't match");
+            return;
+        }
+
+        const { data, error } = await signUp(email, password, fullName, 'admin');
+
+        if (error) {
+            console.error("Admin creation failed:", error.message);
+            Alert.alert("Admin Creation Error", error.message);
+            return;
+        }
+
+        Alert.alert(
+            "Admin created successfully",
+            "Advise the admin to check their email to verify their account.",
+            [{ text: "OK", onPress: () => router.push('/superadmin') }]
+        );
+
+    } catch (error) {
+        console.error("Unexpected error in handleAdminCreation:", (error as Error).message);
+        Alert.alert("Admin Creation Error", (error as Error).message);
+    } finally {
+        setLoading(false);
     }
-    
-    // For development - show confirmation and redirect
-    Alert.alert(
-      "Request Submitted", 
-      "Your admin access request has been submitted for approval. You will receive an email once your account is approved.",
-      [{ text: "OK", onPress: () => router.push('/admin-login') }]
-    );
   };
 
   const toggleSecureEntry = () => {
@@ -71,8 +91,8 @@ export default function AdminSignupScreen() {
             <Logo size="small" />
           </View>
           
-          <Text style={styles.title}>Admin Access Request</Text>
-          <Text style={styles.subtitle}>Please provide your NEU credentials</Text>
+          <Text style={styles.title}>Create Admin</Text>
+          <Text style={styles.subtitle}>Input the Admin Credentials</Text>
           
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
@@ -85,7 +105,7 @@ export default function AdminSignupScreen() {
               />
             </View>
             
-            <View style={styles.inputContainer}>
+            {/* <View style={styles.inputContainer}>
               <Ionicons name="business-outline" size={20} color="#252525" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -103,7 +123,7 @@ export default function AdminSignupScreen() {
                 value={position}
                 onChangeText={setPosition}
               />
-            </View>
+            </View> 
             
             <View style={styles.inputContainer}>
               <Ionicons name="card-outline" size={20} color="#252525" style={styles.inputIcon} />
@@ -113,7 +133,7 @@ export default function AdminSignupScreen() {
                 value={employeeId}
                 onChangeText={setEmployeeId}
               />
-            </View>
+            </View> */}
             
             <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color="#252525" style={styles.inputIcon} />
@@ -154,6 +174,7 @@ export default function AdminSignupScreen() {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={confirmSecureTextEntry}
               />
+        
               <TouchableOpacity onPress={toggleConfirmSecureEntry} style={styles.securityIcon}>
                 <Ionicons 
                   name={confirmSecureTextEntry ? "eye-outline" : "eye-off-outline"} 
@@ -163,37 +184,17 @@ export default function AdminSignupScreen() {
               </TouchableOpacity>
             </View>
             
-            <View style={styles.noteContainer}>
-              <Ionicons name="information-circle-outline" size={18} color="#252525" />
-              <Text style={styles.noteText}>
-                Admin access requires approval from system administrators
-              </Text>
-            </View>
-            
             <TouchableOpacity 
               style={styles.signupButton}
-              onPress={handleSignup}
+              onPress={handleAdminCreation}
             >
-              <Text style={styles.signupButtonText}>Submit Request</Text>
+              <Text style={styles.signupButtonText}>Create Admin</Text>
             </TouchableOpacity>
-            
-            <View style={styles.loginPrompt}>
-              <Text style={styles.loginPromptText}>Already have access? </Text>
-              <TouchableOpacity onPress={() => router.push('/admin-login')}>
-                <Text style={styles.loginLink}>Login</Text>
-              </TouchableOpacity>
+        
             </View>
-          </View>
-          
-          <View style={styles.termsContainer}>
-            <Text style={styles.termsText}>
-              By requesting access, you agree to our{' '}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
-            </Text>
-          </View>
-          
           <Footer />
+
+          <LoadingOverlay visible={adminCreationLoading} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

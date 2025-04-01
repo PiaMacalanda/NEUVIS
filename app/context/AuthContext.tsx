@@ -14,7 +14,7 @@ interface AuthContextProps {
         data: { user: User | null; session: Session | null } | null;
         error: Error | null;
     }>;
-    signIn: (email: string, password: string, requiredRole?: 'admin' | 'security') => Promise<{
+    signIn: (email: string, password: string, requiredRole?: 'admin' | 'security' | 'superadmin') => Promise<{
         data: { user: User | null; session: Session | null } | null;
         userData?: { role: string };
         role?: string;
@@ -107,33 +107,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     useEffect(() => {
         // Throw user to landing if authenticated and in login/signup pages
-        if (!session || !user?.user_metadata) return;
-    
-        const role = user.user_metadata.role;
-        const authScreens = ['/', '/security-login', '/security-signup', '/admin-login', '/admin-signup'];
-    
-        if (authScreens.includes(pathname)) {
-            if (role === 'security') {
-                router.replace('/neuvisLanding');
-            } else if (role === 'admin') {
-                router.replace('/admin');
-            }
-        }
-    }, [session, user?.user_metadata?.role, pathname]);
-
-    useEffect(() => {
-        // Throw user to the correct role page if in the wrong role page
         if (!session || !user) return;
 
         if (!user) {
             console.error("User doesn't exist");
             return;
         }
+        
+        const role = user.user_metadata.role;
+        const authScreens = ['/', '/security-login', '/security-signup', '/admin-login', '/admin-signup'];
+        const adminScreens = ['/admin', '/adminData', '/adminHome', '/adminReport', 'accessControl'];
+        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', '/Scanner', '/IDGenerate', '/ManualForm'];
     
-        const role = user.user_metadata?.role;
+        if (authScreens.includes(pathname)) {
+            if (role === 'security') {
+                router.replace('/neuvisLanding');
+            } else if (role === 'admin') {
+                router.replace('/admin');
+            } else if (role === 'superadmin'){
+                router.replace('/superadmin');
+            }
+        }
 
-        const adminScreens = ['/admin', '/adminData', '/adminHome', '/adminReport']; // lagay niyo admin screens here
-        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', './Scanner', '/IDGenerate', '/ManualForm']; // lagay niyo securiy screens here
 
         if (adminScreens.includes(pathname)){
             if (role === 'security'){
@@ -145,6 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         }
     }, [session, user?.user_metadata?.role, pathname]);
+
 
     const signUp = async (email: string, password: string, full_name: string, role: string) => {
         setLoading(true);
@@ -217,16 +213,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             return error as Error;
         }
     };
-    
-    const signIn = async (email: string, password: string, requiredRole?: 'admin' | 'security') => {
+
+
+    const signIn = async (email: string, password: string, requiredRole?: 'admin' | 'security' | 'superadmin') => {
         setLoading(true);
     
         try {
             if (!email.endsWith('@neu.edu.ph')) throw new Error('Use your institutional email');
     
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-    
+
+            if (error) {
+                if (error.message.toLowerCase().includes('email not confirmed')) {
+                    Alert.alert(
+                        'Error during sign-in', 
+                        'Email is not verified. Please check your inbox or resend verification email.',
+                        [{ text: "OK", onPress: () => router.push(`/(authentication)/verify?email=${email}`) }]
+                    );
+
+                    console.error(error);
+                    return { data: null, userData: undefined, role: undefined, error: error as Error };
+                }
+
+                throw error;
+            }  
+
             const user = data.user;
             if (!user) throw new Error('User not found');
     

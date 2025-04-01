@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function AdminLoginScreen() {
   const { signIn } = useAuth();
@@ -22,8 +23,9 @@ export default function AdminLoginScreen() {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); 
   const router = useRouter();
+  const {loading: signInLoading} = useAuth();
 
   const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
@@ -120,7 +122,7 @@ export default function AdminLoginScreen() {
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
             
-            <View style={styles.dividerContainer}>
+            {/* <View style={styles.dividerContainer}>
               <View style={styles.divider} />
               <Text style={styles.dividerText}>OR</Text>
               <View style={styles.divider} />
@@ -131,7 +133,7 @@ export default function AdminLoginScreen() {
               onPress={() => router.push('/admin-signup')}
             >
               <Text style={styles.signupButtonText}>Request Admin Access</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
           
           <View style={styles.secureInfoContainer}>
@@ -141,6 +143,7 @@ export default function AdminLoginScreen() {
           
           <Footer />
         </View>
+        <LoadingOverlay visible={loading || signInLoading} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
