@@ -2,20 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import supabase from '../lib/supabaseClient';
-import { router } from 'expo-router';
+import { router, useGlobalSearchParams, useLocalSearchParams } from 'expo-router';
 
 const VerifyScreen = () => {
     const { user, session } = useAuth();
     const [loading, setLoading] = useState(false);
+    const params = useGlobalSearchParams()
+    const emailParam = Array.isArray(params['email']) ? params['email'][0] : params['email'] || null;
 
     const resendVerificationEmail = async () => {
-        if (!user?.email) {
+        const email = user?.email || emailParam;
+
+        if (!email) {
             Alert.alert('Error', 'Email is missing.');
             return;
-        }
-    
+        }        
+        
         setLoading(true);
-        const { error } = await supabase.auth.resend({ type: 'signup', email: user.email });
+        const { error } = await supabase.auth.resend({ type: 'signup', email: email });
         setLoading(false);
     
         if (error) {
