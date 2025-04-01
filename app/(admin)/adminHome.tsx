@@ -1,45 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import Button from '../components/buttons';
-import Header from '../components/Header';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from './lib/supabaseClient';
-import { format } from 'date-fns';
+import Header from '../components/Header';
+import { BarChart, PieChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
+
 
 interface Visit {
   time_of_visit: string;
   visitor_id?: string;
   visit_id?: string;
+  purpose_of_visit: string;
+  gate?: string;
+  host?: string;
+  time_in?: string;
+  time_out?: string;
 }
 
 interface Visitor {
   id?: string;
   id_number?: string;
   name: string;
+  phone?: string;
 }
 
 interface VisitorStat {
   totalVisitors: number;
   dailyVisits: Array<{date: string; count: number}>;
-  visitorFrequency: Array<{name: string; count: number}>;
+  monthlyVisits: Array<{month: string; count: number}>;
+  yearlyVisits: Array<{year: string; count: number}>;
+  visitorFrequency: Array<{name: string; count: number; details?: VisitorDetail}>;
+}
+
+interface VisitorDetail {
+  name: string;
+  id_number?: string;
+  phone?: string;
+  visitHistory: Array<{
+    date: string;
+    time_in: string;
+    time_out: string;
+    purpose: string;
+    gate?: string;
+    host?: string;
+  }>;
+  visit_count: number;
+}
+
+interface VisitorTrends {
+  mostCommonPurposes: Array<{purpose: string; count: number}>;
+  topVisitors: Array<{name: string; count: number}>;
+  peakHours: Array<{hour: string; count: number}>;
+  topGates: Array<{gate: string; count: number}>;
 }
 
 export default function AdminHomeScreen() {
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'stats' | 'trends'>('stats');
   const [isLoading, setIsLoading] = useState(true);
   const [visitorStats, setVisitorStats] = useState<VisitorStat>({
     totalVisitors: 0,
     dailyVisits: [],
+    monthlyVisits: [],
+    yearlyVisits: [],
     visitorFrequency: []
   });
-  const [dateFilter, setDateFilter] = useState<string>('all'); 
+  const [visitorTrends, setVisitorTrends] = useState<VisitorTrends>({
+    mostCommonPurposes: [],
+    topVisitors: [],
+    peakHours: [],
+    topGates: []
+  });
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'yearly'>('daily');
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetail | null>(null);
 
-  // Add this after your state definitions
   useEffect(() => {
-  fetchVisitorData();
+    fetchVisitorData();
   }, [dateFilter]);
   
   const fetchVisitorData = async () => {
@@ -61,7 +99,10 @@ export default function AdminHomeScreen() {
   
       // Process data
       const processedData = processVisitorData(visitsData as Visit[], visitorsData as Visitor[]);
+      const processedTrends = processVisitorTrends(visitsData as Visit[], visitorsData as Visitor[]);
+      
       setVisitorStats(processedData);
+      setVisitorTrends(processedTrends);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -70,23 +111,32 @@ export default function AdminHomeScreen() {
   };
 
   const processVisitorData = (visitsData: Visit[], visitorsData: Visitor[]): VisitorStat => {
-    // Map to store daily visits
+    // Maps to store daily, monthly, and yearly visits
     const dailyVisitsMap = new Map();
+    const monthlyVisitsMap = new Map();
+    const yearlyVisitsMap = new Map();
     
-    // Map to store visitor frequency
+    // Map to store visitor frequency (case-insensitive)
     const visitorFrequencyMap = new Map();
+    
+    // Map for visitor details
+    const visitorDetailsMap = new Map();
     
     // Process each visit
     visitsData.forEach(visit => {
-      // Get visit date (without time)
+      // Get visit date
       const visitDate = new Date(visit.time_of_visit);
-      const dateString = visitDate.toISOString().split('T')[0];
       
-      // Filter based on selected date range
+      // Skip if not in selected date range
       if (!isDateInRange(visitDate)) {
         return;
       }
 
+      // Date formats for different view modes
+      const dateString = visitDate.toISOString().split('T')[0];
+      const monthString = `${visitDate.getFullYear()}-${(visitDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const yearString = visitDate.getFullYear().toString();
+      
       // Update daily visits count
       if (dailyVisitsMap.has(dateString)) {
         dailyVisitsMap.set(dateString, dailyVisitsMap.get(dateString) + 1);
@@ -94,7 +144,21 @@ export default function AdminHomeScreen() {
         dailyVisitsMap.set(dateString, 1);
       }
       
-      // Find corresponding visitor
+      // Update monthly visits count
+      if (monthlyVisitsMap.has(monthString)) {
+        monthlyVisitsMap.set(monthString, monthlyVisitsMap.get(monthString) + 1);
+      } else {
+        monthlyVisitsMap.set(monthString, 1);
+      }
+      
+      // Update yearly visits count
+      if (yearlyVisitsMap.has(yearString)) {
+        yearlyVisitsMap.set(yearString, yearlyVisitsMap.get(yearString) + 1);
+      } else {
+        yearlyVisitsMap.set(yearString, 1);
+      }
+      
+      // Find corresponding visitor (case-insensitive)
       const visitor = visitorsData.find(v => {
         // Try different matching strategies
         if (visit.visitor_id && v.id && visit.visitor_id === v.id) return true;
@@ -112,29 +176,141 @@ export default function AdminHomeScreen() {
         return false;
       });
       
-      // Update visitor frequency
+      // Get visitor name (or Unknown if not found)
       const visitorName = visitor ? visitor.name : 'Unknown Visitor';
-      if (visitorFrequencyMap.has(visitorName)) {
-        visitorFrequencyMap.set(visitorName, visitorFrequencyMap.get(visitorName) + 1);
+      const normalizedName = visitorName.toLowerCase();
+      
+      // Update visitor frequency (case-insensitive)
+      if (visitorFrequencyMap.has(normalizedName)) {
+        visitorFrequencyMap.set(normalizedName, visitorFrequencyMap.get(normalizedName) + 1);
       } else {
-        visitorFrequencyMap.set(visitorName, 1);
+        visitorFrequencyMap.set(normalizedName, 1);
       }
+      
+      // Update or create visitor details
+      if (!visitorDetailsMap.has(normalizedName)) {
+        visitorDetailsMap.set(normalizedName, {
+          name: visitorName, // Use original casing for display
+          id_number: visitor?.id_number || '',
+          phone: visitor?.phone || '',
+          visitHistory: [],
+          visit_count: 0
+        });
+      }
+      
+      // Extract time information
+      const timeIn = visit.time_in || new Date(visit.time_of_visit).toLocaleTimeString();
+      const timeOut = visit.time_out || '';
+      
+      // Add visit to history
+      visitorDetailsMap.get(normalizedName).visitHistory.push({
+        date: dateString,
+        time_in: timeIn,
+        time_out: timeOut,
+        purpose: visit.purpose_of_visit || 'Not specified',
+        gate: visit.gate || '',
+        host: visit.host || ''
+      });
+      
+      // Increment visit count
+      visitorDetailsMap.get(normalizedName).visit_count += 1;
     });
     
     // Convert maps to arrays and sort
     const dailyVisits = Array.from(dailyVisitsMap, ([date, count]) => ({ date, count }))
-    .sort((a, b) => new Date(String(b.date)).getTime() - new Date(String(a.date)).getTime());
+      .sort((a, b) => new Date(String(b.date)).getTime() - new Date(String(a.date)).getTime());
     
-    const visitorFrequency = Array.from(visitorFrequencyMap, ([name, count]) => ({ name, count }))
-    .sort((a, b) => Number(b.count) - Number(a.count));
+    const monthlyVisits = Array.from(monthlyVisitsMap, ([month, count]) => ({ month, count }))
+      .sort((a, b) => b.month.localeCompare(a.month));
+    
+    const yearlyVisits = Array.from(yearlyVisitsMap, ([year, count]) => ({ year, count }))
+      .sort((a, b) => b.year.localeCompare(a.year));
+    
+    // Convert visitor frequency and add details
+    const visitorFrequency = Array.from(visitorFrequencyMap, ([name, count]) => {
+      return {
+        name: visitorDetailsMap.get(name).name, // Use original casing
+        count,
+        details: visitorDetailsMap.get(name)
+      };
+    }).sort((a, b) => b.count - a.count);
     
     return {
       totalVisitors: visitorFrequency.length,
       dailyVisits,
+      monthlyVisits,
+      yearlyVisits,
       visitorFrequency
     };
   };
-  
+
+  const processVisitorTrends = (visitsData: Visit[], visitorsData: Visitor[]): VisitorTrends => {
+    // Most Common Purposes
+    const purposesMap = new Map<string, number>();
+    const purposesFilter = visitsData.filter(visit => isDateInRange(new Date(visit.time_of_visit)));
+    
+    purposesFilter.forEach(visit => {
+      const purpose = visit.purpose_of_visit || 'Unknown';
+      purposesMap.set(purpose, (purposesMap.get(purpose) || 0) + 1);
+    });
+    
+    const mostCommonPurposes = Array.from(purposesMap, ([purpose, count]) => ({ purpose, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    
+      const gatesMap = new Map<string, number>();
+      purposesFilter.forEach(visit => {
+        const gate = visit.gate || 'Not Specified';
+        gatesMap.set(gate, (gatesMap.get(gate) || 0) + 1);
+      });
+      
+      const topGates = Array.from(gatesMap, ([gate, count]) => ({ gate, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // Top Visitors
+    const visitorsMap = new Map<string, number>();
+    purposesFilter.forEach(visit => {
+      const visitor = visitorsData.find(v => 
+        (visit.visitor_id && v.id && visit.visitor_id === v.id) ||
+        (visit.visit_id && v.id_number && visit.visit_id.includes(v.id_number))
+      );
+      
+      const visitorName = visitor ? visitor.name.toLowerCase() : 'unknown visitor';
+      visitorsMap.set(visitorName, (visitorsMap.get(visitorName) || 0) + 1);
+    });
+
+    const topVisitors = Array.from(visitorsMap, ([name, count]) => {
+      const visitor = visitorsData.find(v => v.name.toLowerCase() === name);
+      return { 
+        name: visitor ? visitor.name : 'Unknown Visitor', 
+        count 
+      };
+    })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Peak Hours
+    const hoursMap = new Map<string, number>();
+    purposesFilter.forEach(visit => {
+      const hour = new Date(visit.time_of_visit).getHours();
+      const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+      hoursMap.set(hourLabel, (hoursMap.get(hourLabel) || 0) + 1);
+    });
+
+    const peakHours = Array.from(hoursMap, ([hour, count]) => ({ hour, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      mostCommonPurposes,
+      topVisitors,
+      peakHours,
+      topGates,
+      
+    };
+  };
+
   const isDateInRange = (date: Date | string): boolean => {
     if (dateFilter === 'all') return true;
     
@@ -159,14 +335,100 @@ export default function AdminHomeScreen() {
     return true;
   };
 
-  const navigateToVisitorDetails = (visitorName: string): void => {
-    console.log(`Navigate to details for ${visitorName}`);
+  const viewVisitorDetails = (visitor: VisitorDetail): void => {
+    setSelectedVisitor(visitor);
+    setDetailsModalVisible(true);
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Format month for display
+  const formatMonth = (monthString: string): string => {
+    const [year, month] = monthString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  };
+
+  // Get the current chart data based on view mode
+  const getCurrentChartData = () => {
+    switch (viewMode) {
+      case 'daily':
+        return visitorStats.dailyVisits;
+      case 'monthly':
+        return visitorStats.monthlyVisits;
+      case 'yearly':
+        return visitorStats.yearlyVisits;
+      default:
+        return visitorStats.dailyVisits;
+    }
+  };
+
+  // Get label formatter based on view mode
+  const getLabelFormatter = (item: any): string => {
+    switch (viewMode) {
+      case 'daily':
+        return new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      case 'monthly':
+        return formatMonth(item.month);
+      case 'yearly':
+        return item.year;
+      default:
+        return '';
+    }
+  };
+
+  // Get value getter based on view mode
+  const getValueGetter = (item: any): number => {
+    switch (viewMode) {
+      case 'daily':
+        return item.count;
+      case 'monthly':
+        return item.count;
+      case 'yearly':
+        return item.count;
+      default:
+        return 0;
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerContainer}>
-        <Header role="Administrator" name="Statistical Report" />
+        <Header role="Administrator" name="Visitor Management" />
+      </View>
+      
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.tab, 
+            activeTab === 'stats' ? styles.activeTab : styles.inactiveTab
+          ]}
+          onPress={() => setActiveTab('stats')}
+        >
+          <Text style={activeTab === 'stats' ? styles.activeTabText : styles.inactiveTabText}>
+            Statistics
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            styles.tab, 
+            activeTab === 'trends' ? styles.activeTab : styles.inactiveTab
+          ]}
+          onPress={() => setActiveTab('trends')}
+        >
+          <Text style={activeTab === 'trends' ? styles.activeTabText : styles.inactiveTabText}>
+            Visitor Trends
+          </Text>
+        </TouchableOpacity>
       </View>
       
       {/* Filter Options */}
@@ -189,7 +451,7 @@ export default function AdminHomeScreen() {
         <View style={styles.loadingContainer}>
           <Text>Loading statistics...</Text>
         </View>
-      ) : (
+      ) : activeTab === 'stats' ? (
         <>
           {/* Summary Statistics */}
           <View style={styles.summaryContainer}>
@@ -214,21 +476,45 @@ export default function AdminHomeScreen() {
             </View>
           </View>
           
-          {/* Daily Visits Chart */}
+          {/* Visits Chart with View Mode Selector */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Daily Visits</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>
+                {viewMode === 'daily' ? 'Daily' : viewMode === 'monthly' ? 'Monthly' : 'Yearly'} Visits
+              </Text>
+              <View style={styles.viewModeContainer}>
+                <TouchableOpacity 
+                  style={[styles.viewModeButton, viewMode === 'daily' ? styles.activeViewMode : {}]}
+                  onPress={() => setViewMode('daily')}
+                >
+                  <Text style={viewMode === 'daily' ? styles.activeViewModeText : styles.viewModeText}>Daily</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.viewModeButton, viewMode === 'monthly' ? styles.activeViewMode : {}]}
+                  onPress={() => setViewMode('monthly')}
+                >
+                  <Text style={viewMode === 'monthly' ? styles.activeViewModeText : styles.viewModeText}>Monthly</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.viewModeButton, viewMode === 'yearly' ? styles.activeViewMode : {}]}
+                  onPress={() => setViewMode('yearly')}
+                >
+                  <Text style={viewMode === 'yearly' ? styles.activeViewModeText : styles.viewModeText}>Yearly</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.chartContainer}>
-                {visitorStats.dailyVisits.map((day, index) => {
+                {getCurrentChartData().map((item, index) => {
                   // Calculate bar height (max height is 150)
-                  const maxCount = Math.max(...visitorStats.dailyVisits.map(d => d.count));
+                  const maxCount = Math.max(...getCurrentChartData().map(i => getValueGetter(i)));
                   const barHeight = maxCount > 0 
-                    ? Math.max(30, (day.count && maxCount) ? (day.count / maxCount) * 150 : 30) 
-                     : 30;
+                    ? Math.max(30, (getValueGetter(item) / maxCount) * 150) 
+                    : 30;
                   
                   return (
                     <View key={index} style={styles.chartBar}>
-                      <Text style={styles.chartValue}>{day.count}</Text>
+                      <Text style={styles.chartValue}>{getValueGetter(item)}</Text>
                       <View 
                         style={[
                           styles.bar, 
@@ -236,12 +522,12 @@ export default function AdminHomeScreen() {
                         ]} 
                       />
                       <Text style={styles.chartLabel}>
-                        {new Date(day.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        {getLabelFormatter(item)}
                       </Text>
                     </View>
                   );
                 })}
-                {visitorStats.dailyVisits.length === 0 && (
+                {getCurrentChartData().length === 0 && (
                   <Text style={styles.noDataText}>No visit data for selected period</Text>
                 )}
               </View>
@@ -269,7 +555,7 @@ export default function AdminHomeScreen() {
                 <View style={[styles.tableCellAction, { flex: 1 }]}>
                   <TouchableOpacity 
                     style={styles.detailsButton}
-                    onPress={() => navigateToVisitorDetails(visitor.name)}
+                    onPress={() => viewVisitorDetails(visitor.details!)}
                   >
                     <Text style={styles.detailsButtonText}>Details</Text>
                   </TouchableOpacity>
@@ -283,7 +569,211 @@ export default function AdminHomeScreen() {
             )}
           </View>
         </>
+      ) : (
+        <View style={styles.trendsContainer}>
+       {/* Most Common Purposes Pie Chart */}
+<View style={styles.sectionContainer}>
+  <Text style={styles.sectionTitle}>Most Common Visit Purposes</Text>
+  {visitorTrends.mostCommonPurposes.length > 0 ? (
+    <View>
+      <PieChart
+  data={visitorTrends.mostCommonPurposes.map((item, index) => {
+    // Calculate percentage and round it to whole number
+    const totalVisits = visitorTrends.mostCommonPurposes.reduce((sum, i) => sum + i.count, 0);
+    const percentage = totalVisits > 0 ? Math.round((item.count / totalVisits) * 100) : 0;
+    
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+    
+
+    console.log('Purpose:', item.purpose);
+    
+    // Modified name formation to avoid duplication
+    return {
+      // Try this simpler format without percentage
+      name: `${item.purpose} (${item.count} visits)`,
+      count: item.count,
+      color: colors[index % colors.length],
+      legendFontColor: '#7F7F7F',
+      legendFontSize: 12,
+      // Try adding percentage as a separate property
+      percentage: percentage
+    };
+  })}
+        width={Dimensions.get('window').width - 70}
+        height={200}
+        chartConfig={{
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#ffffff',
+          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        }}
+        accessor="count"
+        backgroundColor="transparent"
+        paddingLeft="15"
+        absolute={false}
+      />
+    </View>
+  ) : (
+    <Text style={styles.noDataText}>No purpose data available</Text>
+  )}
+</View>
+
+    
+
+          {/* Top Visitors Pie Chart */}
+<View style={styles.sectionContainer}>
+  <Text style={styles.sectionTitle}>Top Visitors</Text>
+  {visitorTrends.topVisitors.length > 0 ? (
+    <View>
+      <PieChart
+        data={visitorTrends.topVisitors.map((visitor, index) => {
+          const colors = ['#36A2EB', '#4BC0C0', '#FFCE56', '#FF6384', '#9966FF'];
+          
+          return {
+            name: `${visitor.name} (${visitor.count} visits)`,
+            count: visitor.count,
+            color: colors[index % colors.length],
+            legendFontColor: '#7F7F7F',
+            legendFontSize: 12
+          };
+        })}
+        width={Dimensions.get('window').width - 70}
+        height={200}
+        chartConfig={{
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#ffffff',
+          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        }}
+        accessor="count"
+        backgroundColor="transparent"
+        paddingLeft="15"
+        absolute={false}
+      />
+    </View>
+  ) : (
+    <Text style={styles.noDataText}>No visitor data available</Text>
+  )}
+</View>
+
+          {/* Peak Hours */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Peak Visiting Hours</Text>
+            {visitorTrends.peakHours.map((hour, index) => (
+              <View key={index} style={styles.trendRow}>
+                <Text style={styles.trendLabel}>{hour.hour}</Text>
+                <Text style={styles.trendValue}>{hour.count} visits</Text>
+              </View>
+            ))}
+            {visitorTrends.peakHours.length === 0 && (
+              <Text style={styles.noDataText}>No hour data available</Text>
+            )}
+          </View>
+        </View>
       )}
+
+      {/* Top Gates Pie Chart */}
+<View style={styles.sectionContainer}>
+  <Text style={styles.sectionTitle}>Top Gates</Text>
+  {visitorTrends.topGates.length > 0 ? (
+    <View>
+      <PieChart
+        data={visitorTrends.topGates.map((item, index) => {
+          // Calculate percentage and round it to whole number
+          const totalVisits = visitorTrends.topGates.reduce((sum, i) => sum + i.count, 0);
+          const percentage = totalVisits > 0 ? Math.round((item.count / totalVisits) * 100) : 0;
+          
+          const colors = ['#4BC0C0', '#36A2EB', '#FFCE56', '#FF6384', '#9966FF'];
+          
+          return {
+            name: `${item.gate} (${item.count} visits)`,
+            count: item.count,
+            color: colors[index % colors.length],
+            legendFontColor: '#7F7F7F',
+            legendFontSize: 12,
+            percentage: percentage
+          };
+        })}
+        width={Dimensions.get('window').width - 70}
+        height={200}
+        chartConfig={{
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#ffffff',
+          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        }}
+        accessor="count"
+        backgroundColor="transparent"
+        paddingLeft="15"
+        absolute={false}
+      />
+    </View>
+  ) : (
+    <Text style={styles.noDataText}>No gate data available</Text>
+  )}
+</View>
+
+     {/* Visitor Details Modal */}
+     <Modal
+        animationType="slide"
+        transparent={true}
+        visible={detailsModalVisible}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Visitor Details</Text>
+              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {selectedVisitor && (
+              <ScrollView style={styles.modalBody}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Name:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
+                </View>
+                
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>ID Number:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.id_number || 'Not available'}</Text>
+                </View>
+                
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phone:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.phone || 'Not available'}</Text>
+                </View>
+                
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Visit Count:</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.visit_count}</Text>
+                </View>
+                
+                <View style={styles.historySection}>
+                  <Text style={styles.historySectionTitle}>Visit History</Text>
+                  
+                  {selectedVisitor.visitHistory.map((visit, index) => (
+                    <View key={index} style={styles.historyItem}>
+                      <Text style={styles.historyDate}>
+                        {formatDate(visit.date)} ({visit.time_in} - {visit.time_out || 'Not specified'})
+                      </Text>
+                      <Text style={styles.historyPurpose}>Purpose: {visit.purpose}</Text>
+                      {visit.gate && <Text style={styles.historyDetail}>Gate: {visit.gate}</Text>}
+                      {visit.host && <Text style={styles.historyDetail}>Host: {visit.host}</Text>}
+                    </View>
+                  ))}
+                  
+                  {selectedVisitor.visitHistory.length === 0 && (
+                    <Text style={styles.noDataText}>No visit history available</Text>
+                  )}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -317,6 +807,25 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: 'white',
     overflow: 'hidden',
+  },
+  legendContainer: {
+    marginTop: 15,
+    paddingHorizontal: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legendColor: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 14,
+    color: '#555',
   },
   picker: {
     height: 40,
@@ -367,11 +876,38 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 15,
+  },
+  viewModeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  viewModeButton: {
+    padding: 6,
+    paddingHorizontal: 12,
+  },
+  activeViewMode: {
+    backgroundColor: '#3498db',
+  },
+  viewModeText: {
+    fontSize: 12,
+    color: '#555',
+  },
+  activeViewModeText: {
+    fontSize: 12,
+    color: 'white',
+    fontWeight: '500',
   },
   chartContainer: {
     flexDirection: 'row',
@@ -391,37 +927,50 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
   },
-  chartLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 5,
-  },
   chartValue: {
     fontSize: 12,
-    color: '#333',
+    color: '#666',
     marginBottom: 5,
+  },
+  chartLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+    width: 50,
+  },
+  noDataContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noDataText: {
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
+    padding: 20,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#2c3e50',
-    padding: 12,
-    borderRadius: 4,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   tableHeaderText: {
-    color: 'white',
     fontWeight: 'bold',
+    color: '#555',
+    fontSize: 14,
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 12,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   evenRow: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fff',
   },
   oddRow: {
-    backgroundColor: 'white',
+    backgroundColor: '#f9f9f9',
   },
   tableCell: {
     fontSize: 14,
@@ -432,21 +981,143 @@ const styles = StyleSheet.create({
   },
   detailsButton: {
     backgroundColor: '#3498db',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 4,
   },
   detailsButtonText: {
     color: 'white',
-    fontWeight: '500',
     fontSize: 12,
   },
-  noDataContainer: {
-    padding: 20,
+  trendsContainer: {
+    paddingVertical: 10,
+  },
+  trendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  trendLabel: {
+    fontSize: 14,
+    color: '#333',
+    flex: 3,
+  },
+  trendValue: {
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 2,
+  },
+  activeTab: {
+    borderBottomColor: '#3498db',
+  },
+  inactiveTab: {
+    borderBottomColor: 'transparent',
+  },
+  activeTabText: {
+    color: '#3498db',
+    fontWeight: '600',
+  },
+  inactiveTabText: {
+    color: '#777',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  noDataText: {
-    color: '#666',
-    fontSize: 14,
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    width: '90%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  closeButton: {
+    fontSize: 22,
+    color: '#777',
+  },
+  modalBody: {
+    padding: 15,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#555',
+    width: 100,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  historySection: {
+    marginTop: 20,
+  },
+  historySectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 10,
+  },
+  historyItem: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  historyDate: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#2c3e50',
+    marginBottom: 5,
+  },
+  historyPurpose: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 3,
+  },
+  historyDetail: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 3,
+  }
 });
