@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import Button from '../../components/buttons';
-import Header from '../../components/Header';
+import Button from '../components/buttons';
+import Header from '../components/Header';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from './lib/supabaseClient';
 import { format } from 'date-fns';
 
 interface Visit {
@@ -165,9 +165,9 @@ export default function AdminHomeScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Custom Header for Administrator */}
-      <Header role="Administrator" name="Admin 1" />
-
+      <View style={styles.headerContainer}>
+        <Header role="Administrator" name="Statistical Report" />
+      </View>
       
       {/* Filter Options */}
       <View style={styles.filterContainer}>
@@ -293,6 +293,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 15,
+  },
   filterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,7 +346,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#252525',
+    color: '#666',
     marginBottom: 5,
     textAlign: 'center',
   },
@@ -388,7 +393,7 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     fontSize: 12,
-    color: '#252525',
+    color: '#666',
     marginTop: 5,
   },
   chartValue: {
@@ -441,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noDataText: {
-    color: '#252525',
+    color: '#666',
     fontSize: 14,
   },
 });
