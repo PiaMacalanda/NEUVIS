@@ -571,6 +571,7 @@ export default function AdminHomeScreen() {
         </>
       ) : (
         <View style={styles.trendsContainer}>
+            
        {/* Most Common Purposes Pie Chart */}
 <View style={styles.sectionContainer}>
   <Text style={styles.sectionTitle}>Most Common Visit Purposes</Text>
@@ -656,23 +657,7 @@ export default function AdminHomeScreen() {
   )}
 </View>
 
-          {/* Peak Hours */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Peak Visiting Hours</Text>
-            {visitorTrends.peakHours.map((hour, index) => (
-              <View key={index} style={styles.trendRow}>
-                <Text style={styles.trendLabel}>{hour.hour}</Text>
-                <Text style={styles.trendValue}>{hour.count} visits</Text>
-              </View>
-            ))}
-            {visitorTrends.peakHours.length === 0 && (
-              <Text style={styles.noDataText}>No hour data available</Text>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Top Gates Pie Chart */}
+       {/* Top Gates Pie Chart */}
 <View style={styles.sectionContainer}>
   <Text style={styles.sectionTitle}>Top Gates</Text>
   {visitorTrends.topGates.length > 0 ? (
@@ -713,6 +698,26 @@ export default function AdminHomeScreen() {
   )}
 </View>
 
+   
+
+
+          {/* Peak Hours */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Peak Visiting Hours</Text>
+            {visitorTrends.peakHours.map((hour, index) => (
+              <View key={index} style={styles.trendRow}>
+                <Text style={styles.trendLabel}>{hour.hour}</Text>
+                <Text style={styles.trendValue}>{hour.count} visits</Text>
+              </View>
+            ))}
+            {visitorTrends.peakHours.length === 0 && (
+              <Text style={styles.noDataText}>No hour data available</Text>
+            )}
+          </View>
+        </View>
+      )}
+
+      
      {/* Visitor Details Modal */}
      <Modal
         animationType="slide"
