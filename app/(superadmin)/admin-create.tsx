@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import LoadingOverlay from '../../components/LoadingOverlay';
+
 
 export default function AdminSignupScreen() {
   const [fullName, setFullName] = useState('');
@@ -27,7 +29,7 @@ export default function AdminSignupScreen() {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [confirmSecureTextEntry, setConfirmSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
-  const {loading: userCreationLoading, signUp} = useAuth();
+  const {loading: adminCreationLoading, signUp} = useAuth();
   const router = useRouter();
 
 
@@ -191,6 +193,8 @@ const handleAdminCreation = async () => {
         
             </View>
           <Footer />
+
+          <LoadingOverlay visible={adminCreationLoading} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

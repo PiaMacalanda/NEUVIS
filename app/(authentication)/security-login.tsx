@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function SecurityLoginScreen() {
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ export default function SecurityLoginScreen() {
   const [emailTextColor, setEmailTextColor] = useState('#B0B0B0');
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, loading: signInLoading } = useAuth();
 
   const toggleSecureEntry = () => {
     setSecureTextEntry(!secureTextEntry);
@@ -136,6 +137,7 @@ export default function SecurityLoginScreen() {
           
           <Footer />
         </View>
+        <LoadingOverlay visible={signInLoading || loading} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

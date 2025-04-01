@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function AdminLoginScreen() {
   const { signIn } = useAuth();
@@ -24,6 +25,7 @@ export default function AdminLoginScreen() {
   const [passwordTextColor, setPasswordTextColor] = useState('#B0B0B0');
   const [loading, setLoading] = useState(false); 
   const router = useRouter();
+  const {loading: signInLoading} = useAuth();
 
   const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
@@ -128,6 +130,7 @@ export default function AdminLoginScreen() {
           
           <Footer />
         </View>
+        <LoadingOverlay visible={loading || signInLoading}/>
       </ScrollView>
     </KeyboardAvoidingView>
   );
