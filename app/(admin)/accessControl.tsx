@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -8,13 +8,14 @@ import {
   TextInput, 
   Modal,
   Platform,
-  ViewStyle,
-  TextStyle
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '../../components/Header';
+import Header from '@/components/Header';
 import { colors } from '@/components/colors';
+import supabase from '../lib/supabaseClient';
 
 const roles = ['SC001', 'SC002', 'SC003'];
 const gates = ['Main Gate', 'Back Gate'];
@@ -40,13 +41,83 @@ export default function AccessControlScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editUser, setEditUser] = useState<Security | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditLoading, setIsEditLoading] = useState(false);
 
-  const handleToggleActive = (id: string) => {
-    setSecurity(prev =>
-      prev.map(user =>
-        user.id === id ? { ...user, active: !user.active } : user
-      )
-    );
+  // Fetch security personnel from Supabase
+  useEffect(() => {
+    fetchSecurityPersonnel();
+  }, []);
+
+  const fetchSecurityPersonnel = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.from('security').select('*');
+      
+      if (error) {
+        console.error('Error fetching security personnel:', error);
+        Alert.alert('Error', 'Failed to load security personnel. Please try again.');
+        return;
+      }
+      
+     
+      const validData = data?.map(item => ({
+        ...item,
+        // Set default values for any missing fields
+        active: item.active !== undefined ? item.active : false,
+        assign_gate: item.assign_gate || 'Main Gate',
+        roles: item.roles || 'SC001',
+      })) || [];
+      
+      setSecurity(validData);
+    } catch (err) {
+      console.error('Exception fetching security personnel:', err);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const validateForm = (name: string, userEmail: string) => {
+    if (!name.trim()) {
+      return 'Full name is required.';
+    }
+    
+    if (!userEmail.trim()) {
+      return 'Email is required.';
+    }
+    
+    if (!userEmail.trim().endsWith('@neu.edu.ph')) {
+      return 'Only @neu.edu.ph email addresses are allowed.';
+    }
+    
+    return null;
+  };
+
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    try {
+      // Update in Supabase
+      const { error } = await supabase
+        .from('security')
+        .update({ active: !currentActive })
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error toggling active status:', error);
+        Alert.alert('Error', `Failed to update status: ${error.message}`);
+        return;
+      }
+
+      // Update local state if Supabase update was successful
+      setSecurity(prev =>
+        prev.map(user =>
+          user.id === id ? { ...user, active: !currentActive } : user
+        )
+      );
+    } catch (err) {
+      console.error('Exception toggling active status:', err);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    }
   };
 
   const handleEditUser = (user: Security) => {
@@ -54,42 +125,166 @@ export default function AccessControlScreen() {
     setEditModalVisible(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editUser) {
-      setSecurity(prev => prev.map(user => 
-        user.id === editUser.id ? editUser : user
-      ));
-      setEditModalVisible(false);
+      try {
+        setIsEditLoading(true);
+        setFormError(null);
+
+        // Validate form inputs
+        const error = validateForm(editUser.full_name, editUser.email);
+        if (error) {
+          setFormError(error);
+          setIsEditLoading(false);
+          return;
+        }
+
+        // Update in Supabase
+        const { error: supabaseError } = await supabase
+          .from('security')
+          .update({
+            full_name: editUser.full_name,
+            email: editUser.email,
+            roles: editUser.roles,
+            assign_gate: editUser.assign_gate,
+           
+            active: editUser.active
+          })
+          .eq('id', editUser.id);
+        
+        if (supabaseError) {
+          console.error('Error updating security personnel:', supabaseError);
+      
+          if (supabaseError.code === '23505') {
+            setFormError('A user with this email already exists.');
+          } else {
+            setFormError('Failed to update personnel: ' + supabaseError.message);
+          }
+          setIsEditLoading(false);
+          return;
+        }
+
+        setSecurity(prev => prev.map(user => 
+          user.id === editUser.id ? editUser : user
+        ));
+        
+        setEditModalVisible(false);
+        setFormError(null);
+        Alert.alert('Success', 'Personnel updated successfully!');
+      } catch (err) {
+        console.error('Exception updating security personnel:', err);
+        setFormError('An unexpected error occurred. Please try again.');
+      } finally {
+        setIsEditLoading(false);
+      }
     }
   };
 
-  const handleSubmit = () => {
-    if (!full_name.trim() || !email.trim()) {
-      setFormError('Please fill in all fields.');
-      return;
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      setFormError(null);
+      
+      const error = validateForm(full_name, email);
+      if (error) {
+        setFormError(error);
+        setIsLoading(false);
+        return;
+      }
+      
+
+      const newUser = {
+        full_name,
+        email,
+        roles: selectedRole,
+        assign_gate: selectedGate,
+        active: false 
+      };
+      
+      // Insert into Supabase
+      const { data, error: supabaseError } = await supabase
+        .from('security')
+        .insert([newUser])
+        .select();
+      
+      if (supabaseError) {
+        console.error('Error adding security personnel:', supabaseError);
+        
+       
+        if (supabaseError.code === '23505') {
+          setFormError('A user with this email already exists.');
+        } else if (supabaseError.message.includes('active')) {
+          // Handle the specific 'active' column error
+          setFormError('Failed to add personnel: Could not find the "active" column. Make sure your database schema is updated.');
+        } else {
+          setFormError('Failed to add personnel: ' + supabaseError.message);
+        }
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        setFormError('Failed to add personnel: No data returned from server.');
+        setIsLoading(false);
+        return;
+      }
+      
+   
+      setSecurity(prevSecurity => [...prevSecurity, { ...newUser, id: data[0].id }]);
+      
+      
+      setFullName('');
+      setEmail('');
+      setSelectedRole('SC001');
+      setSelectedGate('Main Gate');
+      
+    
+      Alert.alert('Success', 'Security personnel added successfully!');
+    } catch (err) {
+      console.error('Exception adding security personnel:', err);
+      setFormError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    if (!email.trim().endsWith('@neu.edu.ph')) {
-      setFormError('Only @neu.edu.ph email addresses are allowed.');
-      return;
-    }
-
-    const newUser: Security = {
-      id: Math.random().toString(),
-      full_name,
-      email,
-      roles: selectedRole,
-      assign_gate: selectedGate,
-      active: true,
-    };
-
-    setSecurity([...security, newUser]);
-    setFullName('');
-    setEmail('');
-    setFormError(null);
   };
 
-  // Dropdown component for cross-platform compatibility
+  const handleDeleteUser = async (id: string) => {
+    try {
+   
+      Alert.alert(
+        'Confirm Deletion',
+        'Are you sure you want to delete this security personnel?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              const { error } = await supabase
+                .from('security')
+                .delete()
+                .eq('id', id);
+              
+              if (error) {
+                console.error('Error deleting user:', error);
+                Alert.alert('Error', 'Failed to delete user. Please try again.');
+                return;
+              }
+              
+              // Update local state
+              setSecurity(prev => prev.filter(user => user.id !== id));
+              Alert.alert('Success', 'Security personnel deleted successfully!');
+            }
+          }
+        ]
+      );
+    } catch (err) {
+      console.error('Exception deleting user:', err);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    }
+  };
+
+
   const CustomDropdown = ({ 
     selectedValue, 
     onValueChange, 
@@ -123,6 +318,7 @@ export default function AccessControlScreen() {
   return (
     <ScrollView style={styles.container}>
       <Header role="Administrator" name="Access Control Panel" />
+
       <View style={styles.form}>
         <Text style={styles.sectionTitle}>Add Security Personnel</Text>
         <TextInput 
@@ -136,7 +332,14 @@ export default function AccessControlScreen() {
           value={email} 
           onChangeText={setEmail} 
           placeholder="Enter email" 
-          keyboardType="email-address" 
+          keyboardType="email-address"
+          autoCapitalize="none" 
+        />
+        <CustomDropdown
+          label="Assign Role:"
+          selectedValue={selectedRole}
+          onValueChange={(value) => setSelectedRole(value as roleType)}
+          items={roles}
         />
         <CustomDropdown
           label="Assign Gate:"
@@ -144,57 +347,124 @@ export default function AccessControlScreen() {
           onValueChange={(value) => setSelectedGate(value as gateType)}
           items={gates}
         />
-        <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
-          <Text style={styles.addButtonText}>Add Personnel</Text>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={handleSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.addButtonText}>Add Personnel</Text>
+          )}
         </TouchableOpacity>
         {formError && <Text style={styles.error}>{formError}</Text>}
       </View>
 
-      <Text style={styles.sectionTitle}>Security Personnel</Text>
-      {security.map((entry) => (
-        <View 
-          key={entry.id} 
-          style={[
-            styles.userPane, 
-            !entry.active ? styles.inactiveUserPane : styles.activeUserPane
-          ]}
-        >
-          <View style={styles.userDetails}>
-            <Text style={styles.userName}>{entry.full_name}</Text>
-            <Text style={styles.userEmail}>{entry.email}</Text>
-            <Text style={styles.userGate}>Gate: {entry.assign_gate}</Text>
-          </View>
-          <View style={styles.userActions}>
-            <TouchableOpacity 
-              onPress={() => handleToggleActive(entry.id)} 
-              style={[
-                styles.statusButton, 
-                entry.active ? styles.activeStatus : styles.inactiveStatus
-              ]}
-            >
-              <Text style={[
-                styles.statusText, 
-                entry.active ? styles.activeStatusText : styles.inactiveStatusText
-              ]}>
-                {entry.active ? 'Active' : 'Inactive'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.editButton} 
-              onPress={() => handleEditUser(entry)}
-            >
-              <Ionicons name="create-outline" size={20} color="white" />
-            </TouchableOpacity>
-          </View>
+      <Text style={styles.sectionTitle}>Security Personnel ({security.length})</Text>
+      
+      {isLoading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color="#00a824" />
+          <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ))}
+      ) : security.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            No security personnel found. Add new personnel using the form above.
+          </Text>
+        </View>
+      ) : (
+        security.map((entry) => (
+          <View 
+            key={entry.id} 
+            style={[
+              styles.userPane, 
+              entry.active ? styles.activeUserPane : styles.inactiveUserPane
+            ]}
+          >
+            <View style={styles.userDetails}>
+              <Text 
+                style={[
+                  styles.userName, 
+                  entry.active ? styles.activeUserText : styles.inactiveUserText
+                ]}
+              >
+                {entry.full_name}
+              </Text>
+              <Text 
+                style={[
+                  styles.userEmail, 
+                  entry.active ? styles.activeUserText : styles.inactiveUserText
+                ]}
+              >
+                {entry.email}
+              </Text>
+              <Text 
+                style={[
+                  styles.userRole, 
+                  entry.active ? styles.activeUserText : styles.inactiveUserText
+                ]}
+              >
+                Role: {entry.roles}
+              </Text>
+              <Text 
+                style={[
+                  styles.userGate, 
+                  entry.active ? styles.activeUserText : styles.inactiveUserText
+                ]}
+              >
+                Gate: {entry.assign_gate}
+              </Text>
+              
+              {/* Status badge */}
+              <View style={[
+                styles.statusBadge,
+                entry.active ? styles.activeBadge : styles.inactiveBadge
+              ]}>
+                <Text style={styles.statusBadgeText}>
+                  {entry.active ? 'Active' : 'Inactive'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.userActions}>
+              <TouchableOpacity 
+                onPress={() => handleToggleActive(entry.id, entry.active)} 
+                style={[
+                  styles.statusButton, 
+                  entry.active ? styles.activeStatus : styles.inactiveStatus
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {entry.active ? 'Set Inactive' : 'Set Active'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.editButton} 
+                onPress={() => handleEditUser(entry)}
+              >
+                <Ionicons name="create-outline" size={20} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.deleteButton} 
+                onPress={() => handleDeleteUser(entry.id)}
+              >
+                <Ionicons name="trash-outline" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      )}
 
       {/* Edit Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={editModalVisible}
-        onRequestClose={() => setEditModalVisible(false)}
+        onRequestClose={() => {
+          setEditModalVisible(false);
+          setFormError(null);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -221,6 +491,18 @@ export default function AccessControlScreen() {
                   )}
                   placeholder="Email"
                   keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={styles.modalFormGroup}>
+                <Text style={styles.modalLabel}>Role</Text>
+                <CustomDropdown
+                  label=""
+                  selectedValue={editUser?.roles || 'SC001'}
+                  onValueChange={(value) => setEditUser(prev => 
+                    prev ? {...prev, roles: value as roleType} : null
+                  )}
+                  items={roles}
                 />
               </View>
               <View style={styles.modalFormGroup}>
@@ -235,18 +517,27 @@ export default function AccessControlScreen() {
                 />
               </View>
             </View>
+            {formError && <Text style={styles.error}>{formError}</Text>}
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity 
                 style={styles.modalCancelButton}
-                onPress={() => setEditModalVisible(false)}
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setFormError(null);
+                }}
               >
                 <Text style={styles.modalCancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.modalSaveButton}
                 onPress={handleSaveEdit}
+                disabled={isEditLoading}
               >
-                <Text style={styles.modalSaveButtonText}>Save Changes</Text>
+                {isEditLoading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.modalSaveButtonText}>Save Changes</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -260,37 +551,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    padding: 15
   },
   form: {
     backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    margin: 20,
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 3,
+    elevation: 3
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-    fontSize: 16
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: '#fafafa'
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
     color: '#252525'
   },
   addButton: {
-    backgroundColor: '#007bff',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center'
+    backgroundColor: '#00a824',
+    padding: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 10
   },
   addButtonText: {
     color: 'white',
@@ -306,69 +600,117 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 15,
     borderRadius: 10,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    borderLeftWidth: 5,
+  },
+  // Active user panel styles
+  activeUserPane: {
+    borderColor: '#00a824',
+    shadowColor: '#00a824',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  // Inactive user panel styles
+  inactiveUserPane: {
+    borderColor: '#ff3b30',
+    backgroundColor: '#f8f8f8',
+    opacity: 0.8,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   userDetails: {
-    flex: 1,
-    marginRight: 10
+    marginBottom: 15,
+    position: 'relative',
   },
   userActions: {
     flexDirection: 'row',
-    alignItems: 'center'
-  },
-  activeUserPane: {
-    borderLeftWidth: 5,
-    borderLeftColor: 'green'
-  },
-  inactiveUserPane: {
-    borderLeftWidth: 5,
-    borderLeftColor: 'red'
   },
   userName: {
     fontWeight: 'bold',
-    fontSize: 16
+    fontSize: 18,
+    marginBottom: 5
   },
   userEmail: {
-    color: '#666'
+    color: '#666',
+    marginBottom: 5
+  },
+  userRole: {
+    color: '#666',
+    marginBottom: 5
   },
   userGate: {
     color: '#666'
   },
+  // Text styles for active/inactive states
+  activeUserText: {
+    color: '#252525',
+  },
+  inactiveUserText: {
+    color: '#777',
+  },
+  // Status badge
+  statusBadge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  activeBadge: {
+    backgroundColor: 'rgba(0, 168, 36, 0.15)',
+  },
+  inactiveBadge: {
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333',
+  },
   statusButton: {
-    padding: 5,
-    borderRadius: 5,
-    marginRight: 10
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    marginRight: 10,
+    alignItems: 'center'
   },
   activeStatus: {
-    backgroundColor: 'green'
+    backgroundColor: '#ff3b30'
   },
   inactiveStatus: {
-    backgroundColor: 'red'
+    backgroundColor: '#00a824'
   },
   statusText: {
     color: 'white',
-    fontWeight: 'bold'
-  },
-  activeStatusText: {
-    color: "green",
-    fontWeight: "bold",
-  },
-  inactiveStatusText: {
-    color: "red",
-    fontWeight: "bold",
+    fontWeight: 'bold',
+    fontSize: 16
   },
   editButton: {
+    flex: 1,
     backgroundColor: '#007bff',
-    padding: 8,
-    borderRadius: 5
+    padding: 12,
+    borderRadius: 8,
+    marginRight: 10,
+    alignItems: 'center'
   },
-  
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#ff3b30',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
   // Dropdown Styles
   dropdownContainer: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   dropdownLabel: {
     fontSize: 16,
@@ -377,14 +719,14 @@ const styles = StyleSheet.create({
   },
   pickerWrapper: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fafafa'
   },
   picker: {
     height: 50,
     width: '100%'
   },
-
   // Modal Styles
   modalOverlay: {
     flex: 1,
@@ -394,35 +736,40 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 20,
     color: '#252525',
-    textAlign: 'left'
+    textAlign: 'center'
   },
   modalForm: {
-    marginBottom: 15
+    marginBottom: 20
   },
   modalFormGroup: {
-    marginBottom: 10
+    marginBottom: 15
   },
   modalLabel: {
     fontSize: 16,
     color: '#252525',
     marginBottom: 5,
-    textAlign: 'left'
+    fontWeight: '500'
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
-    textAlign: 'left'
+    backgroundColor: '#fafafa'
   },
   modalButtonContainer: {
     flexDirection: 'row',
@@ -431,24 +778,39 @@ const styles = StyleSheet.create({
   modalCancelButton: {
     flex: 1,
     marginRight: 10,
-    padding: 10,
-    backgroundColor: '#F44336',
-    borderRadius: 5,
+    padding: 15,
+    backgroundColor: '#ff3b30',
+    borderRadius: 8,
     alignItems: 'center'
   },
   modalCancelButtonText: {
     color: 'white',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: 16
   },
   modalSaveButton: {
     flex: 1,
-    padding: 10,
-    backgroundColor: 'green',
-    borderRadius: 5,
+    padding: 15,
+    backgroundColor: '#00a824',
+    borderRadius: 8,
     alignItems: 'center'
   },
   modalSaveButtonText: {
     color: 'white',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  emptyContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center'
   }
 });
