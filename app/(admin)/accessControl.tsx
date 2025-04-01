@@ -9,7 +9,8 @@ import {
   Modal,
   Platform,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Switch
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,7 @@ export default function AccessControlScreen() {
   const [editUser, setEditUser] = useState<Security | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Fetch security personnel from Supabase
   useEffect(() => {
@@ -315,6 +317,10 @@ export default function AccessControlScreen() {
     );
   };
 
+  // Filter security personnel based on their active status
+  const filteredSecurity = security.filter(entry => showInactive || entry.active);
+  const activeCount = security.filter(entry => entry.active).length;
+
   return (
     <ScrollView style={styles.container}>
       <Header role="Administrator" name="Access Control Panel" />
@@ -361,21 +367,34 @@ export default function AccessControlScreen() {
         {formError && <Text style={styles.error}>{formError}</Text>}
       </View>
 
-      <Text style={styles.sectionTitle}>Security Personnel ({security.length})</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Security Personnel ({activeCount} active / {security.length} total)</Text>
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>Show Inactive</Text>
+          <Switch 
+            value={showInactive} 
+            onValueChange={setShowInactive}
+            trackColor={{ false: "#d3d3d3", true: "#81b0ff" }}
+            thumbColor={showInactive ? "#007bff" : "#f4f3f4"}
+          />
+        </View>
+      </View>
       
       {isLoading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color="#00a824" />
           <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ) : security.length === 0 ? (
+      ) : filteredSecurity.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            No security personnel found. Add new personnel using the form above.
+            {security.length === 0 ? 
+              "No security personnel found. Add new personnel using the form above." : 
+              "No active personnel found. Toggle 'Show Inactive' to view inactive personnel."}
           </Text>
         </View>
       ) : (
-        security.map((entry) => (
+        filteredSecurity.map((entry) => (
           <View 
             key={entry.id} 
             style={[
@@ -573,11 +592,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fafafa'
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
     color: '#252525'
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    marginRight: 8,
+    fontSize: 14,
+    color: '#666'
   },
   addButton: {
     backgroundColor: '#00a824',
