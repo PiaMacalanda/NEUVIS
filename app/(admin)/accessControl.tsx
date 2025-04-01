@@ -250,41 +250,41 @@ export default function AccessControlScreen() {
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    try {
+  // const handleDeleteUser = async (id: string) => {
+  //   try {
    
-      Alert.alert(
-        'Confirm Deletion',
-        'Are you sure you want to delete this security personnel?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const { error } = await supabase
-                .from('security')
-                .delete()
-                .eq('id', id);
+  //     Alert.alert(
+  //       'Confirm Deletion',
+  //       'Are you sure you want to delete this security personnel?',
+  //       [
+  //         { text: 'Cancel', style: 'cancel' },
+  //         {
+  //           text: 'Delete',
+  //           style: 'destructive',
+  //           onPress: async () => {
+  //             const { error } = await supabase
+  //               .from('security')
+  //               .delete()
+  //               .eq('id', id);
               
-              if (error) {
-                console.error('Error deleting user:', error);
-                Alert.alert('Error', 'Failed to delete user. Please try again.');
-                return;
-              }
+  //             if (error) {
+  //               console.error('Error deleting user:', error);
+  //               Alert.alert('Error', 'Failed to delete user. Please try again.');
+  //               return;
+  //             }
               
-              // Update local state
-              setSecurity(prev => prev.filter(user => user.id !== id));
-              Alert.alert('Success', 'Security personnel deleted successfully!');
-            }
-          }
-        ]
-      );
-    } catch (err) {
-      console.error('Exception deleting user:', err);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-    }
-  };
+  //             // Update local state
+  //             setSecurity(prev => prev.filter(user => user.id !== id));
+  //             Alert.alert('Success', 'Security personnel deleted successfully!');
+  //           }
+  //         }
+  //       ]
+  //     );
+  //   } catch (err) {
+  //     console.error('Exception deleting user:', err);
+  //     Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+  //   }
+  // };
 
 
   const CustomDropdown = ({ 
@@ -370,7 +370,7 @@ export default function AccessControlScreen() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Security Personnel ({activeCount} active / {security.length} total)</Text>
         <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>Show Inactive</Text>
+         
           <Switch 
             value={showInactive} 
             onValueChange={setShowInactive}
@@ -465,7 +465,7 @@ export default function AccessControlScreen() {
                 <Ionicons name="create-outline" size={20} color="white" />
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.deleteButton} 
+           
                 onPress={() => handleDeleteUser(entry.id)}
               >
                 <Ionicons name="trash-outline" size={20} color="white" />
@@ -735,13 +735,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     alignItems: 'center'
   },
-  deleteButton: {
-    flex: 1,
-    backgroundColor: '#ff3b30',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
+  
   // Dropdown Styles
   dropdownContainer: {
     marginBottom: 15,
