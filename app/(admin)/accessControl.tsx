@@ -60,7 +60,7 @@ export default function AccessControlScreen() {
         return;
       }
       
-      // Make sure all required fields exist in the data
+     
       const validData = data?.map(item => ({
         ...item,
         // Set default values for any missing fields
@@ -147,15 +147,14 @@ export default function AccessControlScreen() {
             email: editUser.email,
             roles: editUser.roles,
             assign_gate: editUser.assign_gate,
-            // Make sure active field is included
+           
             active: editUser.active
           })
           .eq('id', editUser.id);
         
         if (supabaseError) {
           console.error('Error updating security personnel:', supabaseError);
-          
-          // Handle unique constraint violations
+      
           if (supabaseError.code === '23505') {
             setFormError('A user with this email already exists.');
           } else {
@@ -165,7 +164,6 @@ export default function AccessControlScreen() {
           return;
         }
 
-        // Update local state
         setSecurity(prev => prev.map(user => 
           user.id === editUser.id ? editUser : user
         ));
@@ -187,7 +185,6 @@ export default function AccessControlScreen() {
       setIsLoading(true);
       setFormError(null);
       
-      // Validate form inputs
       const error = validateForm(full_name, email);
       if (error) {
         setFormError(error);
@@ -195,13 +192,13 @@ export default function AccessControlScreen() {
         return;
       }
       
-      // Prepare new user data - explicitly include all fields
+
       const newUser = {
         full_name,
         email,
         roles: selectedRole,
         assign_gate: selectedGate,
-        active: false  // Set to false by default to prevent activation issues
+        active: false 
       };
       
       // Insert into Supabase
@@ -213,7 +210,7 @@ export default function AccessControlScreen() {
       if (supabaseError) {
         console.error('Error adding security personnel:', supabaseError);
         
-        // Handle database errors more specifically
+       
         if (supabaseError.code === '23505') {
           setFormError('A user with this email already exists.');
         } else if (supabaseError.message.includes('active')) {
@@ -232,16 +229,16 @@ export default function AccessControlScreen() {
         return;
       }
       
-      // Success - update local state and reset form
+   
       setSecurity(prevSecurity => [...prevSecurity, { ...newUser, id: data[0].id }]);
       
-      // Reset form
+      
       setFullName('');
       setEmail('');
       setSelectedRole('SC001');
       setSelectedGate('Main Gate');
       
-      // Show success message
+    
       Alert.alert('Success', 'Security personnel added successfully!');
     } catch (err) {
       console.error('Exception adding security personnel:', err);
@@ -253,7 +250,7 @@ export default function AccessControlScreen() {
 
   const handleDeleteUser = async (id: string) => {
     try {
-      // Confirm deletion
+   
       Alert.alert(
         'Confirm Deletion',
         'Are you sure you want to delete this security personnel?',
@@ -287,8 +284,7 @@ export default function AccessControlScreen() {
     }
   };
 
-  // The rest of your component remains unchanged
-  // CustomDropdown component and return JSX...
+
   const CustomDropdown = ({ 
     selectedValue, 
     onValueChange, 
