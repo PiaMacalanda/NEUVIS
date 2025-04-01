@@ -9,7 +9,8 @@ import {
   Modal,
   Platform,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Switch
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,7 @@ export default function AccessControlScreen() {
   const [editUser, setEditUser] = useState<Security | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Fetch security personnel from Supabase
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function AccessControlScreen() {
         return;
       }
       
-      // Make sure all required fields exist in the data
+     
       const validData = data?.map(item => ({
         ...item,
         // Set default values for any missing fields
@@ -147,15 +149,14 @@ export default function AccessControlScreen() {
             email: editUser.email,
             roles: editUser.roles,
             assign_gate: editUser.assign_gate,
-            // Make sure active field is included
+           
             active: editUser.active
           })
           .eq('id', editUser.id);
         
         if (supabaseError) {
           console.error('Error updating security personnel:', supabaseError);
-          
-          // Handle unique constraint violations
+      
           if (supabaseError.code === '23505') {
             setFormError('A user with this email already exists.');
           } else {
@@ -165,7 +166,6 @@ export default function AccessControlScreen() {
           return;
         }
 
-        // Update local state
         setSecurity(prev => prev.map(user => 
           user.id === editUser.id ? editUser : user
         ));
@@ -187,7 +187,6 @@ export default function AccessControlScreen() {
       setIsLoading(true);
       setFormError(null);
       
-      // Validate form inputs
       const error = validateForm(full_name, email);
       if (error) {
         setFormError(error);
@@ -195,13 +194,13 @@ export default function AccessControlScreen() {
         return;
       }
       
-      // Prepare new user data - explicitly include all fields
+
       const newUser = {
         full_name,
         email,
         roles: selectedRole,
         assign_gate: selectedGate,
-        active: false  // Set to false by default to prevent activation issues
+        active: false 
       };
       
       // Insert into Supabase
@@ -213,7 +212,7 @@ export default function AccessControlScreen() {
       if (supabaseError) {
         console.error('Error adding security personnel:', supabaseError);
         
-        // Handle database errors more specifically
+       
         if (supabaseError.code === '23505') {
           setFormError('A user with this email already exists.');
         } else if (supabaseError.message.includes('active')) {
@@ -232,16 +231,16 @@ export default function AccessControlScreen() {
         return;
       }
       
-      // Success - update local state and reset form
+   
       setSecurity(prevSecurity => [...prevSecurity, { ...newUser, id: data[0].id }]);
       
-      // Reset form
+      
       setFullName('');
       setEmail('');
       setSelectedRole('SC001');
       setSelectedGate('Main Gate');
       
-      // Show success message
+    
       Alert.alert('Success', 'Security personnel added successfully!');
     } catch (err) {
       console.error('Exception adding security personnel:', err);
@@ -253,7 +252,7 @@ export default function AccessControlScreen() {
 
   const handleDeleteUser = async (id: string) => {
     try {
-      // Confirm deletion
+   
       Alert.alert(
         'Confirm Deletion',
         'Are you sure you want to delete this security personnel?',
@@ -287,8 +286,7 @@ export default function AccessControlScreen() {
     }
   };
 
-  // The rest of your component remains unchanged
-  // CustomDropdown component and return JSX...
+
   const CustomDropdown = ({ 
     selectedValue, 
     onValueChange, 
@@ -318,6 +316,10 @@ export default function AccessControlScreen() {
       </View>
     );
   };
+
+  // Filter security personnel based on their active status
+  const filteredSecurity = security.filter(entry => showInactive || entry.active);
+  const activeCount = security.filter(entry => entry.active).length;
 
   return (
     <ScrollView style={styles.container}>
@@ -365,21 +367,34 @@ export default function AccessControlScreen() {
         {formError && <Text style={styles.error}>{formError}</Text>}
       </View>
 
-      <Text style={styles.sectionTitle}>Security Personnel ({security.length})</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Security Personnel ({activeCount} active / {security.length} total)</Text>
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>Show Inactive</Text>
+          <Switch 
+            value={showInactive} 
+            onValueChange={setShowInactive}
+            trackColor={{ false: "#d3d3d3", true: "#81b0ff" }}
+            thumbColor={showInactive ? "#007bff" : "#f4f3f4"}
+          />
+        </View>
+      </View>
       
       {isLoading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color="#00a824" />
           <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ) : security.length === 0 ? (
+      ) : filteredSecurity.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            No security personnel found. Add new personnel using the form above.
+            {security.length === 0 ? 
+              "No security personnel found. Add new personnel using the form above." : 
+              "No active personnel found. Toggle 'Show Inactive' to view inactive personnel."}
           </Text>
         </View>
       ) : (
-        security.map((entry) => (
+        filteredSecurity.map((entry) => (
           <View 
             key={entry.id} 
             style={[
@@ -577,11 +592,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fafafa'
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
     color: '#252525'
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    marginRight: 8,
+    fontSize: 14,
+    color: '#666'
   },
   addButton: {
     backgroundColor: '#00a824',
