@@ -14,7 +14,7 @@ interface AuthContextProps {
         data: { user: User | null; session: Session | null } | null;
         error: Error | null;
     }>;
-    signIn: (email: string, password: string, requiredRole?: 'admin' | 'security') => Promise<{
+    signIn: (email: string, password: string, requiredRole?: 'admin' | 'security' | 'superadmin') => Promise<{
         data: { user: User | null; session: Session | null } | null;
         userData?: { role: string };
         role?: string;

@@ -50,7 +50,7 @@ const handleAdminCreation = async () => {
 
         Alert.alert(
             "Admin created successfully",
-            "Advise the admin to check his email to verify their account.",
+            "Advise the admin to check their email to verify their account.",
             [{ text: "OK", onPress: () => router.push('/superadmin') }]
         );
 

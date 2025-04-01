@@ -83,8 +83,9 @@ export default function HomeScreen() {
           <View style={styles.buttonGroup}>
             <TouchableOpacity 
               style={styles.routeButton}
-              onPress={() => router.push('/(superadmin)/superadmin')}
+              onPress={() => router.push('/superadmin-login')}
             >
+              <Ionicons name="person-outline" size={20} color="#fff" style={styles.buttonIcon} />
               <Text style={styles.routeButtonText}>Superadmin Page</Text>
             </TouchableOpacity>
           </View>
@@ -179,7 +180,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   underlineButton: {
-    paddingVertical: 8,
     alignItems: 'center',
   },
   underlineButtonText: {
