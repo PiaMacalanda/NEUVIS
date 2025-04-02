@@ -54,7 +54,7 @@ export default function AccessControlScreen() {
   const fetchSecurityPersonnel = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.from('security').select('*');
+      const { data, error } = await supabase.from('users').select('*');
       
       if (error) {
         console.error('Error fetching security personnel:', error);
