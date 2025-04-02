@@ -9,7 +9,8 @@ import {
   Modal,
   Platform,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Switch
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,7 @@ export default function AccessControlScreen() {
   const [editUser, setEditUser] = useState<Security | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Fetch security personnel from Supabase
   useEffect(() => {
@@ -248,41 +250,41 @@ export default function AccessControlScreen() {
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    try {
+  // const handleDeleteUser = async (id: string) => {
+  //   try {
    
-      Alert.alert(
-        'Confirm Deletion',
-        'Are you sure you want to delete this security personnel?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const { error } = await supabase
-                .from('security')
-                .delete()
-                .eq('id', id);
+  //     Alert.alert(
+  //       'Confirm Deletion',
+  //       'Are you sure you want to delete this security personnel?',
+  //       [
+  //         { text: 'Cancel', style: 'cancel' },
+  //         {
+  //           text: 'Delete',
+  //           style: 'destructive',
+  //           onPress: async () => {
+  //             const { error } = await supabase
+  //               .from('security')
+  //               .delete()
+  //               .eq('id', id);
               
-              if (error) {
-                console.error('Error deleting user:', error);
-                Alert.alert('Error', 'Failed to delete user. Please try again.');
-                return;
-              }
+  //             if (error) {
+  //               console.error('Error deleting user:', error);
+  //               Alert.alert('Error', 'Failed to delete user. Please try again.');
+  //               return;
+  //             }
               
-              // Update local state
-              setSecurity(prev => prev.filter(user => user.id !== id));
-              Alert.alert('Success', 'Security personnel deleted successfully!');
-            }
-          }
-        ]
-      );
-    } catch (err) {
-      console.error('Exception deleting user:', err);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-    }
-  };
+  //             // Update local state
+  //             setSecurity(prev => prev.filter(user => user.id !== id));
+  //             Alert.alert('Success', 'Security personnel deleted successfully!');
+  //           }
+  //         }
+  //       ]
+  //     );
+  //   } catch (err) {
+  //     console.error('Exception deleting user:', err);
+  //     Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+  //   }
+  // };
 
 
   const CustomDropdown = ({ 
@@ -314,6 +316,10 @@ export default function AccessControlScreen() {
       </View>
     );
   };
+
+  // Filter security personnel based on their active status
+  const filteredSecurity = security.filter(entry => showInactive || entry.active);
+  const activeCount = security.filter(entry => entry.active).length;
 
   return (
     <ScrollView style={styles.container}>
@@ -361,21 +367,34 @@ export default function AccessControlScreen() {
         {formError && <Text style={styles.error}>{formError}</Text>}
       </View>
 
-      <Text style={styles.sectionTitle}>Security Personnel ({security.length})</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Security Personnel ({activeCount} active / {security.length} total)</Text>
+        <View style={styles.toggleContainer}>
+         
+          <Switch 
+            value={showInactive} 
+            onValueChange={setShowInactive}
+            trackColor={{ false: "#d3d3d3", true: "#81b0ff" }}
+            thumbColor={showInactive ? "#007bff" : "#f4f3f4"}
+          />
+        </View>
+      </View>
       
       {isLoading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color="#00a824" />
           <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ) : security.length === 0 ? (
+      ) : filteredSecurity.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            No security personnel found. Add new personnel using the form above.
+            {security.length === 0 ? 
+              "No security personnel found. Add new personnel using the form above." : 
+              "No active personnel found. Toggle 'Show Inactive' to view inactive personnel."}
           </Text>
         </View>
       ) : (
-        security.map((entry) => (
+        filteredSecurity.map((entry) => (
           <View 
             key={entry.id} 
             style={[
@@ -446,7 +465,7 @@ export default function AccessControlScreen() {
                 <Ionicons name="create-outline" size={20} color="white" />
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.deleteButton} 
+           
                 onPress={() => handleDeleteUser(entry.id)}
               >
                 <Ionicons name="trash-outline" size={20} color="white" />
@@ -573,11 +592,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fafafa'
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
     color: '#252525'
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    marginRight: 8,
+    fontSize: 14,
+    color: '#666'
   },
   addButton: {
     backgroundColor: '#00a824',
@@ -701,13 +735,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     alignItems: 'center'
   },
-  deleteButton: {
-    flex: 1,
-    backgroundColor: '#ff3b30',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
+  
   // Dropdown Styles
   dropdownContainer: {
     marginBottom: 15,
