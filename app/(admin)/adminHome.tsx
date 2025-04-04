@@ -402,7 +402,6 @@ export default function AdminHomeScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerContainer}>
-        <Header />
       </View>
       
       {/* Tab Navigation */}

@@ -323,8 +323,6 @@ export default function AccessControlScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Header />
-
       <View style={styles.form}>
         <Text style={styles.sectionTitle}>Add Security Personnel</Text>
         <TextInput 

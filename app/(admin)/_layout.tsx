@@ -6,7 +6,7 @@ export default function AuthenticationLayout() {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#4a89dc',
+          backgroundColor: '#003566',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {

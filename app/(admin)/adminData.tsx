@@ -236,7 +236,6 @@ export default function AdminDataScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerContainer}>
-        <Header />
       </View>
       
       {/* Search and Filter */}

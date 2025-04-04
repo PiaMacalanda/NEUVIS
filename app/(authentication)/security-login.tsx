@@ -74,15 +74,8 @@ export default function SecurityLoginScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#4a89dc" />
-          </TouchableOpacity>
           
           <View style={styles.logoContainer}>
             <Logo size="small" />
@@ -172,12 +165,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 10,
-  },
   logoContainer: {
     alignItems: 'center',
     marginTop: 60,
@@ -226,7 +213,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   loginButton: {
-    backgroundColor: '#4a89dc',
+    backgroundColor: '#003566',
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',
@@ -253,7 +240,7 @@ const styles = StyleSheet.create({
   },
   signupButton: {
     borderWidth: 1,
-    borderColor: '#4a89dc',
+    borderColor: '#003566',
     borderRadius: 8,
     backgroundColor: 'transparent',
     paddingVertical: 15,
@@ -261,7 +248,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   signupButtonText: {
-    color: '#4a89dc',
+    color: '#003566',
     fontSize: 16,
     fontWeight: '600',
   },

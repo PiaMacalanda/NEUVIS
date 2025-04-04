@@ -5,6 +5,7 @@ import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import Footer from '@/components/Footer';
 
 export default function NeuvisLanding() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function NeuvisLanding() {
   const { user, session } = useAuth();
   const [stats, setStats] = useState({
     todayCount: 0,
-    totalCount: 0, // Here naman, ts was expecting just number but got number | null
+    totalCount: 0,
     loading: true
   });
 
@@ -69,7 +70,7 @@ export default function NeuvisLanding() {
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Visitor Management</Text>
+          <Text style={styles.heroTitle}>Welcome to <Text style={styles.heroTitleAccent}>NEUVIS</Text></Text>
           <Text style={styles.heroSubtitle}>Scan a valid ID or manually enter visitor details.</Text>
         </View>
 
@@ -77,7 +78,7 @@ export default function NeuvisLanding() {
         <View style={styles.statsWrapper}>
           {stats.loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#252525" />
+              <ActivityIndicator size="small" color="#003566" />
             </View>
           ) : (
             <View style={styles.statsContainer}>
@@ -94,7 +95,7 @@ export default function NeuvisLanding() {
                 style={styles.refreshButton}
                 onPress={fetchSimpleStats}
               >
-                <Ionicons name="refresh-outline" size={16} color="#252525" />
+                <Ionicons name="refresh-outline" size={16} color="#003566" />
               </TouchableOpacity>
             </View>
           )}
@@ -105,50 +106,49 @@ export default function NeuvisLanding() {
           <TouchableOpacity 
             style={styles.card} 
             onPress={() => router.push('/Scanner')}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
+            <View style={[styles.iconContainer, styles.scanIcon]}>
               <Ionicons name="scan-outline" size={32} color="#fff" />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>Scan ID</Text>
               <Text style={styles.cardDescription}>Quickly process visitors by scanning their ID</Text>
             </View>
+            <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.card} 
             onPress={() => router.push('/ManualForm')}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
+            <View style={[styles.iconContainer, styles.manualIcon]}>
               <Ionicons name="create-outline" size={32} color="#fff" />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>Manual Input</Text>
               <Text style={styles.cardDescription}>Enter visitor information manually</Text>
             </View>
+            <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.card} 
             onPress={() => router.push('./VisitorsLogs')}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <View style={styles.iconContainer}>
+            <View style={[styles.iconContainer, styles.logsIcon]}>
               <Ionicons name="book-outline" size={32} color="#fff" />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>Visitor Logs</Text>
               <Text style={styles.cardDescription}>View and manage all visitor records</Text>
             </View>
+            <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
           </TouchableOpacity>
         </View>
-
-        {/* Footer with version */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>© 2025 NEUVIS MDRPLT - All Rights Reserved</Text>
-        </View>
+        <Footer />
       </ScrollView>
     </View>
   );
@@ -172,30 +172,35 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#252525',
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  heroTitleAccent: {
+    color: '#003566',
   },
   heroSubtitle: {
     fontSize: 16,
     color: '#252525',
     textAlign: 'center',
     maxWidth: '80%',
+    opacity: 0.8,
   },
   statsWrapper: {
     marginBottom: 25,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    padding: 15,
+    shadowRadius: 8,
+    elevation: 4,
+    padding: 18,
   },
   loadingContainer: {
-    height: 40,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -204,6 +209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    paddingVertical: 10,
   },
   statItem: {
     flex: 1,
@@ -211,25 +217,32 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#252525',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#252525',
     marginTop: 4,
+    opacity: 0.7,
   },
   statDivider: {
     width: 1,
-    height: 40,
-    backgroundColor: '#eee',
+    height: 50,
+    backgroundColor: '#eeeeee',
   },
   refreshButton: {
     position: 'absolute',
     right: 0,
     top: 0,
-    padding: 5,
+    padding: 6,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardsContainer: {
     flexDirection: 'column',
@@ -238,27 +251,39 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#252525',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#252525',
   },
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#252525',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  scanIcon: {
+    backgroundColor: '#003566',
+  },
+  manualIcon: {
+    backgroundColor: '#ffc300',
+  },
+  logsIcon: {
+    backgroundColor: '#003566',
+    opacity: 0.9,
   },
   cardContent: {
     flex: 1,
@@ -267,18 +292,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#252525',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   cardDescription: {
     fontSize: 14,
     color: '#252525',
+    opacity: 0.7,
+    lineHeight: 20,
   },
-  footer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#999',
+  cardArrow: {
+    marginLeft: 10,
   },
 });

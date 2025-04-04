@@ -82,12 +82,12 @@ export default function PrivacyPolicy() {
           <Text style={styles.paragraph}>
             NEUVIS was developed by a dedicated team of Computer Science students from the New Era University:
           </Text>
-          <Text style={styles.listItem}>• Pia Macalanda - Lead Developer</Text>
+          <Text style={styles.listItem}>• Pia Macalanda - Scrum Master & Lead Developer</Text>
           <Text style={styles.listItem}>• Jaime III Dy - Backend Developer & Security Specialist</Text>
-          <Text style={styles.listItem}>• Jaime III Dy - Backend Developer</Text>
           <Text style={styles.listItem}>• Aliyah Llana - UI/UX Designer</Text>
           <Text style={styles.listItem}>• Leo Rentazida - UI/UX Designer</Text>
           <Text style={styles.listItem}>• Lyrine Poliarco - Database Analyst</Text>
+          <Text style={styles.listItem}>• Angelica Toquero - Database Analyst</Text>
           <Text style={styles.listItem}>• Prof. Jeremias Esperanza - Project Advisor</Text>
           <Text style={styles.paragraph}>
             The development team adheres to best practices in software development, 
