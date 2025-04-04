@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './context/AuthContext';
 
-export default function Layout() {
+export default function RootLayout() {
   return (
     <AuthProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -13,7 +13,13 @@ export default function Layout() {
             headerTintColor: '#252525',
             headerTitleStyle: { fontWeight: 'bold' },
         }}>
-          <Stack.Screen name="callback" options={{ headerShown: false }} />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(static)" options={{ headerShown: false }} />
+          <Stack.Screen name="(security)" options={{ headerShown: false }} />
+          <Stack.Screen name="(authentication)" options={{ headerShown: false }}/>
+          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+
+
         </Stack>
       </GestureHandlerRootView>
     </AuthProvider>

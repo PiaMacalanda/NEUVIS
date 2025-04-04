@@ -23,8 +23,7 @@ const Admin = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Custom Header for Administrator */}
-      <Header role="Administrator" name="Admin 1" />
+      <Header />
 
       <StatusBar barStyle="light-content" backgroundColor="#252525" />
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>

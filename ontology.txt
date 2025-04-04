@@ -33,7 +33,6 @@ NEUVIS
 ├── lib
 │   ├── supabaseClient.ts
 │   ├── _layout.tsx
-│   ├── callback.tsx
 │   └── index.tsx
 ├── assets
 │   ├── fonts

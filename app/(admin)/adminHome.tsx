@@ -402,7 +402,7 @@ export default function AdminHomeScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerContainer}>
-        <Header role="Administrator" name="Visitor Management" />
+        <Header />
       </View>
       
       {/* Tab Navigation */}
