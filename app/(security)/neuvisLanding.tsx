@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import Footer from '@/components/Footer';
 import { visit } from './types/visits';
 import { fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet } from './api/notification-service/visits';
-import { insertVisitExpirationNotificationWithoutTimeout } from './api/notification-service/notification';
+import { insertVisitExpirationNotificationWithoutTimeout, fetchUserNotifications } from './api/notification-service/notification';
 
 export default function NeuvisLanding() {
   const [expiredUntimedoutVisitswithoutNotificationsSentYet, setExpiredUntimedoutVisitsWithoutNotificationsSentYet] = useState<visit[]>([]);
@@ -69,7 +69,7 @@ export default function NeuvisLanding() {
   useEffect(() => {
     const sendNotfications = async () => {
       const data = await fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet(user);
-    
+      
       if (data && data.length > 0) {
         for (const visit of data) {
           const notificationContent = `

@@ -10,7 +10,7 @@ export const fetchExpiredUntimedoutVisits = async (user: any) => {
     const { data, error } = await supabase
         .from('visits')
         .select('*')
-        .eq('security_id', user?.id)
+        .eq('security_id', user.id)
         .lt('expiration', new Date().toISOString())
         .is('time_out', null);
     

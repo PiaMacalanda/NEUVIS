@@ -51,3 +51,20 @@ export const insertVisitExpirationNotificationWithoutTimeout = async (visit: vis
         console.error('Error during Notification insertion: ', error);
     }
 };
+
+
+export const fetchUserNotifications = async (user: any) => {
+    try {
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id);
+        
+        if(error) throw new Error('Error during fetching User Notifications: ', error);
+
+        console.log(data);
+        return data;
+    } catch (error) {
+        console.error('Error during Notification fetching: ', error);
+    }
+}
