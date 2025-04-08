@@ -107,21 +107,29 @@ export default function AdminDataScreen() {
           const security = securityData.find(s => s.assign_gate === `Gate ${visit.id % 2 + 1}`);
   
           // Parse timestamps
-          const visitTime = new Date(visit.time_of_visit);
-          const timeOutDate = new Date(visit.expiration);
+          // Change this part in the useEffect where you're parsing timestamps
+        // In the useEffect where you create combinedData
+const visitTime = new Date(visit.time_of_visit);
+// Update this line to check for different time_out fields
+const timeOutDate = visit.time_out ? new Date(visit.time_out) : 
+                   (visit.expiration ? new Date(visit.expiration) : visitTime);
           
-          return {
-            id: visit.id,
-            name: visitor ? visitor.name : 'Unknown Visitor',
-            id_number: visit.visit_id || 'Unknown ID',
-            phone_number: visitor ? visitor.phone_number : 'Unknown Phone',
-            purpose_of_visit: visit.purpose_of_visit || 'Unknown Purpose',
-            gate: security ? security.assign_gate : `Gate ${visit.id % 2 + 1}`,
-            host: security ? security.full_name : 'Security Staff',
-            time_in: visitTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            time_out: timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: visitTime
-          };
+return {
+  id: visit.id,
+  name: visitor ? visitor.name : 'Unknown Visitor',
+  id_number: visit.visit_id || 'Unknown ID',
+  phone_number: visitor ? visitor.phone_number : 'Unknown Phone',
+  purpose_of_visit: visit.purpose_of_visit || 'Unknown Purpose',
+  gate: security ? security.assign_gate : `Gate ${visit.id % 2 + 1}`,
+  host: security ? security.full_name : 'Security Staff',
+  // Format time_in 
+  time_in: visitTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/am|pm/i, m => m.toUpperCase()),
+  // Updated time_out formatting with fallback options
+  time_out: visit.time_out || visit.expiration ? 
+    timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/am|pm/i, m => m.toUpperCase()) : 
+    'N/A',
+  date: visitTime
+};
         });
   
         setTableData(combinedData);
@@ -502,82 +510,89 @@ export default function AdminDataScreen() {
 
       {/* Details Modal */}
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={detailsModalVisible}
-        onRequestClose={() => setDetailsModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Visitor Details</Text>
-              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
+  animationType="slide"
+  transparent={true}
+  visible={detailsModalVisible}
+  onRequestClose={() => setDetailsModalVisible(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Visitor Details</Text>
+        <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+          <Ionicons name="close" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+      
+      {selectedVisitor && (
+        <ScrollView 
+          style={styles.modalScrollView}
+          contentContainerStyle={styles.modalScrollViewContent}
+          showsVerticalScrollIndicator={true}
+        >
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Name:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>ID Number:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.id_number}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Phone:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.phone_number}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Purpose:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.purpose_of_visit}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Gate:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.gate}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Host:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.host}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Time In:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.time_in}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Time Out:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.time_out}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Date:</Text>
+              <Text style={styles.detailValue}>{selectedVisitor.date.toLocaleDateString()}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Visit Count:</Text>
+              <Text style={styles.detailValue}>{visitorFrequencies[selectedVisitor.name]}</Text>
             </View>
             
-            {selectedVisitor && (
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Name:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>ID Number:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.id_number}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Phone:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.phone_number}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Purpose:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.purpose_of_visit}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Gate:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.gate}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Host:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.host}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Time In:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.time_in}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Time Out:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.time_out}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Date:</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.date.toLocaleDateString()}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Visit Count:</Text>
-                  <Text style={styles.detailValue}>{visitorFrequencies[selectedVisitor.name]}</Text>
-                </View>
-                
-                <View style={styles.visitHistoryHeader}>
-                  <Text style={styles.visitHistoryTitle}>Visit History</Text>
-                </View>
-                
-                {tableData.filter(item => item.name === selectedVisitor.name).map((visit) => (
-                  <View key={visit.id} style={styles.visitHistoryItem}>
-                    <Text style={styles.visitHistoryDate}>
-                      {visit.date.toLocaleDateString()} ({visit.time_in} - {visit.time_out})
-                    </Text>
-                    <Text style={styles.visitHistoryPurpose}>
-                      Purpose: {visit.purpose_of_visit}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+            <View style={styles.visitHistoryHeader}>
+              <Text style={styles.visitHistoryTitle}>Visit History</Text>
+            </View>
+                  
+            {tableData.filter(item => item.name === selectedVisitor.name).map((visit) => (
+        <View key={visit.id} style={styles.visitHistoryItem}>
+          <Text style={styles.visitHistoryDate}>
+            {/* Format the date as "Day Month Year" (1 Apr 2025) */}
+            {`${visit.date.getDate()} ${visit.date.toLocaleString('default', { month: 'short' })} ${visit.date.getFullYear()}`} ({visit.time_in} - {visit.time_out})
+          </Text>
+          <Text style={styles.visitHistoryPurpose}>
+            Purpose: {visit.purpose_of_visit}
+          </Text>
         </View>
-      </Modal>
+      ))}
+          </View>
+        </ScrollView>
+      )}
+    </View>
+  </View>
+</Modal>
     </ScrollView>
   );
 }
@@ -781,13 +796,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 15,
+  },
+  modalScrollView: {
+    maxHeight: '100%', // Takes all available space
+  },
+  modalScrollViewContent: {
+    padding: 15,
+    paddingBottom: 30, // Add extra padding at bottom for better scrolling experience
   },
   modalContent: {
-    width: '85%',
-    maxHeight: '80%',
+    width: '90%',
+    maxHeight: '80%', 
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 20,
+    overflow: 'hidden', // Important to keep content inside rounded corners
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -798,10 +821,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
-    paddingBottom: 10,
+    padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    backgroundColor: 'white', // Ensure header has background
   },
   modalTitle: {
     fontSize: 18,

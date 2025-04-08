@@ -3,11 +3,13 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal } from 'rea
 import { Picker } from '@react-native-picker/picker';
 import { supabase } from '../lib/supabaseClient';
 import Header from '../../components/Header';
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 
 
+
 interface Visit {
+  id?: number;
   time_of_visit: string;
   visitor_id?: string;
   visit_id?: string;
@@ -48,12 +50,66 @@ interface VisitorDetail {
   visit_count: number;
 }
 
+
+
 interface VisitorTrends {
   mostCommonPurposes: Array<{purpose: string; count: number}>;
   topVisitors: Array<{name: string; count: number}>;
   peakHours: Array<{hour: string; count: number}>;
   topGates: Array<{gate: string; count: number}>;
 }
+
+type ChartDataItem = 
+  | {name: string; count: number}
+  | {purpose: string; count: number}
+  | {hour: string; count: number}
+  | {gate: string; count: number};
+
+
+interface SimplePieChartProps {
+  data: ChartDataItem[];
+  title: string;
+}
+
+const SimplePieChart = ({ data, title }: SimplePieChartProps) => {
+  const totalValue = data.reduce((sum, item) => sum + item.count, 0);
+  
+  return (
+    <View style={styles.simplePieContainer}>
+      <Text style={styles.simplePieTitle}>{title}</Text>
+      {data.map((item, index) => {
+        const percentage = totalValue > 0 ? (item.count / totalValue) * 100 : 0;
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+        
+        // Get the label based on which property exists in the item
+        const label = 'name' in item ? item.name : 
+                     'purpose' in item ? item.purpose : 
+                     'hour' in item ? item.hour : 
+                     'gate' in item ? item.gate : 'Unknown';
+        
+        return (
+          <View key={index} style={styles.simplePieItem}>
+            <View style={styles.simplePieBar}>
+              <View 
+                style={[
+                  styles.simplePieFill, 
+                  { 
+                    width: `${percentage}%`,
+                    backgroundColor: colors[index % colors.length]
+                  }
+                ]} 
+              />
+            </View>
+            <View style={styles.simplePieInfo}>
+              <View style={[styles.simplePieColor, { backgroundColor: colors[index % colors.length] }]} />
+              <Text style={styles.simplePieName}>{label}: {item.count} ({percentage.toFixed(1)}%)</Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
 
 export default function AdminHomeScreen() {
   const [activeTab, setActiveTab] = useState<'stats' | 'trends'>('stats');
@@ -203,14 +259,30 @@ export default function AdminHomeScreen() {
       const timeOut = visit.time_out || '';
       
       // Add visit to history
-      visitorDetailsMap.get(normalizedName).visitHistory.push({
-        date: dateString,
-        time_in: timeIn,
-        time_out: timeOut,
-        purpose: visit.purpose_of_visit || 'Not specified',
-        gate: visit.gate || '',
-        host: visit.host || ''
-      });
+      // In processVisitorData function where you add visitor history
+visitorDetailsMap.get(normalizedName).visitHistory.push({
+  date: dateString,
+  time_in: visit.time_in ? 
+    new Date(visit.time_in).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    }).replace(/am|pm/i, m => m.toUpperCase()) : 
+    new Date(visit.time_of_visit).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    }).replace(/am|pm/i, m => m.toUpperCase()),
+  time_out: visit.time_out ? 
+    new Date(visit.time_out).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    }).replace(/am|pm/i, m => m.toUpperCase()) : '',
+  purpose: visit.purpose_of_visit || 'Not specified',
+  gate: visit.gate || '',
+  host: visit.host || ''
+});
       
       // Increment visit count
       visitorDetailsMap.get(normalizedName).visit_count += 1;
@@ -258,16 +330,23 @@ export default function AdminHomeScreen() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
     
-      const gatesMap = new Map<string, number>();
-      purposesFilter.forEach(visit => {
-        const gate = visit.gate || 'Not Specified';
-        gatesMap.set(gate, (gatesMap.get(gate) || 0) + 1);
-      });
+    const gatesMap = new Map<string, number>();
+    purposesFilter.forEach(visit => {
       
-      const topGates = Array.from(gatesMap, ([gate, count]) => ({ gate, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
+      let gate = 'Not Specified';
+      if (visit.gate) {
+        gate = visit.gate;
+      } else if (visit.id !== undefined) {
+        // Only use this if id exists
+        gate = `Gate ${visit.id % 2 + 1}`;
+      }
+      gatesMap.set(gate, (gatesMap.get(gate) || 0) + 1);
+    });
+    
+    const topGates = Array.from(gatesMap, ([gate, count]) => ({ gate, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  
     // Top Visitors
     const visitorsMap = new Map<string, number>();
     purposesFilter.forEach(visit => {
@@ -279,7 +358,7 @@ export default function AdminHomeScreen() {
       const visitorName = visitor ? visitor.name.toLowerCase() : 'unknown visitor';
       visitorsMap.set(visitorName, (visitorsMap.get(visitorName) || 0) + 1);
     });
-
+  
     const topVisitors = Array.from(visitorsMap, ([name, count]) => {
       const visitor = visitorsData.find(v => v.name.toLowerCase() === name);
       return { 
@@ -289,7 +368,7 @@ export default function AdminHomeScreen() {
     })
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-
+  
     // Peak Hours
     const hoursMap = new Map<string, number>();
     purposesFilter.forEach(visit => {
@@ -297,17 +376,16 @@ export default function AdminHomeScreen() {
       const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
       hoursMap.set(hourLabel, (hoursMap.get(hourLabel) || 0) + 1);
     });
-
+  
     const peakHours = Array.from(hoursMap, ([hour, count]) => ({ hour, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-
+  
     return {
       mostCommonPurposes,
       topVisitors,
       peakHours,
       topGates,
-      
     };
   };
 
@@ -349,6 +427,24 @@ export default function AdminHomeScreen() {
       day: 'numeric'
     });
   };
+  // Add near formatDate function
+const formatTime = (timeString: string | undefined): string => {
+  if (!timeString) return 'Not specified';
+  
+  // Try to parse the time string
+  const date = new Date(timeString);
+  if (isNaN(date.getTime())) {
+    // If it's already formatted or not a valid date, return as is
+    return timeString;
+  }
+  
+  // Format with AM/PM in uppercase
+  return date.toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    hour12: true 
+  }).replace(/am|pm/i, m => m.toUpperCase());
+};
 
   // Format month for display
   const formatMonth = (monthString: string): string => {
@@ -570,49 +666,17 @@ export default function AdminHomeScreen() {
         </>
       ) : (
         <View style={styles.trendsContainer}>
+
+        
             
        {/* Most Common Purposes Pie Chart */}
-<View style={styles.sectionContainer}>
+       <View style={styles.sectionContainer}>
   <Text style={styles.sectionTitle}>Most Common Visit Purposes</Text>
   {visitorTrends.mostCommonPurposes.length > 0 ? (
-    <View>
-      <PieChart
-  data={visitorTrends.mostCommonPurposes.map((item, index) => {
-    // Calculate percentage and round it to whole number
-    const totalVisits = visitorTrends.mostCommonPurposes.reduce((sum, i) => sum + i.count, 0);
-    const percentage = totalVisits > 0 ? Math.round((item.count / totalVisits) * 100) : 0;
-    
-    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-    
-
-    console.log('Purpose:', item.purpose);
-    
-    // Modified name formation to avoid duplication
-    return {
-      // Try this simpler format without percentage
-      name: `${item.purpose} (${item.count} visits)`,
-      count: item.count,
-      color: colors[index % colors.length],
-      legendFontColor: '#7F7F7F',
-      legendFontSize: 12,
-      // Try adding percentage as a separate property
-      percentage: percentage
-    };
-  })}
-        width={Dimensions.get('window').width - 70}
-        height={200}
-        chartConfig={{
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#ffffff',
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        }}
-        accessor="count"
-        backgroundColor="transparent"
-        paddingLeft="15"
-        absolute={false}
-      />
-    </View>
+    <SimplePieChart 
+      data={visitorTrends.mostCommonPurposes}
+      title="Visit Purposes Distribution"
+    />
   ) : (
     <Text style={styles.noDataText}>No purpose data available</Text>
   )}
@@ -621,36 +685,13 @@ export default function AdminHomeScreen() {
     
 
           {/* Top Visitors Pie Chart */}
-<View style={styles.sectionContainer}>
+          <View style={styles.sectionContainer}>
   <Text style={styles.sectionTitle}>Top Visitors</Text>
   {visitorTrends.topVisitors.length > 0 ? (
-    <View>
-      <PieChart
-        data={visitorTrends.topVisitors.map((visitor, index) => {
-          const colors = ['#36A2EB', '#4BC0C0', '#FFCE56', '#FF6384', '#9966FF'];
-          
-          return {
-            name: `${visitor.name} (${visitor.count} visits)`,
-            count: visitor.count,
-            color: colors[index % colors.length],
-            legendFontColor: '#7F7F7F',
-            legendFontSize: 12
-          };
-        })}
-        width={Dimensions.get('window').width - 70}
-        height={200}
-        chartConfig={{
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#ffffff',
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        }}
-        accessor="count"
-        backgroundColor="transparent"
-        paddingLeft="15"
-        absolute={false}
-      />
-    </View>
+    <SimplePieChart 
+      data={visitorTrends.topVisitors}
+      title="Top Visitors Distribution"
+    />
   ) : (
     <Text style={styles.noDataText}>No visitor data available</Text>
   )}
@@ -660,62 +701,40 @@ export default function AdminHomeScreen() {
 <View style={styles.sectionContainer}>
   <Text style={styles.sectionTitle}>Top Gates</Text>
   {visitorTrends.topGates.length > 0 ? (
-    <View>
-      <PieChart
-        data={visitorTrends.topGates.map((item, index) => {
-          // Calculate percentage and round it to whole number
-          const totalVisits = visitorTrends.topGates.reduce((sum, i) => sum + i.count, 0);
-          const percentage = totalVisits > 0 ? Math.round((item.count / totalVisits) * 100) : 0;
-          
-          const colors = ['#4BC0C0', '#36A2EB', '#FFCE56', '#FF6384', '#9966FF'];
-          
-          return {
-            name: `${item.gate} (${item.count} visits)`,
-            count: item.count,
-            color: colors[index % colors.length],
-            legendFontColor: '#7F7F7F',
-            legendFontSize: 12,
-            percentage: percentage
-          };
-        })}
-        width={Dimensions.get('window').width - 70}
-        height={200}
-        chartConfig={{
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#ffffff',
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        }}
-        accessor="count"
-        backgroundColor="transparent"
-        paddingLeft="15"
-        absolute={false}
-      />
-    </View>
+    <SimplePieChart 
+      data={visitorTrends.topGates}
+      title="Gate Usage Distribution"
+    />
   ) : (
     <Text style={styles.noDataText}>No gate data available</Text>
   )}
 </View>
 
-   
-
-
-          {/* Peak Hours */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Peak Visiting Hours</Text>
-            {visitorTrends.peakHours.map((hour, index) => (
-              <View key={index} style={styles.trendRow}>
-                <Text style={styles.trendLabel}>{hour.hour}</Text>
-                <Text style={styles.trendValue}>{hour.count} visits</Text>
-              </View>
-            ))}
-            {visitorTrends.peakHours.length === 0 && (
-              <Text style={styles.noDataText}>No hour data available</Text>
-            )}
-          </View>
+{/* Peak Hours Pie Chart */}
+<View style={styles.sectionContainer}>
+  <Text style={styles.sectionTitle}>Peak Visiting Hours</Text>
+  {visitorTrends.peakHours.length > 0 ? (
+    <SimplePieChart 
+      data={visitorTrends.peakHours.map(hour => {
+        // Convert 24-hour format to AM/PM format
+        const hourNum = parseInt(hour.hour.split(':')[0]);
+        const ampm = hourNum >= 12 ? 'PM' : 'AM';
+        const hour12 = hourNum % 12 || 12; // Convert 0 to 12 for 12 AM
+        const formattedHour = `${hour12}:00${ampm}`;
+        
+        return {
+          hour: formattedHour,
+          count: hour.count
+        };
+      })}
+      title="Peak Hours Distribution"
+    />
+  ) : (
+    <Text style={styles.noDataText}>No hour data available</Text>
+  )}
+</View>
         </View>
       )}
-
       
      {/* Visitor Details Modal */}
      <Modal
@@ -758,16 +777,17 @@ export default function AdminHomeScreen() {
                 <View style={styles.historySection}>
                   <Text style={styles.historySectionTitle}>Visit History</Text>
                   
-                  {selectedVisitor.visitHistory.map((visit, index) => (
-                    <View key={index} style={styles.historyItem}>
-                      <Text style={styles.historyDate}>
-                        {formatDate(visit.date)} ({visit.time_in} - {visit.time_out || 'Not specified'})
-                      </Text>
-                      <Text style={styles.historyPurpose}>Purpose: {visit.purpose}</Text>
-                      {visit.gate && <Text style={styles.historyDetail}>Gate: {visit.gate}</Text>}
-                      {visit.host && <Text style={styles.historyDetail}>Host: {visit.host}</Text>}
-                    </View>
-                  ))}
+                  {/* In the Modal where visitor history is rendered */}
+{selectedVisitor.visitHistory.map((visit, index) => (
+  <View key={index} style={styles.historyItem}>
+    <Text style={styles.historyDate}>
+      {formatDate(visit.date)} ({visit.time_in} - {visit.time_out || 'Not specified'})
+    </Text>
+    <Text style={styles.historyPurpose}>Purpose: {visit.purpose}</Text>
+    {visit.gate && <Text style={styles.historyDetail}>Gate: {visit.gate}</Text>}
+    {visit.host && <Text style={styles.historyDetail}>Host: {visit.host}</Text>}
+  </View>
+))}
                   
                   {selectedVisitor.visitHistory.length === 0 && (
                     <Text style={styles.noDataText}>No visit history available</Text>
@@ -787,6 +807,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  simplePieContainer: {
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  simplePieTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#555',
+  },
+  simplePieItem: {
+    marginBottom: 12,
+  },
+  simplePieBar: {
+    height: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 5,
+  },
+  simplePieFill: {
+    height: '100%',
+    borderRadius: 10,
+  },
+  simplePieInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  simplePieColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  simplePieName: {
+    fontSize: 14,
+    color: '#555',
+  },
+
   headerContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -982,16 +1044,19 @@ const styles = StyleSheet.create({
   },
   tableCellAction: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
   detailsButton: {
     backgroundColor: '#3498db',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 4,
+    elevation: 2,
   },
   detailsButtonText: {
     color: 'white',
     fontSize: 12,
+    fontWeight: '500',
   },
   trendsContainer: {
     paddingVertical: 10,
