@@ -163,10 +163,6 @@ const AdminReport: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Use the imported Header component with the right props */}
-        <Header role="Administrator" name="Admin Reports" />
-      
-
       <ScrollView style={styles.reportsContainer}>
         {loading ? (
           <View style={styles.loadingContainer}>

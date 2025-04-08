@@ -77,15 +77,8 @@ const handleAdminCreation = async () => {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#4a89dc" />
-          </TouchableOpacity>
           
           <View style={styles.logoContainer}>
             <Logo size="small" />
@@ -211,12 +204,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 10,
-  },
   logoContainer: {
     alignItems: 'center',
     marginTop: 60,
@@ -276,7 +263,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   signupButton: {
-    backgroundColor: '#4a89dc',
+    backgroundColor: '#003566',
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',

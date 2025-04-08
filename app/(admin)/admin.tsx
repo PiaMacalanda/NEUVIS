@@ -23,15 +23,14 @@ const Admin = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Custom Header for Administrator */}
-      <Header role="Administrator" name="Admin 1" />
+      <Header />
 
       <StatusBar barStyle="light-content" backgroundColor="#252525" />
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
         {/* Admin Welcome Section */}
         <View style={styles.welcomeContainer}>
-          <Ionicons name="shield-checkmark" size={50} color="#252525" />
+          <Ionicons name="shield-checkmark" size={50} color="#003566" />
           <Text style={styles.welcomeTitle}>Hello Admin</Text>
           <Text style={styles.welcomeSubtitle}>Welcome to NEUVIS Administration</Text>
         </View>
@@ -72,14 +71,12 @@ const Admin = () => {
   );
 };
 
-// Define TypeScript interface for TouchableCard props
 interface TouchableCardProps {
    icon: keyof typeof Ionicons.glyphMap;
   title: string;
   onPress: (event: GestureResponderEvent) => void;
 }
 
-// TouchableCard Component with proper TypeScript types
 const TouchableCard: React.FC<TouchableCardProps> = ({ icon, title, onPress }) => {
   return (
     <TouchableOpacity 
@@ -88,14 +85,13 @@ const TouchableCard: React.FC<TouchableCardProps> = ({ icon, title, onPress }) =
       activeOpacity={0.7}
     >
       <View style={styles.iconContainer}>
-        <Ionicons name={icon} size={26} color="#252525" />
+        <Ionicons name={icon} size={26} color="#003566" />
       </View>
       <Text style={styles.cardText}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
-// Enhanced Styles with improved spacing and margins
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -162,7 +158,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   iconContainer: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#ffc300',
     borderRadius: 40,
     width: 48,
     height: 48,

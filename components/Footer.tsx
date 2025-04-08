@@ -11,11 +11,12 @@ export default function Footer() {
 
 const styles = StyleSheet.create({
   footer: {
-    marginTop: 40,
+    marginTop: 30,
     alignItems: 'center',
   },
   footerText: {
-    color: '#8a9aa8',
+    color: '#252525',
     fontSize: 12,
+    opacity: 0.7,
   },
 });

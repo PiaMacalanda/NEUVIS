@@ -1,3 +1,11 @@
+Color Palette:
+#252525 (Text color)
+#ffffff (Background, Text color)
+#ffc300 (Secondary Button)
+#003566 (Primary Button)
+#001d3d (Other)
+#4a89dc (Link Text Color)
+
 NEUVIS
 ├── .eas
 │   └── workflows
@@ -33,7 +41,6 @@ NEUVIS
 ├── lib
 │   ├── supabaseClient.ts
 │   ├── _layout.tsx
-│   ├── callback.tsx
 │   └── index.tsx
 ├── assets
 │   ├── fonts
