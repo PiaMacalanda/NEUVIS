@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../../components/logo';
 
+
 interface Visitor {
   id: number;
   name: string;
@@ -492,7 +493,8 @@ const VisitorsLogs: React.FC = () => {
         
       </View>
     </SafeAreaView>
-  );
+  )
+  ;
 };
 
 const styles = StyleSheet.create({
