@@ -6,8 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import Footer from '@/components/Footer';
+import { visit } from './types/visits';
+import { fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet } from './api/notification-service/visits';
+import { insertVisitExpirationNotificationWithoutTimeout } from './api/notification-service/notification';
 
 export default function NeuvisLanding() {
+  const [expiredUntimedoutVisitswithoutNotificationsSentYet, setExpiredUntimedoutVisitsWithoutNotificationsSentYet] = useState<visit[]>([]);
   const router = useRouter();
   const navigation = useNavigation();
   const { user, session } = useAuth();
@@ -61,6 +65,26 @@ export default function NeuvisLanding() {
       setStats(prev => ({ ...prev, loading: false }));
     }
   };
+
+  useEffect(() => {
+    const sendNotfications = async () => {
+      const data = await fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet(user);
+    
+      if (data && data.length > 0) {
+        for (const visit of data) {
+          const notificationContent = `
+            Visitor ID Expired but is not Timed Out!
+            Visit ID: + ${visit.visit_id}
+          `;
+          
+          await insertVisitExpirationNotificationWithoutTimeout(visit, notificationContent);
+        }
+      }
+    }
+
+    sendNotfications();
+  }, []);
+
   
   return (
     <View style={styles.mainContainer}>
@@ -144,6 +168,21 @@ export default function NeuvisLanding() {
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>Visitor Logs</Text>
               <Text style={styles.cardDescription}>View and manage all visitor records</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.card} 
+            onPress={() => router.push('./apitest')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconContainer, styles.logsIcon]}>
+              <Ionicons name="book-outline" size={32} color="#fff" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Api Test</Text>
+              <Text style={styles.cardDescription}>Testing of api functions</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
           </TouchableOpacity>

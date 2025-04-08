@@ -20,6 +20,7 @@ export default function SecurityLayout() {
       <Stack.Screen name="Scanner"/>
       <Stack.Screen name="ScannerOutput" options={{title: ''}} />
       <Stack.Screen name="VisitorsLogs" options={{ title: 'Visitor Logs' }} />
+      <Stack.Screen name="apitest" options={{ title: 'Api Call Testing' }} />
     </Stack>
   );
 }

@@ -10,15 +10,16 @@ interface ExpoSecureStoreType {
 }
 
 const ExpoSecureStoreAdapter = {
-    getItem: (key: string) => {
-      return SecureStore.getItemAsync(key);
-    },
-    setItem: (key: string, value: string) => {
-      SecureStore.setItemAsync(key, value);
-    },
-    removeItem: (key: string) => {
-      SecureStore.deleteItemAsync(key);
-    },
+  getItem: async (key: string) => {
+    const value = await SecureStore.getItemAsync(key);
+    return value;
+  },
+  setItem: async (key: string, value: string) => {
+    await SecureStore.setItemAsync(key, value);
+  },
+  removeItem: async (key: string) => {
+    await SecureStore.deleteItemAsync(key);
+  },
 };
 
 // Load environment variables
