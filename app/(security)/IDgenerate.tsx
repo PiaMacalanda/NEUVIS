@@ -48,7 +48,7 @@ export default function IDgenerate() {
 
   const handleFinish = () => {
    
-    router.replace('/');
+    router.replace('/neuvisLanding');
   };
 
   if (isLoading) {

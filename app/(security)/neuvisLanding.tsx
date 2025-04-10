@@ -174,15 +174,15 @@ export default function NeuvisLanding() {
 
           <TouchableOpacity 
             style={styles.card} 
-            onPress={() => router.push('./apitest')}
+            onPress={() => router.push('./Notifications')}
             activeOpacity={0.7}
           >
             <View style={[styles.iconContainer, styles.logsIcon]}>
               <Ionicons name="book-outline" size={32} color="#fff" />
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Api Test</Text>
-              <Text style={styles.cardDescription}>Testing of api functions</Text>
+              <Text style={styles.cardTitle}>Notifications</Text>
+              <Text style={styles.cardDescription}>Notifications</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
           </TouchableOpacity>
