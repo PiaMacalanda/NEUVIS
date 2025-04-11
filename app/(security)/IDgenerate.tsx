@@ -141,7 +141,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
-    right: 10
+    right: 10,
+    
   },
   infoContainer: {
     flex: 1,
