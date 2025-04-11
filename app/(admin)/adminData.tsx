@@ -9,7 +9,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabaseClient';
 
 
-// Define types for our data
 type VisitorData = {
   id: number;
   name: string;
