@@ -8,6 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabaseClient';
 
+
 // Define types for our data
 type VisitorData = {
   id: number;
@@ -240,6 +241,8 @@ return {
     setSelectedVisitor(visitor);
     setDetailsModalVisible(true);
   };
+
+  
 
   return (
     <ScrollView style={styles.container}>
