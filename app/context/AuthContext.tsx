@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const role = user.user_metadata.role;
         const authScreens = ['/', '/security-login', '/security-signup', '/admin-login', '/admin-signup'];
         const adminScreens = ['/admin', '/adminData', '/adminHome', '/adminReport', 'accessControl'];
-        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', '/Scanner', '/IDGenerate', '/ManualForm'];
+        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', '/Scanner', '/IDGenerate', '/ManualForm','/Notifications'];
     
         if (authScreens.includes(pathname)) {
             if (role === 'security') {

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabaseClient';
+import Logo from '../../components/logo';
 
 export default function IDgenerate() {
   const params = useLocalSearchParams();
@@ -37,14 +37,6 @@ export default function IDgenerate() {
     );
   };
 
-  const handleDownload = () => {
-    
-    Alert.alert(
-      'Success',
-      'Visitor ID has been saved to your device',
-      [{ text: 'OK' }]
-    );
-  };
 
   const handleFinish = () => {
    
@@ -83,30 +75,10 @@ export default function IDgenerate() {
           
           <View style={styles.cardBody}>
             
-            <View style={styles.qrPlaceholder}>
-              <View style={styles.qrGrid}>
-                {Array(5).fill(0).map((_, rowIndex) => (
-                  <View key={`row-${rowIndex}`} style={styles.qrRow}>
-                    {Array(5).fill(0).map((_, colIndex) => (
-                      <View 
-                        key={`cell-${rowIndex}-${colIndex}`} 
-                        style={[
-                          styles.qrCell,
-                       
-                          ((rowIndex === 0 && colIndex === 0) || 
-                           (rowIndex === 0 && colIndex === 4) ||
-                           (rowIndex === 4 && colIndex === 0) ||
-                           (rowIndex === 2 && colIndex === 2) ||
-                           (rowIndex % 2 === 0 && colIndex % 2 === 0)) ? 
-                            styles.qrCellFilled : {}
-                        ]}
-                      />
-                    ))}
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.scanText}>SCAN ME</Text>
-            </View>
+           
+                             <Logo size="large" style={styles.logoCircle} />
+                             
+                          
             
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>NAME</Text>
@@ -137,10 +109,7 @@ export default function IDgenerate() {
           <Text style={styles.actionButtonText}>Print</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionButton} onPress={handleDownload}>
-          <Ionicons name="download-outline" size={24} color="white" />
-          <Text style={styles.actionButtonText}>Download</Text>
-        </TouchableOpacity>
+        
       </View>
       
       <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
@@ -167,6 +136,30 @@ const ProgressBar = ({ progress }: ProgressBarProps) => (
 );
 
 const styles = StyleSheet.create({
+ 
+  logoCircle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    right: 10
+  },
+  infoContainer: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#252525',
+    marginTop: 8,
+   right: 5
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+    right: 5
+  },
+ 
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -233,7 +226,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardHeader: {
-    backgroundColor: '#000',
+    backgroundColor: '#003566',
     padding: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -247,7 +240,7 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 20,
     color: '#000',
   },
   idNumber: {
@@ -264,59 +257,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   // QR code placeholder styling
-  qrPlaceholder: {
-    width: 120,
-    height: 140,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrGrid: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#fff',
-    padding: 5,
-  },
-  qrRow: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  qrCell: {
-    flex: 1,
-    margin: 1,
-    backgroundColor: '#f0f0f0',
-  },
-  qrCellFilled: {
-    backgroundColor: '#000',
-  },
-  scanText: {
-    fontSize: 10,
-    color: '#252525',
-    marginTop: 8,
-    fontWeight: 'bold',
-  },
-  infoContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#252525',
-    marginTop: 8,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 4,
-  },
+  
+  
+ 
   cardFooter: {
     backgroundColor: '#f5f5f5',
     padding: 15,
@@ -335,7 +278,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   actionButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#003566',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 25,
