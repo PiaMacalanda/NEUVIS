@@ -181,8 +181,8 @@ export default function NeuvisLanding() {
               <Ionicons name="book-outline" size={32} color="#fff" />
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Notifications</Text>
-              <Text style={styles.cardDescription}>Notifications</Text>
+              <Text style={styles.cardTitle}>Expired ID</Text>
+              <Text style={styles.cardDescription}>Expired ID</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#003566" style={styles.cardArrow} />
           </TouchableOpacity>

@@ -17,6 +17,7 @@ interface VisitorDetails {
 }
 
 interface ExtendedVisit extends visit {
+  [x: string]: any;
   visitorDetails?: VisitorDetails;
   formattedExpiration?: string;
   formattedVisitTime?: string;
@@ -53,7 +54,7 @@ const ExpiredVisitors: React.FC = () => {
           return {
             ...visit,
             visitorDetails: visitorData || undefined,
-            formattedExpiration: formatDateTime(visit.expiration),
+            
             formattedVisitTime: formatDateTime(visit.time_of_visit)
           };
         })
@@ -101,23 +102,7 @@ const ExpiredVisitors: React.FC = () => {
     }
   };
 
-  const handleSendNotification = async (visit: ExtendedVisit) => {
-    try {
-      const notificationContent = `
-        Visitor ID Expired but is not Timed Out!
-        Visit ID: ${visit.visit_id}
-        Visitor: ${visit.visitorDetails?.name || 'Unknown'}
-        Expired at: ${visit.formattedExpiration}
-      `;
-      
-      await insertVisitExpirationNotificationWithoutTimeout(visit, notificationContent);
-      alert('Notification sent successfully!');
-      fetchExpiredVisitors();
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      alert('Failed to send notification');
-    }
-  };
+ 
 
   const handleViewVisitor = (visitor: ExtendedVisit) => {
     setSelectedVisitor(visitor);
@@ -209,7 +194,7 @@ const ExpiredVisitors: React.FC = () => {
             
             {selectedVisitor && (
               <View style={styles.visitorDetailsContainer}>
-                <View style={styles.visitorDetailsHeader}>
+                <View style={styles.visitorDetailsName}>
                   <Text style={styles.visitorDetailsName}>
                     {selectedVisitor.visitorDetails?.name || 'Unknown Visitor'}
                   </Text>
@@ -251,10 +236,7 @@ const ExpiredVisitors: React.FC = () => {
                       <Text style={styles.timeInValue}>{selectedVisitor.formattedVisitTime}</Text>
                     </View>
                     
-                    <View style={styles.timeRow}>
-                      <Text style={styles.timeLabel}>Expiration:</Text>
-                      <Text style={styles.timeOutValue}>{selectedVisitor.formattedExpiration}</Text>
-                    </View>
+                    
 
                     <View style={styles.timeRow}>
                       <Text style={styles.timeLabel}>Status:</Text>
@@ -276,17 +258,8 @@ const ExpiredVisitors: React.FC = () => {
                     <Text style={styles.modalButtonText}>Time Out</Text>
                   </TouchableOpacity>
                   
-                  {!selectedVisitor.notification_sent && (
-                    <TouchableOpacity 
-                      style={[styles.modalButton, styles.notifyModalButton]} 
-                      onPress={() => {
-                        handleSendNotification(selectedVisitor);
-                        setShowVisitorModal(false);
-                      }}
-                    >
-                      <Text style={styles.modalButtonText}>Send Notification</Text>
-                    </TouchableOpacity>
-                  )}
+             
+                  
                 </View>
               </View>
             )}
@@ -426,15 +399,10 @@ const styles = StyleSheet.create({
   viewButton: {
     backgroundColor: '#003566',
   },
-  
-
   buttonText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '500',
-  },
-  buttonTextDisabled: {
-    opacity: 0.6,
   },
   modalOverlay: {
     flex: 1,
@@ -457,7 +425,6 @@ const styles = StyleSheet.create({
   visitorDetailsContainer: {
     width: '100%',
   },
-
   visitorDetailsName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -501,19 +468,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#2e7d32',
   },
-  timeOutValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#d32f2f',
-  },
   expiredStatus: {
     fontSize: 14,
     fontWeight: '500',
     color: '#d32f2f',
-  },
-  notificationStatus: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   modalButtonsContainer: {
     flexDirection: 'row',
@@ -539,5 +497,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
 export default ExpiredVisitors;
