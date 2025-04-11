@@ -39,7 +39,7 @@ const ManualForm: React.FC = () => {
     idType: 'Phils ID',
     idNumber: '',
     purposeOfVisit: '',
-    time_of_visit: formatDate(today), // Initialize with current date
+    time_of_visit: formatDate(today),
     expiration: ''
   });
 
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   submitButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#003566',
     borderRadius: 8,
     height: 50,
     justifyContent: 'center',

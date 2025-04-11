@@ -38,7 +38,6 @@ export default function AdminLoginScreen() {
     try {
       const { error } = await signIn(email, password, 'admin');
       if (error) throw error;
-      router.replace('/admin');
     } catch (error) {
       console.error('Login error:', error);
     } finally {

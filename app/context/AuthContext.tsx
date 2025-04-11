@@ -88,6 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     JSON.stringify({
                         access_token: newSession.access_token,
                         refresh_token: newSession.refresh_token,
+                        user_id: newSession.user?.id
                     })
                 );
             } else {
@@ -103,8 +104,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         };
     }, []);
-      
 
+      
     useEffect(() => {
         // Throw user to landing if authenticated and in login/signup pages
         if (!session || !user) return;
@@ -117,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const role = user.user_metadata.role;
         const authScreens = ['/', '/security-login', '/security-signup', '/admin-login', '/admin-signup'];
         const adminScreens = ['/admin', '/adminData', '/adminHome', '/adminReport', 'accessControl'];
-        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', '/Scanner', '/IDGenerate', '/ManualForm'];
+        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', '/Scanner', '/IDGenerate', '/ManualForm','/Notifications'];
     
         if (authScreens.includes(pathname)) {
             if (role === 'security') {
@@ -339,3 +340,4 @@ export const useAuth = (): AuthContextProps => {
     return context;
 };
 
+export default AuthProvider;

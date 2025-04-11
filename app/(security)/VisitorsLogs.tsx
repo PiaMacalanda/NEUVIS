@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../../components/logo';
 
+
 interface Visitor {
   id: number;
   name: string;
@@ -209,7 +210,20 @@ const VisitorsLogs: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Tab Navigation - Moved to the top */}
+      {/* Search moved to top */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Visitor"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <TouchableOpacity style={styles.searchButton}>
+          <Ionicons name="search" size={20} color="#000" />
+        </TouchableOpacity>
+      </View>
+      
+      {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <TouchableOpacity 
           style={[
@@ -238,41 +252,25 @@ const VisitorsLogs: React.FC = () => {
         </TouchableOpacity>
       </View>
       
-      {/* Search and date picker - Only visible in completed tab */}
+      {/* Date picker - Only visible in completed tab */}
       {activeTab === 'completed' && (
-        <>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search Visitor"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            <TouchableOpacity style={styles.searchButton}>
-              <Ionicons name="search" size={20} color="#000" />
-            </TouchableOpacity>
-          </View>
+        <View style={styles.datePickerContainer}>
           
-          <View style={styles.datePickerContainer}>
-            <Text>Date</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => setShowDateModal(true)}
-            >
-              <Text style={styles.dateText}>{formattedDate}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#252525" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.reportButton}>
-              <Text style={styles.reportButtonText}>View Report</Text>
-            </TouchableOpacity>
-          </View>
-        </>
+          <TouchableOpacity
+            style={styles.datePickerButton}
+            onPress={() => setShowDateModal(true)}
+          >
+            <Text style={styles.dateText}>{formattedDate}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#252525" />
+          </TouchableOpacity>
+          
+        </View>
       )}
       
       <View style={styles.tableHeader}>
         <Text style={[styles.headerText, styles.nameColumn]}>Visitor Name</Text>
         <Text style={[styles.headerText, styles.timeColumn]}>Time In/Time Out</Text>
-        <Text style={[styles.headerText, styles.actionColumn]}>Action</Text>
+        <Text style={[styles.headerText, styles.actionColumn]}></Text>
       </View>
       
       {loading ? (
@@ -530,28 +528,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
+    left: 250
   },
   dateText: {
     marginRight: 10,
     fontSize: 14,
     fontWeight: '500',
   },
-  reportButton: {
-    padding: 8,
-  },
-  reportButtonText: {
-    color: '#000000',
-    fontWeight: '500',
-  },
-  // Tab Navigation Styles - Modified to be at the top
+
+  // Tab Navigation Styles
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginVertical: 16,
+    marginBottom: 16,
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#000000',
+    borderColor: '#003566',
   },
   tabButton: {
     flex: 1,
@@ -560,7 +553,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   activeTabButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#003566',
   },
   tabButtonText: {
     fontWeight: '500',
@@ -629,7 +622,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#003566',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 4,

@@ -16,7 +16,6 @@ import { useAuth } from '../context/AuthContext';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import supabase from '../lib/supabaseClient';
 
 export default function SecurityLoginScreen() {
   const [loading, setLoading] = useState(false);
@@ -41,34 +40,15 @@ export default function SecurityLoginScreen() {
     setLoading(true);
     
     try {
-      // First, verify if the account is active
-      const { data, error: accountError } = await supabase
-        .from('security')
-        .select('active')
-        .eq('email', email)
-        .single();
-      
-      if (accountError) {
-        console.error('Account check error:', accountError);
-        // Let the normal authentication flow handle it
-      } else if (data && data.active === false) {
-        // Account exists but is inactive
-        alert('Account is inactive. Please contact administrator.');
-        setLoading(false);
-        return;
-      }
-      
-      // Proceed with normal authentication
       const { error } = await signIn(email, password, 'security');
       if (error) throw error;
-      router.replace('./neuvisLanding');
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
