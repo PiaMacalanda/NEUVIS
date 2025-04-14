@@ -368,11 +368,7 @@ export default function AccessControlScreen() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Security Personnel ({activeCount} active / {security.length} total)</Text>
         <View style={styles.toggleContainer}>
-<<<<<<< HEAD
-          <Text style={styles.toggleLabel}>Show Inactive</Text>
-=======
          
->>>>>>> 61e88744290200fc5b9fb8346c6764f6e131ef69
           <Switch 
             value={showInactive} 
             onValueChange={setShowInactive}
