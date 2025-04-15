@@ -8,11 +8,10 @@ import { useAuth } from '@/app/context/AuthContext';
 import { supabase } from '@/app/lib/supabaseClient';
 import NotificationPanel from './NotificationPanel';
 import NotificationAlert from './NotificationAlert';
-import { fetchUserNotifications } from '../app/(security)/api/notification-service/notification';
 
 // Define the Notification interface
 interface Notification {
-  id: number;
+  id: string;  // Using string type for id
   content: string;
   read: boolean;
   created_at: string;
@@ -72,17 +71,17 @@ const Header: React.FC<HeaderProps> = ({
     fetchUserData();
   }, [user]);
 
-  // Fetch notifications directly from the database
+  // Fetch initial notifications and set up real-time subscription
   useEffect(() => {
-    const fetchNotifications = async () => {
+    const fetchInitialNotifications = async () => {
       if (user && user.id) {
         try {
-          // Direct query to get notifications
           const { data, error } = await supabase
             .from('notifications')
             .select('*')
             .eq('user_id', user.id)
-            .eq('read', false);
+            .eq('read', false)
+            .order('created_at', { ascending: false });
           
           if (error) {
             console.error('Error fetching notifications:', error);
@@ -90,20 +89,11 @@ const Header: React.FC<HeaderProps> = ({
           }
           
           if (data) {
-            // Set the notifications directly from the database
-            setNotifications(data);
+            setNotifications(data as Notification[]);
             
-            // For testing - show the most recent notification as an alert
+            // Show the most recent notification as an alert if it exists
             if (data.length > 0) {
-              // Sort by created_at in descending order
-              const sorted = [...data].sort((a, b) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
-              // Get the most recent notification
-              const mostRecent = sorted[0];
-              if (mostRecent) {
-                showNewNotificationAlert(mostRecent);
-              }
+              showNewNotificationAlert(data[0] as Notification);
             }
           }
         } catch (error) {
@@ -112,31 +102,64 @@ const Header: React.FC<HeaderProps> = ({
       }
     };
     
-    fetchNotifications();
+    fetchInitialNotifications();
     
     // Set up real-time subscription for new notifications
-    const subscription = user?.id ? 
-      supabase
+    const setupNotificationSubscription = () => {
+      if (!user?.id) return null;
+      
+      return supabase
         .channel('notifications_changes')
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
-        }, () => {
-          // Refresh notifications when a new one is added
-          fetchNotifications();
+        }, (payload) => {
+          // Handle new notification directly
+          const newNotification = payload.new as unknown as Notification;
+          console.log("New notification received:", newNotification);
+          
+          // Add to notifications array
+          setNotifications(prev => [newNotification, ...prev]);
+          
+          // Show notification alert - this is critical for the popup!
+          showNewNotificationAlert(newNotification);
         })
         .on('postgres_changes', {
           event: 'UPDATE',
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
-        }, () => {
-          // Refresh notifications when one is updated
-          fetchNotifications();
+        }, (payload) => {
+          // Handle updated notification directly
+          const updatedNotification = payload.new as unknown as Notification;
+          
+          // Update the notification in our local state
+          setNotifications(prev => 
+            prev.map(notification => 
+              notification.id === updatedNotification.id ? updatedNotification : notification
+            ).filter(notification => !notification.read)
+          );
         })
-        .subscribe() : null;
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, (payload) => {
+          // Handle deleted notification
+          const deletedNotification = payload.old as unknown as Notification;
+          
+          // Remove from our local state
+          setNotifications(prev => 
+            prev.filter(notification => notification.id !== deletedNotification.id)
+          );
+        })
+        .subscribe();
+    };
+    
+    const subscription = setupNotificationSubscription();
     
     return () => {
       if (subscription) {
@@ -166,8 +189,8 @@ const Header: React.FC<HeaderProps> = ({
 
   // For testing - show a test notification alert
   const testNotificationAlert = () => {
-    const testNotification = {
-      id: 9999,
+    const testNotification: Notification = {
+      id: "test-" + Date.now().toString(),  // Generate unique string ID
       content: "This is a test notification to verify the alert is working correctly.",
       read: false,
       created_at: new Date().toISOString(),
@@ -175,6 +198,8 @@ const Header: React.FC<HeaderProps> = ({
     };
     
     console.log("Triggering test notification alert");
+    // Add to notifications array so it appears in the list too
+    setNotifications(prev => [testNotification, ...prev]);
     showNewNotificationAlert(testNotification);
   };
 
@@ -185,8 +210,7 @@ const Header: React.FC<HeaderProps> = ({
     setLatestNotification(null);
   };
 
-  // Get unread count - directly from the notifications array length
-  const unreadCount = notifications.length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleViewProfile = () => {
     setProfileModalVisible(false);
@@ -206,14 +230,11 @@ const Header: React.FC<HeaderProps> = ({
         </View>
       </View>
 
-      {/* Right Side: Notifications & Profile */}
       <View style={styles.right}>
-        {/* Notification Button */}
         <TouchableOpacity 
           style={styles.notificationButton}
           onPress={handleNotificationPress}
-          // For testing - long press to trigger a test notification
-          onLongPress={testNotificationAlert}
+          onLongPress={testNotificationAlert} // Long press to test notification
         >
           <Ionicons name="notifications" size={20} color="#252525" />
           {unreadCount > 0 && (
@@ -225,7 +246,6 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </TouchableOpacity>
 
-        {/* Profile Button */}
         <TouchableOpacity 
           style={styles.profileButton}
           onPress={() => setProfileModalVisible(true)}
@@ -298,14 +318,18 @@ const Header: React.FC<HeaderProps> = ({
         visible={notificationModalVisible}
         onClose={() => setNotificationModalVisible(false)}
         user={user}
+        notifications={notifications}
+        setNotifications={setNotifications}
       />
 
-      {/* Notification Alert - improved positioning and visibility */}
-      <NotificationAlert
-        notification={latestNotification}
-        visible={showNotificationAlert}
-        onHide={handleHideNotificationAlert}
-      />
+      {/* Notification Alert - Make sure it's the last component to ensure proper z-index layering */}
+      {showNotificationAlert && latestNotification && (
+        <NotificationAlert
+          notification={latestNotification}
+          visible={showNotificationAlert}
+          onHide={handleHideNotificationAlert}
+        />
+      )}
     </View>
   );
 };

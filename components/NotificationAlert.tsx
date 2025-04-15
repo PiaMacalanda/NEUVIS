@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Define the Notification interface
 interface Notification {
-  id: number;
+  id: string;
   content: string;
   read: boolean;
   created_at: string;
@@ -16,14 +16,18 @@ interface NotificationAlertProps {
   notification: Notification | null;
   visible: boolean;
   onHide: () => void;
+  offsetIndex?: number; // For stacking multiple alerts
 }
 
 const NotificationAlert: React.FC<NotificationAlertProps> = ({ 
   notification, 
   visible, 
-  onHide 
+  onHide,
+  offsetIndex = 0
 }) => {
-  const [slideAnim] = useState(new Animated.Value(-100));
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [isRendered, setIsRendered] = useState(false);
   
   // Format date for better readability
   const formatNotificationDate = (dateString: string) => {
@@ -42,66 +46,98 @@ const NotificationAlert: React.FC<NotificationAlertProps> = ({
     return date.toLocaleDateString();
   };
 
-  // Animate in and out when visibility changes
+  // Handle visibility changes
   useEffect(() => {
-    if (visible) {
-      // Slide in from top
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
+    if (notification && visible) {
+      // Ensure we render the component first
+      setIsRendered(true);
       
-      // Auto-hide after 5 seconds
+      // Reset position before animating in
+      slideAnim.setValue(-100);
+      fadeAnim.setValue(0);
+      
+      // Animate in
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start();
+      
+      // Auto-hide after 10 seconds
       const timer = setTimeout(() => {
         hideNotification();
-      }, 5000);
+      }, 10000);
       
       return () => clearTimeout(timer);
-    } else {
+    } else if (!visible) {
+      // If becoming invisible, trigger hide animation
       hideNotification();
     }
-  }, [visible]);
+  }, [notification, visible]);
 
   // Hide notification with animation
   const hideNotification = () => {
-    Animated.timing(slideAnim, {
-      toValue: -100,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setIsRendered(false);
       if (onHide) onHide();
     });
   };
 
-  if (!notification || !visible) return null;
+  if (!isRendered) return null;
+
+  // Calculate offset for stacking notifications
+  const topPosition = offsetIndex * 60;
 
   return (
     <Animated.View 
       style={[
         styles.container, 
-        { transform: [{ translateY: slideAnim }] }
+        { 
+          transform: [{ translateY: slideAnim }],
+          opacity: fadeAnim,
+          top: 80 + topPosition, 
+          zIndex: 9999 - offsetIndex 
+        }
       ]}
     >
       <View style={styles.iconContainer}>
         <View style={styles.notificationIcon}>
-          <Ionicons name="alert-circle" size={18} color="#fff" />
+          <Ionicons name="notifications" size={18} color="#fff" />
         </View>
       </View>
       
       <View style={styles.contentContainer}>
         <Text style={styles.notificationText} numberOfLines={2}>
-          {notification.content}
+          {notification?.content || ''}
         </Text>
         <Text style={styles.timeText}>
-          {formatNotificationDate(notification.created_at)}
+          {notification ? formatNotificationDate(notification.created_at) : ''}
         </Text>
       </View>
       
       <TouchableOpacity 
         style={styles.closeButton}
         onPress={hideNotification}
+        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >
         <Ionicons name="close" size={16} color="#777" />
       </TouchableOpacity>
@@ -112,23 +148,22 @@ const NotificationAlert: React.FC<NotificationAlertProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 80, // Positioned below header
     left: 20,
     right: 20,
     backgroundColor: '#fff',
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
     flexDirection: 'row',
-    padding: 12,
-    zIndex: 9999,
+    padding: 16,
     maxWidth: 500,
     alignSelf: 'center',
     borderLeftWidth: 4,
     borderLeftColor: '#003566',
+    marginBottom: 8,
   },
   iconContainer: {
     marginRight: 12,
@@ -149,16 +184,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#252525',
     fontWeight: '500',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   timeText: {
     fontSize: 12,
     color: '#777',
-    marginTop: 2,
+    marginTop: 4,
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
     alignSelf: 'flex-start',
+    marginTop: -4,
+    marginRight: -4,
   },
 });
 
