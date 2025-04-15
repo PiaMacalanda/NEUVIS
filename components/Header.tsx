@@ -1,31 +1,184 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
 import Logo from './logo';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
+import { supabase } from '@/app/lib/supabaseClient';
+import NotificationPanel from '../components/NotificationPanel';
+import NotificationAlert from '../components/NotificationAlert';
+import { fetchUserNotifications } from '../app/(security)/api/notification-service/notification';
 
+// Define the Notification interface
+interface Notification {
+  id: number;
+  content: string;
+  read: boolean;
+  created_at: string;
+  user_id: string;
+  visit_id?: string;
+}
 
 interface HeaderProps {
-  role?: string;
-  name?: string;
   onProfilePress?: () => void;
   onNotificationPress?: () => void;
-  notifications?: number;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  role = "Security Guard 1",
-  name = "Main Gate",
   onProfilePress,
   onNotificationPress,
-  notifications = 0
 }) => {
-  const { signOut } = useAuth();
-
+  const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotificationAlert, setShowNotificationAlert] = useState(false);
+  const [latestNotification, setLatestNotification] = useState<Notification | null>(null);
+  const [userData, setUserData] = useState({
+    full_name: "Loading...",
+    role: "Loading..."
+  });
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (user && user.id) {
+          const { data, error } = await supabase
+            .from('users')
+            .select('full_name, role')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching user data:', error);
+            return;
+          }
+          
+          if (data) {
+            setUserData({
+              full_name: data.full_name || "User",
+              role: data.role || "No Role Assigned"
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
+  // Fetch notifications and setup realtime subscription
+  useEffect(() => {
+    let subscription: any;
+    
+    const setupNotifications = async () => {
+      if (user) {
+        try {
+          // Fetch initial notifications
+          const data = await fetchUserNotifications(user);
+          if (data) {
+            setNotifications(data);
+            
+            // For testing - show the most recent notification as an alert
+            if (data.length > 0) {
+              // Sort by created_at in descending order
+              const sorted = [...data].sort((a, b) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              // Find the most recent unread notification
+              const mostRecentUnread = sorted.find(n => !n.read);
+              if (mostRecentUnread) {
+                showNewNotificationAlert(mostRecentUnread);
+              }
+            }
+          }
+          
+          // Set up real-time subscription for notifications
+          subscription = supabase
+            .channel('notifications_changes')
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`,
+            }, payload => {
+              console.log("New notification received:", payload.new);
+              // When a new notification is received
+              const newNotification = payload.new as Notification;
+              
+              // Always show alert for new notifications
+              showNewNotificationAlert(newNotification);
+              
+              // Update notifications list
+              fetchUserNotifications(user).then(data => {
+                if (data) {
+                  setNotifications(data);
+                }
+              });
+            })
+            .subscribe();
+        } catch (error) {
+          console.error('Error setting up notifications:', error);
+        }
+      }
+    };
+    
+    setupNotifications();
+    
+    return () => {
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
+  }, [user]);
+
+  // Function to show notification alert for new notifications
+  const showNewNotificationAlert = (notification: Notification) => {
+    console.log("Showing notification alert for:", notification.content);
+    
+    // Only show alert for unread notifications
+    if (!notification.read) {
+      setLatestNotification(notification);
+      setShowNotificationAlert(true);
+    }
+  };
+
+  // Handle notification icon press
+  const handleNotificationPress = () => {
+    setNotificationModalVisible(prev => !prev); // Toggle notification panel
+    if (onNotificationPress) {
+      onNotificationPress();
+    }
+  };
+
+  // For testing - show a test notification alert
+  const testNotificationAlert = () => {
+    const testNotification = {
+      id: 9999,
+      content: "This is a test notification to verify the alert is working correctly.",
+      read: false,
+      created_at: new Date().toISOString(),
+      user_id: user?.id || "test-user"
+    };
+    
+    console.log("Triggering test notification alert");
+    showNewNotificationAlert(testNotification);
+  };
+
+  // Handle when notification alert is closed
+  const handleHideNotificationAlert = () => {
+    console.log("Hiding notification alert");
+    setShowNotificationAlert(false);
+    setLatestNotification(null);
+  };
+
+  // Count unread notifications
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleViewProfile = () => {
     setProfileModalVisible(false);
@@ -34,7 +187,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top +10 : 20 }]}>
+    <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top + 10 : 20 }]}>
       {/* Left Side: Logo & Title */}
       <View style={styles.left}>
         <Logo size="smallest" />
@@ -42,27 +195,28 @@ const Header: React.FC<HeaderProps> = ({
           <Text style={styles.title}>
             <Text style={styles.bold}>NEUVIS</Text>
           </Text>
-          {/* <Text style={styles.subtitle}>Visitor Identification System</Text> // Eih tinanggal na */}
         </View>
       </View>
 
       {/* Right Side: Notifications & Profile */}
       <View style={styles.right}>
-        {/* Notification Icon */}
-        {/* <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={onNotificationPress}
+        {/* Notification Button */}
+        <TouchableOpacity 
+          style={styles.notificationButton}
+          onPress={handleNotificationPress}
+          // For testing - long press to trigger a test notification
+          onLongPress={testNotificationAlert}
         >
-          <Ionicons name="notifications-outline" size={22} color="#333" />
-          {notifications > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {notifications > 9 ? '9+' : notifications}
+          <Ionicons name="notifications" size={20} color="#252525" />
+          {unreadCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationCount}>
+                {unreadCount > 99 ? '99+' : unreadCount}
               </Text>
             </View>
           )}
-        </TouchableOpacity> */}
-        
+        </TouchableOpacity>
+
         {/* Profile Button */}
         <TouchableOpacity 
           style={styles.profileButton}
@@ -72,8 +226,8 @@ const Header: React.FC<HeaderProps> = ({
             <Ionicons name="person" size={16} color="#fff" />
           </View>
           <View style={styles.guardInfo}>
-            <Text style={styles.guardTitle} numberOfLines={1}>{role}</Text>
-            <Text style={styles.guardSubtitle} numberOfLines={1}>{name}</Text>
+            <Text style={styles.guardTitle} numberOfLines={1}>{userData.role}</Text>
+            <Text style={styles.guardSubtitle} numberOfLines={1}>{userData.full_name}</Text>
           </View>
           <Ionicons name="chevron-down" size={16} color="#252525" />
         </TouchableOpacity>
@@ -95,8 +249,8 @@ const Header: React.FC<HeaderProps> = ({
               <View style={styles.modalAvatar}>
                 <Ionicons name="person" size={32} color="#fff" />
               </View>
-              <Text style={styles.modalName}>{name}</Text>
-              <Text style={styles.modalRole}>{role}</Text>
+              <Text style={styles.modalName}>{userData.full_name}</Text>
+              <Text style={styles.modalRole}>{userData.role}</Text>
             </View>
             
             <View style={styles.modalContent}>
@@ -130,6 +284,20 @@ const Header: React.FC<HeaderProps> = ({
           </View>
         </Pressable>
       </Modal>
+
+      {/* Notification Panel */}
+      <NotificationPanel
+        visible={notificationModalVisible}
+        onClose={() => setNotificationModalVisible(false)}
+        user={user}
+      />
+
+      {/* Notification Alert - improved positioning and visibility */}
+      <NotificationAlert
+        notification={latestNotification}
+        visible={showNotificationAlert}
+        onHide={handleHideNotificationAlert}
+      />
     </View>
   );
 };
@@ -144,6 +312,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
     backgroundColor: '#fff',
+    zIndex: 10,
   },
   left: {
     flexDirection: 'row',
@@ -167,25 +336,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconButton: {
-    padding: 8,
-    marginRight: 8,
+  notificationButton: {
     position: 'relative',
+    marginRight: 12,
+    padding: 8,
+    zIndex: 11, // Ensure it's above other elements
   },
-  badge: {
+  notificationBadge: {
     position: 'absolute',
-    top: 3,
-    right: 3,
-    backgroundColor: '#e74c3c',
+    top: 0,
+    right: 0,
+    backgroundColor: '#ff3b30',
     borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    minWidth: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
   },
-  badgeText: {
-    color: 'white',
+  notificationCount: {
+    color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -201,7 +371,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#4a89dc',
+    backgroundColor: '#003566',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -238,7 +408,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalHeader: {
-    backgroundColor: '#4a89dc',
+    backgroundColor: '#003566',
     padding: 20,
     alignItems: 'center',
   },
