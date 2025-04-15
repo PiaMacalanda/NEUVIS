@@ -72,16 +72,25 @@ const Header: React.FC<HeaderProps> = ({
     fetchUserData();
   }, [user]);
 
-  // Fetch notifications and setup realtime subscription
+  // Fetch notifications directly from the database
   useEffect(() => {
-    let subscription: any;
-    
-    const setupNotifications = async () => {
-      if (user) {
+    const fetchNotifications = async () => {
+      if (user && user.id) {
         try {
-          // Fetch initial notifications
-          const data = await fetchUserNotifications(user);
+          // Direct query to get notifications
+          const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('read', false);
+          
+          if (error) {
+            console.error('Error fetching notifications:', error);
+            return;
+          }
+          
           if (data) {
+            // Set the notifications directly from the database
             setNotifications(data);
             
             // For testing - show the most recent notification as an alert
@@ -90,45 +99,44 @@ const Header: React.FC<HeaderProps> = ({
               const sorted = [...data].sort((a, b) => 
                 new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
               );
-              // Find the most recent unread notification
-              const mostRecentUnread = sorted.find(n => !n.read);
-              if (mostRecentUnread) {
-                showNewNotificationAlert(mostRecentUnread);
+              // Get the most recent notification
+              const mostRecent = sorted[0];
+              if (mostRecent) {
+                showNewNotificationAlert(mostRecent);
               }
             }
           }
-          
-          // Set up real-time subscription for notifications
-          subscription = supabase
-            .channel('notifications_changes')
-            .on('postgres_changes', {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'notifications',
-              filter: `user_id=eq.${user.id}`,
-            }, payload => {
-              console.log("New notification received:", payload.new);
-              // When a new notification is received
-              const newNotification = payload.new as Notification;
-              
-              // Always show alert for new notifications
-              showNewNotificationAlert(newNotification);
-              
-              // Update notifications list
-              fetchUserNotifications(user).then(data => {
-                if (data) {
-                  setNotifications(data);
-                }
-              });
-            })
-            .subscribe();
         } catch (error) {
-          console.error('Error setting up notifications:', error);
+          console.error('Failed to fetch notifications:', error);
         }
       }
     };
     
-    setupNotifications();
+    fetchNotifications();
+    
+    // Set up real-time subscription for new notifications
+    const subscription = user?.id ? 
+      supabase
+        .channel('notifications_changes')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, () => {
+          // Refresh notifications when a new one is added
+          fetchNotifications();
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, () => {
+          // Refresh notifications when one is updated
+          fetchNotifications();
+        })
+        .subscribe() : null;
     
     return () => {
       if (subscription) {
@@ -177,8 +185,8 @@ const Header: React.FC<HeaderProps> = ({
     setLatestNotification(null);
   };
 
-  // Count unread notifications
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Get unread count - directly from the notifications array length
+  const unreadCount = notifications.length;
 
   const handleViewProfile = () => {
     setProfileModalVisible(false);
@@ -340,12 +348,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginRight: 12,
     padding: 8,
-    zIndex: 11, // Ensure it's above other elements
+    zIndex: 11, 
   },
   notificationBadge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: -2,
+    right: -2,
     backgroundColor: '#ff3b30',
     borderRadius: 10,
     minWidth: 20,
@@ -353,12 +361,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#fff', // Add white border for better contrast
   },
   notificationCount: {
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
+    textAlign: 'center', // Ensure text is centered
   },
+  
   profileButton: {
     flexDirection: 'row',
     alignItems: 'center',
