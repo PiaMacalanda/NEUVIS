@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import { supabase } from '@/app/lib/supabaseClient';
-import NotificationPanel from '../components/NotificationPanel';
-import NotificationAlert from '../components/NotificationAlert';
+import NotificationPanel from './NotificationPanel';
+import NotificationAlert from './NotificationAlert';
 import { fetchUserNotifications } from '../app/(security)/api/notification-service/notification';
 
 // Define the Notification interface
