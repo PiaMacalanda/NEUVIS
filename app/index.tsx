@@ -74,7 +74,7 @@ export default function HomeScreen() {
           <View style={styles.buttonGroup}>
             <TouchableOpacity 
               style={[styles.routeButton, styles.darkButton]}
-              onPress={() => router.push('/superadmin')}
+              onPress={() => router.push('/superadmin-login')}
             >
               <Ionicons name="person-outline" size={24} color="#fff" style={styles.buttonIcon} />
               <Text style={styles.routeButtonText}>Superadmin Portal</Text>

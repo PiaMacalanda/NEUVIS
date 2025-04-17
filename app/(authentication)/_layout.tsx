@@ -20,6 +20,8 @@ export default function AuthenticationLayout() {
       <Stack.Screen name="security-login" options={{ headerShown: true, title: ' ' }}/>
       <Stack.Screen name="security-signup" options={{ headerShown: true, title: ' ' }}/>
       <Stack.Screen name="superadmin-login" options={{ headerShown: true, title: ' ' }}/>
+      <Stack.Screen name="forgot-password" options={{ headerShown: true, title: 'Forgot Password' }}/>
+      <Stack.Screen name="reset-password" options={{ headerShown: true, title: 'Reset Password' }}/>
       <Stack.Screen name="verify" />
     </Stack>
   );
