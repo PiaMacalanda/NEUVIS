@@ -1,5 +1,5 @@
 {
-  "extends": "expo/tsconfig.base",
+  // "extends": "expo/tsconfig.base", // Removed or commented out as the file was not found
   "compilerOptions": {
     "jsx": "react",
     "strict": true,
@@ -7,13 +7,15 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "esModuleInterop": true // Merged from the second object
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
-, "app/(static)/privacyStyles.tsx"  ]
+    "nativewind-env.d.ts",
+    "app/(static)/privacyStyles.tsx"
+  ]
 }
