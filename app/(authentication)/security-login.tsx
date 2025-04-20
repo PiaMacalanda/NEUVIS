@@ -7,7 +7,6 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
-  Image,
   ScrollView
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -16,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { Logo } from '../../components';
 import Footer from '../../components/Footer';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import supabase from '../lib/supabaseClient';
 
 export default function SecurityLoginScreen() {
   const [loading, setLoading] = useState(false);
@@ -40,10 +40,50 @@ export default function SecurityLoginScreen() {
     setLoading(true);
     
     try {
+      // First, check if the security personnel exists and is confirmed
+      const { data, error: securityError } = await supabase
+        .from('security')
+        .select('confirmed, active')
+        .eq('email', email);
+      
+      if (securityError) {
+        console.error('Error checking security status:', securityError);
+        alert('Error checking account status. Please try again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Check if any security record was found
+      if (!data || data.length === 0) {
+        alert('Account not found. Please verify your email address.');
+        setLoading(false);
+        return;
+      }
+      
+      const securityData = data[0]; // Get the first (and should be only) record
+      
+      // Check if the account is confirmed and active
+      if (!securityData.confirmed) {
+        alert('Your account is pending admin confirmation. Please contact your administrator.');
+        setLoading(false);
+        return;
+      }
+      
+      if (!securityData.active) {
+        alert('Your account has been deactivated. Please contact your administrator.');
+        setLoading(false);
+        return;
+      }
+      
+      // If account is confirmed and active, proceed with sign in
       const { error } = await signIn(email, password, 'security');
-      if (error) throw error;
+      if (error) {
+        console.error('Login error:', error);
+        alert('Invalid email or password. Please try again.');
+      }
     } catch (error) {
       console.error('Login error:', error);
+      alert('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
