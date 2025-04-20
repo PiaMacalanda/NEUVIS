@@ -31,14 +31,11 @@ type Security = {
   roles: roleType;
   assign_gate: gateType | null;
   active: boolean;
+  confirmed: boolean; // New field to track confirmed status
 };
 
 export default function AccessControlScreen() {
   const [security, setSecurity] = useState<Security[]>([]);
-  const [full_name, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [selectedRole, setSelectedRole] = useState<roleType>('SC001');
-  const [selectedGate, setSelectedGate] = useState<gateType>('Main Gate');
   const [formError, setFormError] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editUser, setEditUser] = useState<Security | null>(null);
@@ -54,21 +51,25 @@ export default function AccessControlScreen() {
   const fetchSecurityPersonnel = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.from('users').select('*');
+      // Modified: Remove role filter to see if that's causing the issue
+      const { data, error } = await supabase
+        .from('security')
+        .select('*');
       
       if (error) {
         console.error('Error fetching security personnel:', error);
-        Alert.alert('Error', 'Failed to load security personnel. Please try again.');
+        // Enhanced error message with specific error details
+        Alert.alert('Error', `Failed to load security personnel: ${error.message}`);
         return;
       }
       
-     
       const validData = data?.map(item => ({
         ...item,
         // Set default values for any missing fields
         active: item.active !== undefined ? item.active : false,
         assign_gate: item.assign_gate || 'Main Gate',
         roles: item.roles || 'SC001',
+        confirmed: item.confirmed !== undefined ? item.confirmed : false,
       })) || [];
       
       setSecurity(validData);
@@ -109,7 +110,7 @@ export default function AccessControlScreen() {
         Alert.alert('Error', `Failed to update status: ${error.message}`);
         return;
       }
-
+  
       // Update local state if Supabase update was successful
       setSecurity(prev =>
         prev.map(user =>
@@ -118,6 +119,41 @@ export default function AccessControlScreen() {
       );
     } catch (err) {
       console.error('Exception toggling active status:', err);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    }
+  };
+
+  // Function to confirm user access
+  const handleConfirmAccess = async (id: string) => {
+    try {
+      // Update in Supabase - set both confirmed AND active to true
+      const { error } = await supabase
+        .from('security')
+        .update({ 
+          confirmed: true,
+          active: true // Automatically set active to true when confirming
+        })
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error confirming user access:', error);
+        Alert.alert('Error', `Failed to confirm access: ${error.message}`);
+        return;
+      }
+  
+      // Update local state - set both confirmed and active to true
+      setSecurity(prev =>
+        prev.map(user =>
+          user.id === id ? { ...user, confirmed: true, active: true } : user
+        )
+      );
+      
+      Alert.alert('Success', 'User access confirmed and activated successfully!');
+      
+      // Refresh data after confirmation
+      fetchSecurityPersonnel();
+    } catch (err) {
+      console.error('Exception confirming user access:', err);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     }
   };
@@ -132,7 +168,7 @@ export default function AccessControlScreen() {
       try {
         setIsEditLoading(true);
         setFormError(null);
-
+  
         // Validate form inputs
         const error = validateForm(editUser.full_name, editUser.email);
         if (error) {
@@ -140,7 +176,7 @@ export default function AccessControlScreen() {
           setIsEditLoading(false);
           return;
         }
-
+  
         // Update in Supabase
         const { error: supabaseError } = await supabase
           .from('security')
@@ -149,8 +185,8 @@ export default function AccessControlScreen() {
             email: editUser.email,
             roles: editUser.roles,
             assign_gate: editUser.assign_gate,
-           
-            active: editUser.active
+            active: editUser.active,
+            confirmed: editUser.confirmed
           })
           .eq('id', editUser.id);
         
@@ -165,7 +201,7 @@ export default function AccessControlScreen() {
           setIsEditLoading(false);
           return;
         }
-
+  
         setSecurity(prev => prev.map(user => 
           user.id === editUser.id ? editUser : user
         ));
@@ -181,111 +217,6 @@ export default function AccessControlScreen() {
       }
     }
   };
-
-  const handleSubmit = async () => {
-    try {
-      setIsLoading(true);
-      setFormError(null);
-      
-      const error = validateForm(full_name, email);
-      if (error) {
-        setFormError(error);
-        setIsLoading(false);
-        return;
-      }
-      
-
-      const newUser = {
-        full_name,
-        email,
-        roles: selectedRole,
-        assign_gate: selectedGate,
-        active: false 
-      };
-      
-      // Insert into Supabase
-      const { data, error: supabaseError } = await supabase
-        .from('security')
-        .insert([newUser])
-        .select();
-      
-      if (supabaseError) {
-        console.error('Error adding security personnel:', supabaseError);
-        
-       
-        if (supabaseError.code === '23505') {
-          setFormError('A user with this email already exists.');
-        } else if (supabaseError.message.includes('active')) {
-          // Handle the specific 'active' column error
-          setFormError('Failed to add personnel: Could not find the "active" column. Make sure your database schema is updated.');
-        } else {
-          setFormError('Failed to add personnel: ' + supabaseError.message);
-        }
-        setIsLoading(false);
-        return;
-      }
-      
-      if (!data || data.length === 0) {
-        setFormError('Failed to add personnel: No data returned from server.');
-        setIsLoading(false);
-        return;
-      }
-      
-   
-      setSecurity(prevSecurity => [...prevSecurity, { ...newUser, id: data[0].id }]);
-      
-      
-      setFullName('');
-      setEmail('');
-      setSelectedRole('SC001');
-      setSelectedGate('Main Gate');
-      
-    
-      Alert.alert('Success', 'Security personnel added successfully!');
-    } catch (err) {
-      console.error('Exception adding security personnel:', err);
-      setFormError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // const handleDeleteUser = async (id: string) => {
-  //   try {
-   
-  //     Alert.alert(
-  //       'Confirm Deletion',
-  //       'Are you sure you want to delete this security personnel?',
-  //       [
-  //         { text: 'Cancel', style: 'cancel' },
-  //         {
-  //           text: 'Delete',
-  //           style: 'destructive',
-  //           onPress: async () => {
-  //             const { error } = await supabase
-  //               .from('security')
-  //               .delete()
-  //               .eq('id', id);
-              
-  //             if (error) {
-  //               console.error('Error deleting user:', error);
-  //               Alert.alert('Error', 'Failed to delete user. Please try again.');
-  //               return;
-  //             }
-              
-  //             // Update local state
-  //             setSecurity(prev => prev.filter(user => user.id !== id));
-  //             Alert.alert('Success', 'Security personnel deleted successfully!');
-  //           }
-  //         }
-  //       ]
-  //     );
-  //   } catch (err) {
-  //     console.error('Exception deleting user:', err);
-  //     Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-  //   }
-  // };
-
 
   const CustomDropdown = ({ 
     selectedValue, 
@@ -317,58 +248,83 @@ export default function AccessControlScreen() {
     );
   };
 
-  // Filter security personnel based on their active status
-  const filteredSecurity = security.filter(entry => showInactive || entry.active);
-  const activeCount = security.filter(entry => entry.active).length;
+  // Filter out unconfirmed accounts for the recently created accounts section
+  const unconfirmedUsers = security.filter(entry => !entry.confirmed);
+  
+  // Filter security personnel based on their active status for the active/inactive section
+  const confirmedUsers = security.filter(entry => entry.confirmed);
+  const filteredConfirmedUsers = confirmedUsers.filter(entry => showInactive || entry.active);
+  const activeCount = confirmedUsers.filter(entry => entry.active).length;
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.form}>
-        <Text style={styles.sectionTitle}>Add Security Personnel</Text>
-        <TextInput 
-          style={styles.input} 
-          value={full_name} 
-          onChangeText={setFullName} 
-          placeholder="Enter full name" 
-        />
-        <TextInput 
-          style={styles.input} 
-          value={email} 
-          onChangeText={setEmail} 
-          placeholder="Enter email" 
-          keyboardType="email-address"
-          autoCapitalize="none" 
-        />
-        <CustomDropdown
-          label="Assign Role:"
-          selectedValue={selectedRole}
-          onValueChange={(value) => setSelectedRole(value as roleType)}
-          items={roles}
-        />
-        <CustomDropdown
-          label="Assign Gate:"
-          selectedValue={selectedGate}
-          onValueChange={(value) => setSelectedGate(value as gateType)}
-          items={gates}
-        />
+      {/* Debug Info - Add this to help debug */}
+      <View style={styles.debugSection}>
+        <Text style={styles.debugTitle}>Debug Info:</Text>
+        <Text style={styles.debugText}>Total Records: {security.length}</Text>
+        <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
+        <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
         <TouchableOpacity 
-          style={styles.addButton} 
-          onPress={handleSubmit}
-          disabled={isLoading}
+          style={styles.debugButton}
+          onPress={fetchSecurityPersonnel}
         >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.addButtonText}>Add Personnel</Text>
-          )}
+          <Text style={styles.debugButtonText}>Retry Fetch</Text>
         </TouchableOpacity>
-        {formError && <Text style={styles.error}>{formError}</Text>}
       </View>
 
+      {/* New Section: Recently Created Accounts */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Security Personnel ({activeCount} active / {security.length} total)</Text>
+        <Text style={styles.sectionTitle}>Recently Created Accounts ({unconfirmedUsers.length})</Text>
+      </View>
+      
+      {isLoading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color="#00a824" />
+          <Text style={styles.emptyText}>Loading account data...</Text>
+        </View>
+      ) : unconfirmedUsers.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No pending account confirmation requests.</Text>
+        </View>
+      ) : (
+        unconfirmedUsers.map((entry) => (
+          <View 
+            key={entry.id} 
+            style={[styles.userPane, styles.pendingUserPane]}
+          >
+            <View style={styles.userDetails}>
+              <Text style={styles.userName}>{entry.full_name}</Text>
+              <Text style={styles.userEmail}>{entry.email}</Text>
+              <Text style={styles.userRole}>Role: {entry.roles}</Text>
+              <Text style={styles.userGate}>Gate: {entry.assign_gate}</Text>
+              
+              {/* Pending badge */}
+              <View style={styles.pendingBadge}>
+                <Text style={styles.statusBadgeText}>Pending Confirmation</Text>
+              </View>
+            </View>
+            <View style={styles.userActions}>
+              <TouchableOpacity 
+                onPress={() => handleConfirmAccess(entry.id)} 
+                style={styles.confirmButton}
+              >
+                <Text style={styles.statusText}>Confirm Access</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.editButton} 
+                onPress={() => handleEditUser(entry)}
+              >
+                <Ionicons name="create-outline" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      )}
+
+      {/* Active and Inactive Users Section (Only for confirmed users) */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Active and Inactive Users ({activeCount} active / {confirmedUsers.length} total)</Text>
         <View style={styles.toggleContainer}>
-         
           <Switch 
             value={showInactive} 
             onValueChange={setShowInactive}
@@ -383,16 +339,16 @@ export default function AccessControlScreen() {
           <ActivityIndicator size="large" color="#00a824" />
           <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ) : filteredSecurity.length === 0 ? (
+      ) : filteredConfirmedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {security.length === 0 ? 
-              "No security personnel found. Add new personnel using the form above." : 
+            {confirmedUsers.length === 0 ? 
+              "No confirmed users found." : 
               "No active personnel found. Toggle 'Show Inactive' to view inactive personnel."}
           </Text>
         </View>
       ) : (
-        filteredSecurity.map((entry) => (
+        filteredConfirmedUsers.map((entry) => (
           <View 
             key={entry.id} 
             style={[
@@ -462,12 +418,6 @@ export default function AccessControlScreen() {
               >
                 <Ionicons name="create-outline" size={20} color="white" />
               </TouchableOpacity>
-              <TouchableOpacity 
-           
-                onPress={() => handleDeleteUser(entry.id)}
-              >
-                <Ionicons name="trash-outline" size={20} color="white" />
-              </TouchableOpacity>
             </View>
           </View>
         ))
@@ -526,7 +476,7 @@ export default function AccessControlScreen() {
                 <Text style={styles.modalLabel}>Assign Gate</Text>
                 <CustomDropdown
                   label=""
-                  selectedValue={editUser?.assign_gate || 'Main Gate'}
+                  selectedValue={editUser?.assign_gate || ''}
                   onValueChange={(value) => setEditUser(prev => 
                     prev ? {...prev, assign_gate: value as gateType} : null
                   )}
@@ -570,16 +520,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 15
   },
-  form: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 10,
+  // Debug section styles
+  debugSection: {
+    backgroundColor: '#f0f8ff',
+    padding: 10,
+    borderRadius: 8,
     marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3
+    borderWidth: 1,
+    borderColor: '#add8e6'
+  },
+  debugTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5
+  },
+  debugText: {
+    fontSize: 14,
+    marginBottom: 3
+  },
+  debugButton: {
+    backgroundColor: '#4682b4',
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 5,
+    alignItems: 'center'
+  },
+  debugButtonText: {
+    color: 'white',
+    fontWeight: 'bold'
   },
   input: {
     borderWidth: 1,
@@ -611,18 +579,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666'
   },
-  addButton: {
-    backgroundColor: '#00a824',
-    padding: 15,
-    borderRadius: 30,
-    alignItems: 'center',
-    marginTop: 10
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16
-  },
   error: {
     color: 'red',
     marginTop: 10,
@@ -639,6 +595,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     borderLeftWidth: 5,
+  },
+  // Pending user panel style
+  pendingUserPane: {
+    borderColor: '#f5a623',
+    shadowColor: '#f5a623',
+    shadowOpacity: 0.2,
   },
   // Active user panel styles
   activeUserPane: {
@@ -687,7 +649,7 @@ const styles = StyleSheet.create({
   inactiveUserText: {
     color: '#777',
   },
-  // Status badge
+  // Status badges
   statusBadge: {
     position: 'absolute',
     right: 0,
@@ -701,6 +663,15 @@ const styles = StyleSheet.create({
   },
   inactiveBadge: {
     backgroundColor: 'rgba(255, 59, 48, 0.15)',
+  },
+  pendingBadge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    backgroundColor: 'rgba(245, 166, 35, 0.15)',
   },
   statusBadgeText: {
     fontSize: 12,
@@ -720,18 +691,25 @@ const styles = StyleSheet.create({
   inactiveStatus: {
     backgroundColor: '#00a824'
   },
-  statusText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16
-  },
-  editButton: {
+  confirmButton: {
     flex: 1,
     backgroundColor: '#007bff',
     padding: 12,
     borderRadius: 8,
     marginRight: 10,
     alignItems: 'center'
+  },
+  statusText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  editButton: {
+    backgroundColor: '#007bff',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    minWidth: 48
   },
   
   // Dropdown Styles
