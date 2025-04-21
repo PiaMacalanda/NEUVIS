@@ -267,70 +267,83 @@ return {
       
       {/* Expanded filter options */}
       {showFilters && (
-        <View style={styles.expandedFilters}>
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>Gate:</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={filterConfig.gate}
-                style={styles.picker}
-                onValueChange={(itemValue) => setFilterConfig({...filterConfig, gate: itemValue})}>
-                {gates.map(gate => (
-                  <Picker.Item key={gate} label={gate.charAt(0).toUpperCase() + gate.slice(1)} value={gate} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-          
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>Purpose:</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={filterConfig.purpose}
-                style={styles.picker}
-                onValueChange={(itemValue) => setFilterConfig({...filterConfig, purpose: itemValue})}>
-                {purposes.map(purpose => (
-                  <Picker.Item key={purpose} label={purpose.charAt(0).toUpperCase() + purpose.slice(1)} value={purpose} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-          
-          {/* Host filter */}
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>Host:</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={filterConfig.host}
-                style={styles.picker}
-                onValueChange={(itemValue) => setFilterConfig({...filterConfig, host: itemValue})}>
-                {hosts.map(host => (
-                  <Picker.Item key={host} label={host} value={host} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-          
-          {/* Date filter */}
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>Date:</Text>
-            <TouchableOpacity 
-              style={styles.datePickerButton} 
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text>
-                {filterConfig.date ? filterConfig.date.toLocaleDateString() : 'Select Date'}
-              </Text>
-            </TouchableOpacity>
-            {filterConfig.date && (
-              <TouchableOpacity 
-                style={styles.clearDateButton} 
-                onPress={() => setFilterConfig({...filterConfig, date: null})}
-              >
-                <Ionicons name="close-circle" size={20} color="#252525" />
-              </TouchableOpacity>
-            )}
-          </View>
+       <View style={styles.expandedFilters}>
+       <View style={styles.filterRow}>
+         <Text style={styles.filterLabel}>Gate:</Text>
+         <View style={styles.pickerContainer}>
+           <Picker
+             selectedValue={filterConfig.gate}
+             style={{
+               height: 50,
+               width: '100%',
+                       
+             }}
+             itemStyle={{ color: '#000000', fontSize: 16 }}
+             onValueChange={(itemValue) => setFilterConfig({...filterConfig, gate: itemValue})}>
+             {gates.map(gate => (
+               <Picker.Item key={gate} label={gate.charAt(0).toUpperCase() + gate.slice(1)} value={gate} />
+             ))}
+           </Picker>
+         </View>
+       </View>
+       
+       <View style={styles.filterRow}>
+         <Text style={styles.filterLabel}>Purpose:</Text>
+         <View style={styles.pickerContainer}>
+           <Picker
+             selectedValue={filterConfig.purpose}
+             style={{
+               height: 50,
+               width: '100%',
+             }}
+             itemStyle={{ color: '#000000', fontSize: 16 }}
+             onValueChange={(itemValue) => setFilterConfig({...filterConfig, purpose: itemValue})}>
+             {purposes.map(purpose => (
+               <Picker.Item key={purpose} label={purpose.charAt(0).toUpperCase() + purpose.slice(1)} value={purpose} />
+             ))}
+           </Picker>
+         </View>
+       </View>
+       
+       {/* Host filter */}
+       <View style={styles.filterRow}>
+         <Text style={styles.filterLabel}>Host:</Text>
+         <View style={styles.pickerContainer}>
+           <Picker
+             selectedValue={filterConfig.host}
+             style={{
+               height: 50,
+               width: '100%',
+             }}
+             itemStyle={{ color: '#000000', fontSize: 16 }}
+             onValueChange={(itemValue) => setFilterConfig({...filterConfig, host: itemValue})}>
+             {hosts.map(host => (
+               <Picker.Item key={host} label={host} value={host} />
+             ))}
+           </Picker>
+         </View>
+       </View>
+       
+       {/* Date filter remains the same as it's a button, not a picker */}
+       <View style={styles.filterRow}>
+         <Text style={styles.filterLabel}>Date:</Text>
+         <TouchableOpacity 
+           style={styles.datePickerButton} 
+           onPress={() => setShowDatePicker(true)}
+         >
+           <Text>
+             {filterConfig.date ? filterConfig.date.toLocaleDateString() : 'Select Date'}
+           </Text>
+         </TouchableOpacity>
+         {filterConfig.date && (
+           <TouchableOpacity 
+             style={styles.clearDateButton} 
+             onPress={() => setFilterConfig({...filterConfig, date: null})}
+           >
+             <Ionicons name="close-circle" size={20} color="#252525" />
+           </TouchableOpacity>
+         )}
+       </View>
           
           {showDatePicker && (
             <DateTimePicker

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
+import { router } from 'expo-router';
 
 interface ProfileModalProps {
   visible: boolean;
@@ -14,6 +15,20 @@ interface ProfileModalProps {
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ visible, onClose, userData }) => {
   const { signOut } = useAuth();
+
+  const handleViewProfile = () => {
+    onClose(); // Close the modal first
+    router.push('/profile'); // Navigate to profile screen
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(); // Sign out the user
+      onClose(); // Close the modal
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <Modal
@@ -36,17 +51,27 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ visible, onClose, userData 
           </View>
           
           <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.modalOption}>
+            <TouchableOpacity 
+              style={styles.modalOption}
+              onPress={handleViewProfile}
+              activeOpacity={0.7}
+            >
               <Ionicons name="person-outline" size={20} color="#333" />
               <Text style={styles.modalOptionText}>View Profile</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.modalOption}>
+            <TouchableOpacity 
+              style={styles.modalOption}
+              activeOpacity={0.7}
+            >
               <Ionicons name="settings-outline" size={20} color="#333" />
               <Text style={styles.modalOptionText}>Settings</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.modalOption}>
+            <TouchableOpacity 
+              style={styles.modalOption}
+              activeOpacity={0.7}
+            >
               <Ionicons name="help-circle-outline" size={20} color="#333" />
               <Text style={styles.modalOptionText}>Help & Support</Text>
             </TouchableOpacity>
@@ -55,7 +80,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ visible, onClose, userData 
             
             <TouchableOpacity  
               style={[styles.modalOption, styles.logoutOption]}
-              onPress={signOut}>
+              onPress={handleSignOut}
+              activeOpacity={0.7}
+            >
               <Ionicons name="log-out-outline" size={20} color="#e74c3c" />
               <Text style={[styles.modalOptionText, styles.logoutText]}>Log Out</Text>
             </TouchableOpacity>
