@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header'; // Import the Header component like adminData.tsx does
+  import { supabase } from '../lib/supabaseClient';
 
 // Define color constants to avoid themeColors errors
 const colors = {
@@ -67,29 +68,31 @@ const AdminReport: React.FC = () => {
   const [newReportName, setNewReportName] = useState<string>('');
   const navigation = useNavigation();
 
+
+
   useEffect(() => {
-    // Placeholder for Supabase integration
     const fetchReports = async () => {
       try {
         setLoading(true);
-        // Simulating data fetch with timeout
-        setTimeout(() => {
-          const dummyReports = [
-            { id: '01', title: 'Report 01', created: '02/26/2025 18:09:12' },
-            { id: '02', title: 'Report 02', created: '02/26/2025 18:09:12' },
-          ];
-          setReports(dummyReports);
-          setLoading(false);
-        }, 500);
-        
-        // Supabase implementation would look something like:
-        // const { data, error } = await supabase
-        //   .from('reports')
-        //   .select('*')
-        //   .order('created_at', { ascending: false });
-        
-        // if (error) throw error;
-        // setReports(data || []);
+        const { data, error } = await supabase
+          .from('saved_reports')
+          .select('*')
+          .order('created_at', { ascending: false });
+  
+        if (error) {
+          console.error('Error fetching reports:', error);
+          throw error;
+        }
+  
+        const formatted = (data || []).map(r => ({
+          id: r.id,
+          title: r.name, // Use 'name' field instead of 'title'
+          created: new Date(r.created_at).toLocaleString(),
+          data: r.data_snapshot, // Use 'data_snapshot' field instead of 'data'
+          filters: r.filters
+        }));
+  
+        setReports(formatted);
       } catch (error) {
         console.error('Error fetching reports:', error);
         Alert.alert('Error', 'Failed to load reports');
@@ -97,8 +100,20 @@ const AdminReport: React.FC = () => {
         setLoading(false);
       }
     };
-
+  
     fetchReports();
+  
+    // Optional: Update real-time listener to match table name
+    const reportSubscription = supabase
+      .channel('saved_reports-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'saved_reports' }, () => {
+        fetchReports();
+      })
+      .subscribe();
+  
+    return () => {
+      supabase.removeChannel(reportSubscription);
+    };
   }, []);
 
   const handleEdit = (reportId: string, currentTitle: string) => {
@@ -107,51 +122,53 @@ const AdminReport: React.FC = () => {
     setIsRenaming(true);
   };
 
-  const handleRenameConfirm = () => {
+  const handleRenameConfirm = async () => {
     if (!reportToRename || !newReportName.trim()) {
       setIsRenaming(false);
       return;
     }
-
-    // Update report name locally
-    const updatedReports = reports.map(report => 
-      report.id === reportToRename 
-        ? { ...report, title: newReportName } 
-        : report
-    );
-    
-    setReports(updatedReports);
-    
-    // Placeholder for Supabase update
-    Alert.alert('Success', `Report renamed to "${newReportName}"`);
-    
-    // Reset rename state
-    setIsRenaming(false);
-    setReportToRename(null);
-    setNewReportName('');
+  
+    try {
+      // Update the report name in Supabase
+      const { error } = await supabase
+        .from('saved_reports')
+        .update({ name: newReportName })
+        .eq('id', reportToRename);
+  
+      if (error) throw error;
+  
+      // Update report name locally
+      const updatedReports = reports.map(report => 
+        report.id === reportToRename 
+          ? { ...report, title: newReportName } 
+          : report
+      );
+      
+      setReports(updatedReports);
+      Alert.alert('Success', `Report renamed to "${newReportName}"`);
+    } catch (error) {
+      console.error('Error renaming report:', error);
+      Alert.alert('Error', 'Failed to rename report');
+    } finally {
+      // Reset rename state
+      setIsRenaming(false);
+      setReportToRename(null);
+      setNewReportName('');
+    }
   };
-
-  const handlePrint = (reportId: string) => {
-    // Placeholder for print functionality
-    Alert.alert('Print', `Preparing to print report ${reportId}...`);
-    
-    // This would be replaced with actual PDF generation and printing
-    setTimeout(() => {
-      Alert.alert('Success', `Report ${reportId} sent to printer!`);
-    }, 1000);
-  };
-
-  const handleDelete = (reportId: string) => {
-    // Show delete confirmation
-    setShowDeleteConfirm(reportId);
-  };
-
+  
   const confirmDelete = async (reportId: string) => {
     try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('saved_reports')
+        .delete()
+        .eq('id', reportId);
+  
+      if (error) throw error;
+  
       // Remove report locally
       setReports(reports.filter(report => report.id !== reportId));
-      
-      // Placeholder for Supabase delete
       Alert.alert('Success', 'Report deleted successfully');
     } catch (error) {
       console.error('Error deleting report:', error);
@@ -160,6 +177,14 @@ const AdminReport: React.FC = () => {
       setShowDeleteConfirm(null);
     }
   };
+
+  function handlePrint(id: string): void {
+    throw new Error('Function not implemented.');
+  }
+
+  function handleDelete(id: string): void {
+    throw new Error('Function not implemented.');
+  }
 
   return (
     <View style={styles.container}>
