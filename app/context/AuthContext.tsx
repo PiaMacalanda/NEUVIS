@@ -1,10 +1,8 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import supabase from '../lib/supabaseClient';
-import * as SecureStore from 'expo-secure-store';
-import { Alert } from 'react-native';
-import { Session, User, Provider } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { router, usePathname } from 'expo-router';
-import VisitorsLogs from '../(security)/VisitorsLogs';
+import * as authService from '../services/authService';
 
 interface AuthContextProps {
     user: User | null;
@@ -21,8 +19,8 @@ interface AuthContextProps {
         error: Error | null;
     }>;
     signOut: () => Promise<void>;
+    forgetPassword: (email: string) => Promise<void>;
 }
-  
 
 const AuthContext = createContext<AuthContextProps>({
     user: null,
@@ -30,7 +28,8 @@ const AuthContext = createContext<AuthContextProps>({
     loading: true,
     signUp: async () => ({ data: null, error: null }),
     signIn: async () => ({ data: null, error: null }),
-    signOut: async () => {}
+    signOut: async () => {},
+    forgetPassword: async () => {}
 });
 
 interface AuthProviderProps {
@@ -45,67 +44,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const pathname = usePathname();
 
     useEffect(() => {
-        const loadSession = async () => {
-          setLoading(true);
-          
-          try {
-            const storedSession = await SecureStore.getItemAsync('supabase-session');
+        const initializeAuth = async () => {
+            setLoading(true);
             
-            if (storedSession) {
-              const sessionData = JSON.parse(storedSession);
-              
-              const { data, error } = await supabase.auth.setSession({
-                access_token: sessionData.access_token,
-                refresh_token: sessionData.refresh_token,
-              });
-
-              if (error) {
-                await SecureStore.deleteItemAsync('supabase-session');
-                setUser(null);
-                setSession(null);
-              } else {
-                setSession(data.session);
-                setUser(data.user);
-              }
+            try {
+                const { session: loadedSession, user: loadedUser, error } = await authService.loadSession();
+                
+                if (error) {
+                    setUser(null);
+                    setSession(null);
+                } else {
+                    setSession(loadedSession);
+                    setUser(loadedUser);
+                }
+            } finally {
+                setLoading(false);
             }
-          } catch (error) {
-            console.error('Error loading auth session:', error);
-          } finally {
-            setLoading(false);
-          }
         };
     
-        loadSession();
+        initializeAuth();
     
         const { data: authListener } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            
-            if (newSession) {
-                await SecureStore.setItemAsync(
-                    'supabase-session',
-                    JSON.stringify({
-                        access_token: newSession.access_token,
-                        refresh_token: newSession.refresh_token,
-                        user_id: newSession.user?.id
-                    })
-                );
-            } else {
-                await SecureStore.deleteItemAsync('supabase-session');
-                router.replace('/');
+            async (event, newSession) => {
+                setSession(newSession);
+                setUser(newSession?.user ?? null);
+                
+                if (newSession) {
+                    await authService.saveSession(newSession);
+                } else {
+                    await authService.clearSession();
+                    router.replace('/');
+                }
             }
-          }
         );
 
         return () => {
-          if (authListener && authListener.subscription) {
-            authListener.subscription.unsubscribe();
-          }
+            if (authListener && authListener.subscription) {
+                authListener.subscription.unsubscribe();
+            }
         };
     }, []);
 
-      
     useEffect(() => {
         // Throw user to landing if authenticated and in login/signup pages
         if (!session || !user) return;
@@ -130,7 +109,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         }
 
-
         if (adminScreens.includes(pathname)){
             if (role === 'security'){
                 router.replace('/neuvisLanding');
@@ -142,179 +120,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, [session, user?.user_metadata?.role, pathname]);
 
-
-    const signUp = async (email: string, password: string, full_name: string, role: string) => {
+    const handleSignUp = async (email: string, password: string, full_name: string, role: string) => {
         setLoading(true);
-        
         try {
-            if(!email.endsWith('@neu.edu.ph')) throw new Error ('Use your institutional email');
+            return await authService.signUp(email, password, full_name, role);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            const { data, error } = await supabase.auth.signUp({ 
-                email, 
-                password,
-                options: {
-                    emailRedirectTo: 'myapp://emailVerified',
-                    data: { full_name, role }
-                }
-            })
+    const handleSignIn = async (email: string, password: string, requiredRole?: 'admin' | 'security' | 'superadmin') => {
+        setLoading(true);
+        try {
+            const result = await authService.signIn(email, password, requiredRole);
             
-            if (error) {
-                console.error('Sign-up failed:', error.message);
-                Alert.alert('Error signing up', error.message);
-                return { data: null, error };
+            if (result.error?.message?.toLowerCase().includes('email not confirmed')) {
+                router.push(`/(authentication)/verify?email=${email}`);
             }
+            
+            return result;
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            return { data, error: null };
-        } catch (error) {
-            console.error('Unexpected error during sign-up:', (error as Error).message);
-            Alert.alert('Sign-up Error', (error as Error).message);
-            return { data: null, error: error as Error };
+    const handleSignOut = async (): Promise<void> => {
+        setLoading(true);
+        try {
+            await authService.signOut();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgetPassword = async (email: string): Promise<void> => {
+        setLoading(true);
+        try {
+            await authService.forgetPassword(email);
         } finally {
             setLoading(false);
         }
     }
-
-    const insertUserToUsersTable = async (email: string, id: string, full_name: string, role: string) => {
-        try {
-            const { data: existingUser, error: fetchError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('id', id)
-                .single();
-            
-            if (fetchError && fetchError.code !== 'PGRST116') {
-                console.error('Error checking existing user:', fetchError.message);
-                return fetchError;
-            }
-    
-            if (existingUser) return new Error('Account already exists');
-    
-            const { error } = await supabase.from('users').insert([
-                {
-                    id: id,
-                    email: email,
-                    full_name: full_name,
-                    role: role,
-                }
-            ]);
-    
-            if (error) {
-                if (error.code === '23505') {
-                    return new Error('Account already exists');
-                } else {
-                    console.error('Insert failed:', error.message);
-                    return error;
-                }
-            }
-            
-            console.log('User successfully inserted.');
-            return null;
-        } catch (error) {
-            console.error('Unexpected error inserting user:', (error as Error).message);
-            return error as Error;
-        }
-    };
-
-
-    const signIn = async (email: string, password: string, requiredRole?: 'admin' | 'security' | 'superadmin') => {
-        setLoading(true);
-    
-        try {
-            if (!email.endsWith('@neu.edu.ph')) throw new Error('Use your institutional email');
-    
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-            if (error) {
-                if (error.message.toLowerCase().includes('email not confirmed')) {
-                    Alert.alert(
-                        'Error during sign-in', 
-                        'Email is not verified. Please check your inbox or resend verification email.',
-                        [{ text: "OK", onPress: () => router.push(`/(authentication)/verify?email=${email}`) }]
-                    );
-
-                    console.error(error);
-                    return { data: null, userData: undefined, role: undefined, error: error as Error };
-                }
-
-                throw error;
-            }  
-
-            const user = data.user;
-            if (!user) throw new Error('User not found');
-    
-            if (!user.email_confirmed_at) {
-                throw new Error('Please verify your email before signing in.');
-            }
-    
-            const { data: existingUser, error: userError } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', user.id)
-                .single();
-    
-            if (userError && userError.code !== 'PGRST116') throw userError;
-    
-            let userData: { role: string } | undefined;
-            let role: string | undefined;
-    
-            if (!existingUser) {
-                console.log('User is verified but not in database. Inserting...');
-                const full_name = user.user_metadata?.full_name || 'Unknown';
-                role = user.user_metadata?.role || 'user';
-
-                if(!role){
-                    Alert.alert('User role not found!');
-                    throw new Error("User role not found!");
-                }
-    
-                const insertError = await insertUserToUsersTable(email, user.id, full_name, role);
-                if (insertError) throw insertError;
-    
-                userData = { role };
-            } else {
-                userData = { role: existingUser.role };
-                role = existingUser.role;
-            }
-    
-            if (requiredRole && role !== requiredRole) {
-                throw new Error(`Access denied. This login requires ${requiredRole} privileges.`);
-            }
-    
-            return { 
-                data, 
-                userData, 
-                role, 
-                error: null 
-            };
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error signing in', (error as Error).message);
-            return { 
-                data: null, 
-                userData: undefined,
-                role: undefined,
-                error: error as Error 
-            };
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-
-    const signOut = async (): Promise<void> => {
-        setLoading(true);
-        
-        try {
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-            await SecureStore.deleteItemAsync('supabase-session');
-        } catch (error) {
-            Alert.alert('Error signing out', (error as Error).message);
-        } finally {
-            setLoading(false);
-        }
-    };
-    
 
     return (
         <AuthContext.Provider
@@ -322,15 +168,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             user,
             session,
             loading,
-            signUp,
-            signIn,
-            signOut,
+            signUp: handleSignUp,
+            signIn: handleSignIn,
+            signOut: handleSignOut,
+            forgetPassword: handleForgetPassword
           }}
         >
           {children}
         </AuthContext.Provider>
-      );
-}
+    );
+};
 
 export const useAuth = (): AuthContextProps => {
     const context = useContext(AuthContext);

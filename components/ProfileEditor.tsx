@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { supabase } from '@/app/lib/supabaseClient';
 
 interface ProfileEditorProps {
   initialData?: {
@@ -29,43 +30,174 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
   
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState(initialData.email);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  
+  // New state variables for password validation
+  const [isCurrentPasswordVerified, setIsCurrentPasswordVerified] = useState(false);
+  const [isPasswordMatching, setIsPasswordMatching] = useState(false);
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
 
-  const handleSaveProfile = () => {
-    // Here you would connect to Supabase for updating the profile
-    // For now, just show a success message
-    Alert.alert(
-      "Profile Updated",
-      "Your profile information has been updated successfully.",
-      [{ text: "OK", onPress: () => setIsEditing(false) }]
-    );
+  // Mock last password update date - this would come from your backend in production
+  const lastPasswordUpdate = "02/04/2025";
+
+  // Verify current password
+  const verifyCurrentPassword = async (password: string) => {
+    if (!password) {
+      setIsCurrentPasswordVerified(false);
+      return;
+    }
+    
+    setIsVerifyingPassword(true);
+    try {
+      // This is a simplified approach - in a real app, you would verify this against your backend
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+      
+      if (error) {
+        setIsCurrentPasswordVerified(false);
+      } else {
+        setIsCurrentPasswordVerified(true);
+      }
+    } catch (error) {
+      setIsCurrentPasswordVerified(false);
+    } finally {
+      setIsVerifyingPassword(false);
+    }
   };
 
-  const handleChangePassword = () => {
+  // Check if passwords match
+  useEffect(() => {
+    if (confirmPassword && newPassword) {
+      setIsPasswordMatching(confirmPassword === newPassword);
+    } else {
+      setIsPasswordMatching(false);
+    }
+  }, [confirmPassword, newPassword]);
+
+  // Verify current password when it changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (currentPassword) {
+        verifyCurrentPassword(currentPassword);
+      } else {
+        setIsCurrentPasswordVerified(false);
+      }
+    }, 500); // Debounce to avoid too many API calls
+
+    return () => clearTimeout(timeoutId);
+  }, [currentPassword]);
+
+  const handleSaveProfile = async () => {
+    setIsLoading(true);
+    try {
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Update the user profile in the public users table
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          full_name: name,
+          email: email
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update auth metadata if needed
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { full_name: name }
+      });
+
+      if (metadataError) {
+        throw metadataError;
+      }
+
+      Alert.alert(
+        "Profile Updated",
+        "Your profile information has been updated successfully.",
+        [{ text: "OK", onPress: () => setIsEditing(false) }]
+      );
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to update profile. Please try again."
+      );
+      console.error('Profile update error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    // Validate current password is verified
+    if (!isCurrentPasswordVerified) {
+      Alert.alert("Error", "Please enter your correct current password.");
+      return;
+    }
+    
     // Validate passwords match
-    if (newPassword !== confirmPassword) {
+    if (!isPasswordMatching) {
       Alert.alert("Error", "New passwords don't match.");
       return;
     }
     
-    if (!currentPassword) {
-      Alert.alert("Error", "Please enter your current password.");
-      return;
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert(
+        "Password Changed",
+        "Your password has been updated successfully.",
+        [{ 
+          text: "OK", 
+          onPress: () => {
+            setIsChangingPassword(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setIsCurrentPasswordVerified(false);
+            setIsPasswordMatching(false);
+          }
+        }]
+      );
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to update password. Please make sure you're properly authenticated."
+      );
+      console.error('Password update error:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Here you would connect to Supabase for password change
-    // For now, just show a success message
+  };
+
+  const handleForgotPassword = () => {
+    // This is just UI for now, you'll implement the function later
+    setShowForgotPasswordModal(false);
     Alert.alert(
-      "Password Changed",
-      "Your password has been updated successfully.",
-      [{ 
-        text: "OK", 
-        onPress: () => {
-          setIsChangingPassword(false);
-          setCurrentPassword('');
-          setNewPassword('');
-          setConfirmPassword('');
-        }
-      }]
+      "Reset Email Sent",
+      "If an account exists for this email, you will receive a password reset link.",
+      [{ text: "OK" }]
     );
   };
 
@@ -80,6 +212,8 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
+    setIsCurrentPasswordVerified(false);
+    setIsPasswordMatching(false);
   };
 
   return (
@@ -101,60 +235,22 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <Text style={styles.avatarRole}>{initialData.role}</Text>
       </View>
 
-      {/* Profile Information Section */}
+      {/* Profile Information Section - Edit button removed as requested */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Profile Information</Text>
-          {!isEditing ? (
-            <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editButton}>
-              <Ionicons name="create-outline" size={20} color="#4a89dc" />
-              <Text style={styles.editText}>Edit</Text>
-            </TouchableOpacity>
-          ) : null}
         </View>
-
-        {!isEditing ? (
-          <View style={styles.infoContainer}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Name</Text>
-              <Text style={styles.infoValue}>{name}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{email}</Text>
-            </View>
+        <View style={styles.infoContainer}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Name</Text>
+            <Text style={styles.infoValue}>{name}</Text>
           </View>
-        ) : (
-          <View style={styles.editContainer}>
-            <Text style={styles.inputLabel}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter your name"
-            />
-            
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            
-            <View style={styles.buttonRow}>
-              <TouchableOpacity onPress={handleCancel} style={[styles.button, styles.cancelButton]}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleSaveProfile} style={[styles.button, styles.saveButton]}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue}>{email}</Text>
           </View>
-        )}
+        </View>
       </View>
 
       {/* Password Section */}
@@ -175,47 +271,218 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
               <Text style={styles.infoLabel}>Password</Text>
               <Text style={styles.infoValue}>••••••••</Text>
             </View>
+            <TouchableOpacity 
+              style={styles.forgotPasswordButton} 
+              onPress={() => setShowForgotPasswordModal(true)}
+            > 
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.editContainer}>
-            <Text style={styles.inputLabel}>Current Password</Text>
-            <TextInput
-              style={styles.input}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder="Enter current password"
-              secureTextEntry
-            />
+            {/* Password requirements */}
+            <View style={styles.passwordRequirementsContainer}>
+              <Text style={styles.passwordRequirementsTitle}>Change Password</Text>
+              <Text style={styles.passwordRequirementsText}>
+                Your password must be at least 6 characters and should include a combination of numbers, letters and special characters (!$@%).
+              </Text>
+            </View>
             
-            <Text style={styles.inputLabel}>New Password</Text>
-            <TextInput
-              style={styles.input}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder="Enter new password"
-              secureTextEntry
-            />
+            {/* Current Password with verification indicator */}
+            <Text style={styles.inputLabel}>Current password</Text>
+            <View style={[
+              styles.passwordInputContainer,
+              currentPassword ? 
+                isCurrentPasswordVerified ? styles.inputSuccess : styles.inputError 
+                : null
+            ]}>
+              <TextInput
+                style={styles.passwordInput}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Enter current password"
+                secureTextEntry={!showCurrentPassword}
+              />
+              {isVerifyingPassword ? (
+                <ActivityIndicator size="small" color="#4a89dc" style={styles.passwordIndicator} />
+              ) : currentPassword ? (
+                <View style={styles.passwordIndicator}>
+                  <Ionicons 
+                    name={isCurrentPasswordVerified ? "checkmark-circle" : "close-circle"} 
+                    size={24} 
+                    color={isCurrentPasswordVerified ? "#4caf50" : "#f44336"} 
+                  />
+                </View>
+              ) : null}
+              <TouchableOpacity 
+                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                style={styles.passwordToggle}
+              >
+                <Ionicons 
+                  name={showCurrentPassword ? "eye-off" : "eye"} 
+                  size={24} 
+                  color="#888" 
+                />
+              </TouchableOpacity>
+            </View>
             
-            <Text style={styles.inputLabel}>Confirm New Password</Text>
-            <TextInput
-              style={styles.input}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Confirm new password"
-              secureTextEntry
-            />
+            {/* New Password - disabled if current password not verified */}
+            <Text style={[
+              styles.inputLabel, 
+              !isCurrentPasswordVerified && styles.disabledText
+            ]}>New password</Text>
+            <View style={[
+              styles.passwordInputContainer,
+              !isCurrentPasswordVerified && styles.disabledInput
+            ]}>
+              <TextInput
+                style={styles.passwordInput}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Enter new password"
+                secureTextEntry={!showNewPassword}
+                editable={isCurrentPasswordVerified}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowNewPassword(!showNewPassword)}
+                style={styles.passwordToggle}
+                disabled={!isCurrentPasswordVerified}
+              >
+                <Ionicons 
+                  name={showNewPassword ? "eye-off" : "eye"} 
+                  size={24} 
+                  color={isCurrentPasswordVerified ? "#888" : "#ccc"}
+                />
+              </TouchableOpacity>
+            </View>
             
+            {/* Confirm Password with match indicator */}
+            <Text style={[
+              styles.inputLabel,
+              !isCurrentPasswordVerified && styles.disabledText
+            ]}>Retype new password</Text>
+            <View style={[
+              styles.passwordInputContainer,
+              !isCurrentPasswordVerified && styles.disabledInput,
+              (confirmPassword && isCurrentPasswordVerified) ? 
+                isPasswordMatching ? styles.inputSuccess : styles.inputError 
+                : null
+            ]}>
+              <TextInput
+                style={styles.passwordInput}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm new password"
+                secureTextEntry={!showConfirmPassword}
+                editable={isCurrentPasswordVerified}
+              />
+              {confirmPassword && isCurrentPasswordVerified ? (
+                <View style={styles.passwordIndicator}>
+                  <Ionicons 
+                    name={isPasswordMatching ? "checkmark-circle" : "close-circle"} 
+                    size={24} 
+                    color={isPasswordMatching ? "#4caf50" : "#f44336"} 
+                  />
+                </View>
+              ) : null}
+              <TouchableOpacity 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.passwordToggle}
+                disabled={!isCurrentPasswordVerified}
+              >
+                <Ionicons 
+                  name={showConfirmPassword ? "eye-off" : "eye"} 
+                  size={24} 
+                  color={isCurrentPasswordVerified ? "#888" : "#ccc"}
+                />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Forgotten password link */}
+            <TouchableOpacity 
+              style={styles.forgotPasswordInlineButton} 
+              onPress={() => setShowForgotPasswordModal(true)}
+            >
+              <Text style={styles.forgotPasswordInlineText}>Forgotten your password?</Text>
+            </TouchableOpacity>
+            
+            {/* Action buttons */}
             <View style={styles.buttonRow}>
-              <TouchableOpacity onPress={handleCancelPasswordChange} style={[styles.button, styles.cancelButton]}>
+              <TouchableOpacity 
+                onPress={handleCancelPasswordChange} 
+                style={[styles.button, styles.cancelButton]}
+                disabled={isLoading}
+              >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleChangePassword} style={[styles.button, styles.saveButton]}>
-                <Text style={styles.saveButtonText}>Update Password</Text>
+              <TouchableOpacity 
+                onPress={handleChangePassword} 
+                style={[
+                  styles.button, 
+                  styles.saveButton,
+                  (!isCurrentPasswordVerified || !isPasswordMatching) && styles.disabledButton
+                ]}
+                disabled={isLoading || !isCurrentPasswordVerified || !isPasswordMatching}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Update Password</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         )}
       </View>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotPasswordModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowForgotPasswordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Reset Password</Text>
+              <TouchableOpacity 
+                onPress={() => setShowForgotPasswordModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color="#252525" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalDescription}>
+              Enter your email address and we'll send you a link to reset your password.
+            </Text>
+            
+            <TextInput
+              style={[styles.input, styles.modalInput]}
+              value={resetEmail}
+              onChangeText={setResetEmail}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity 
+                onPress={() => setShowForgotPasswordModal(false)} 
+                style={[styles.button, styles.cancelButton]}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleForgotPassword} 
+                style={[styles.button, styles.saveButton, styles.modalSendButton]}
+              >
+                <Text style={styles.saveButtonText}>Send Reset Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -327,6 +594,20 @@ const styles = StyleSheet.create({
   editContainer: {
     
   },
+  passwordRequirementsContainer: {
+    marginBottom: 15,
+  },
+  passwordRequirementsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#252525',
+    marginBottom: 8,
+  },
+  passwordRequirementsText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
   inputLabel: {
     fontSize: 14,
     color: '#666',
@@ -340,6 +621,26 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     marginBottom: 15,
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderWidth: 1,
+    borderColor: '#e1e1e1',
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 14,
+  },
+  passwordToggle: {
+    padding: 10,
+  },
+  passwordIndicator: {
+    paddingRight: 5,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -367,6 +668,89 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '500',
+  },
+  disabledButton: {
+    backgroundColor: '#a0bfed',
+  },
+  forgotPasswordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+    justifyContent: 'center',
+  },
+  forgotPasswordText: {
+    color: '#4a89dc',
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  forgotPasswordInlineButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 15,
+  },
+  forgotPasswordInlineText: {
+    color: '#4a89dc',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    width: '85%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#252525',
+  },
+  modalCloseButton: {
+    padding: 5,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  modalInput: {
+    marginBottom: 20,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalSendButton: {
+    minWidth: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // New styles for password validation
+  inputSuccess: {
+    borderColor: '#4caf50',
+  },
+  inputError: {
+    borderColor: '#f44336',
+  },
+  disabledInput: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#ddd',
+  },
+  disabledText: {
+    color: '#aaa',
   },
 });
 

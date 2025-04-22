@@ -530,17 +530,24 @@ const formatTime = (timeString: string | undefined): string => {
       <View style={styles.filterContainer}>
         <Text style={styles.filterLabel}>Time Period:</Text>
         <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={dateFilter}
-            style={styles.picker}
-            onValueChange={(itemValue) => setDateFilter(itemValue)}>
-            <Picker.Item label="All Time" value="all" />
-            <Picker.Item label="Today" value="today" />
-            <Picker.Item label="Last 7 Days" value="week" />
-            <Picker.Item label="Last 30 Days" value="month" />
-          </Picker>
-        </View>
-      </View>
+                <Picker
+          selectedValue={dateFilter}
+          style={{
+            height: 60,
+            width: '100%',
+            color: '#000000',
+            backgroundColor: 'white',
+            fontWeight: '500',
+          }}
+          itemStyle={{ color: '#000000', fontSize: 16 }}
+          onValueChange={(itemValue) => setDateFilter(itemValue)}>
+          <Picker.Item label="All Time" value="all" />
+          <Picker.Item label="Today" value="today" />
+          <Picker.Item label="Last 7 Days" value="week" />
+          <Picker.Item label="Last 30 Days" value="month" />
+        </Picker>
+                </View>
+              </View>
       
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -869,10 +876,11 @@ const styles = StyleSheet.create({
   pickerContainer: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#888',
     borderRadius: 5,
     backgroundColor: 'white',
     overflow: 'hidden',
+    minHeight: 50,
   },
   legendContainer: {
     marginTop: 15,
@@ -895,6 +903,9 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 40,
+    color: '#000000', // Change from default light color to black
+    fontSize: 14, // Make sure text is clearly visible
+    paddingHorizontal: 8, // Add some padding to avoid text getting cut off
   },
   loadingContainer: {
     padding: 20,
