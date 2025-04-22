@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import Header from '../../components/Header'; // Import the Header component like adminData.tsx does
+import Header from '../../components/Header'; 
   import { supabase } from '../lib/supabaseClient';
 
 // Define color constants to avoid themeColors errors
