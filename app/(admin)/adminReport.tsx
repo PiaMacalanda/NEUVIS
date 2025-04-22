@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header'; 
-  import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 // Define color constants to avoid themeColors errors
 const colors = {
@@ -17,19 +17,33 @@ const colors = {
   dangerLight: '#FFEEEE',
   primary: '#007AFF',
   secondary: '#5856D6',
-  cardBackground: '#F8F8F8'
+  cardBackground: '#F8F8F8',
+  navyBlue: '#0A3B75', // Added dark blue color to match Admin Reports header
 };
 
 interface Report {
   id: string;
   title: string;
   created: string;
+  data: any[];
+  filters: any;
+  created_by: {
+    name: string;
+  };
 }
 
 interface ButtonProps {
   onPress: () => void;
   label: string;
   variant?: 'primary' | 'secondary' | 'danger';
+}
+
+interface SavedReport {
+  id: string;
+  title: string;
+  created: string;
+  data: any[]; // This will hold the data_snapshot contents
+  filters: any;
 }
 
 // Simple button component to avoid type errors
@@ -61,38 +75,59 @@ const CustomButton: React.FC<ButtonProps> = ({ onPress, label, variant = 'primar
 
 const AdminReport: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
+  const [filteredReports, setFilteredReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const [reportToRename, setReportToRename] = useState<string | null>(null);
   const [newReportName, setNewReportName] = useState<string>('');
   const navigation = useNavigation();
-
-
+  const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
+  const [showMaximizeModal, setShowMaximizeModal] = useState<boolean>(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterGate, setFilterGate] = useState<string>('');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
         setLoading(true);
+        const { data: userData } = await supabase.auth.getUser();
+        const currentUser = userData?.user;
+        
         const { data, error } = await supabase
-          .from('saved_reports')
-          .select('*')
-          .order('created_at', { ascending: false });
-  
+        .from('saved_reports')
+        .select(`
+          id,
+          name,
+          created_at,
+          created_by:admins (
+            full_name
+          ),
+          data_snapshot,
+          filters
+        `);
+      
         if (error) {
           console.error('Error fetching reports:', error);
           throw error;
         }
-  
+    
         const formatted = (data || []).map(r => ({
           id: r.id,
-          title: r.name, // Use 'name' field instead of 'title'
-          created: new Date(r.created_at).toLocaleString(),
-          data: r.data_snapshot, // Use 'data_snapshot' field instead of 'data'
-          filters: r.filters
+          title: r.name || 'Untitled Report',
+          created: new Date(r.created_at).toISOString(),
+          created_by: {
+            name: r.created_by?.full_name || 'Unknown'
+          },
+          data: r.data_snapshot || [],
+          filters: r.filters || {}
         }));
-  
+        
         setReports(formatted);
+        setFilteredReports(formatted);
       } catch (error) {
         console.error('Error fetching reports:', error);
         Alert.alert('Error', 'Failed to load reports');
@@ -100,7 +135,6 @@ const AdminReport: React.FC = () => {
         setLoading(false);
       }
     };
-  
     fetchReports();
   
     // Optional: Update real-time listener to match table name
@@ -115,6 +149,39 @@ const AdminReport: React.FC = () => {
       supabase.removeChannel(reportSubscription);
     };
   }, []);
+
+  // Apply filters when filter values change
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, filterGate, reports]);
+
+  const applyFilters = () => {
+    let results = [...reports];
+    
+    // Apply search term filter
+    if (searchTerm.trim()) {
+      const lowercasedSearch = searchTerm.toLowerCase();
+      results = results.filter(report => 
+        report.title.toLowerCase().includes(lowercasedSearch) ||
+        report.created_by.name.toLowerCase().includes(lowercasedSearch)
+      );
+    }
+    
+    // Apply gate filter if selected
+    if (filterGate) {
+      results = results.filter(report => 
+        report.filters?.gate?.toLowerCase().includes(filterGate.toLowerCase())
+      );
+    }
+    
+    setFilteredReports(results);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterGate('');
+    setFilteredReports(reports);
+  };
 
   const handleEdit = (reportId: string, currentTitle: string) => {
     setReportToRename(reportId);
@@ -145,6 +212,13 @@ const AdminReport: React.FC = () => {
       );
       
       setReports(updatedReports);
+      setFilteredReports(prevFiltered => 
+        prevFiltered.map(report => 
+          report.id === reportToRename 
+            ? { ...report, title: newReportName } 
+            : report
+        )
+      );
       Alert.alert('Success', `Report renamed to "${newReportName}"`);
     } catch (error) {
       console.error('Error renaming report:', error);
@@ -169,6 +243,7 @@ const AdminReport: React.FC = () => {
   
       // Remove report locally
       setReports(reports.filter(report => report.id !== reportId));
+      setFilteredReports(filteredReports.filter(report => report.id !== reportId));
       Alert.alert('Success', 'Report deleted successfully');
     } catch (error) {
       console.error('Error deleting report:', error);
@@ -178,41 +253,104 @@ const AdminReport: React.FC = () => {
     }
   };
 
-  function handlePrint(id: string): void {
-    throw new Error('Function not implemented.');
-  }
-
-  function handleDelete(id: string): void {
-    throw new Error('Function not implemented.');
-  }
+  const handleDelete = (id: string) => {
+    setShowDeleteConfirm(id);
+  };
 
   return (
     <View style={styles.container}>
+      {/* Filters Section at the top */}
+      <View style={styles.filtersContainer}>
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search reports..."
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            placeholderTextColor={colors.mediumGray}
+          />
+          <TouchableOpacity 
+            style={styles.filterToggleButton} 
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Ionicons 
+              name={showFilters ? "options" : "options-outline"} 
+              size={24} 
+              color={colors.primary} 
+            />
+          </TouchableOpacity>
+        </View>
+        
+        {showFilters && (
+          <View style={styles.advancedFilters}>
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Gate:</Text>
+              <View style={styles.filterOptions}>
+                <TouchableOpacity 
+                  style={[
+                    styles.filterOption, 
+                    filterGate === 'Gate 1' && styles.filterOptionSelected
+                  ]}
+                  onPress={() => setFilterGate(filterGate === 'Gate 1' ? '' : 'Gate 1')}
+                >
+                  <Text 
+                    style={[
+                      styles.filterOptionText,
+                      filterGate === 'Gate 1' && styles.filterOptionTextSelected
+                    ]}
+                  >
+                    Gate 1
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.filterOption, 
+                    filterGate === 'Gate 2' && styles.filterOptionSelected
+                  ]}
+                  onPress={() => setFilterGate(filterGate === 'Gate 2' ? '' : 'Gate 2')}
+                >
+                  <Text 
+                    style={[
+                      styles.filterOptionText,
+                      filterGate === 'Gate 2' && styles.filterOptionTextSelected
+                    ]}
+                  >
+                    Gate 2
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.clearFiltersButton}
+              onPress={clearFilters}
+            >
+              <Text style={styles.clearFiltersText}>Clear Filters</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+      
       <ScrollView style={styles.reportsContainer}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <Text>Loading reports...</Text>
           </View>
-        ) : reports.length === 0 ? (
+        ) : filteredReports.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text>No reports found. Create a report from the Data section.</Text>
           </View>
         ) : (
-          reports.map((report) => (
+          filteredReports.map((report) => (
             <View key={report.id} style={styles.reportCard}>
               <View style={styles.reportInfo}>
                 <Text style={styles.reportTitle}>{report.title}</Text>
                 <Text style={styles.reportDate}>created: {report.created}</Text>
+                <Text style={styles.reportName}>created by: {report.created_by.name}</Text>
               </View>
               
               <View style={styles.reportActions}>
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={() => handlePrint(report.id)}
-                >
-                  <Ionicons name="print-outline" size={24} color={colors.black} />
-                </TouchableOpacity>
-                
                 <TouchableOpacity 
                   style={styles.actionButton}
                   onPress={() => handleDelete(report.id)}
@@ -229,6 +367,11 @@ const AdminReport: React.FC = () => {
                 
                 <TouchableOpacity 
                   style={styles.actionButton}
+                  onPress={() => {
+                    const reportToView = reports.find(r => r.id === report.id);
+                    setSelectedReport(reportToView || null);
+                    setShowMaximizeModal(true);
+                  }}
                 >
                   <Ionicons name="expand" size={24} color={colors.black} />
                 </TouchableOpacity>
@@ -290,6 +433,85 @@ const AdminReport: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Maximize Modal */}
+      <Modal
+        visible={showMaximizeModal}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setShowMaximizeModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalHeaderText}>
+              {selectedReport?.title || 'Report Details'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowMaximizeModal(false)}>
+              <Ionicons name="close" size={24} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Filters Section - Positioned above the ScrollView */}
+          <View style={styles.filterInfo}>
+            <Text style={styles.filterInfoTitle}>Applied Filters:</Text>
+            {selectedReport?.filters && (
+              <View style={styles.filtersList}>
+                <Text>Gate: {selectedReport.filters.gate || 'All'}</Text>
+                <Text>Purpose: {selectedReport.filters.purpose || 'All'}</Text>
+                <Text>Host: {selectedReport.filters.host || 'All'}</Text>
+                {selectedReport.filters.date && (
+                  <Text>Date: {new Date(selectedReport.filters.date).toLocaleDateString()}</Text>
+                )}
+              </View>
+            )}
+          </View>
+          
+          <ScrollView>
+            {/* Table Header */}
+            <ScrollView horizontal>
+              <View style={styles.tableContainer}>
+                <View style={styles.tableHeader}>
+                  <Text style={styles.headerCell}>Name</Text>
+                  <Text style={styles.headerCell}>ID</Text>
+                  <Text style={styles.headerCell}>Phone</Text>
+                  <Text style={styles.headerCell}>Purpose</Text>
+                  <Text style={styles.headerCell}>Gate</Text>
+                  <Text style={styles.headerCell}>Host</Text>
+                  <Text style={styles.headerCell}>Time In</Text>
+                  <Text style={styles.headerCell}>Time Out</Text>
+                  <Text style={styles.headerCell}>Date</Text>
+                </View>
+                
+                {/* Table Rows */}
+                {selectedReport?.data?.map((item, index) => (
+                  <View 
+                    key={index}
+                    style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
+                  >
+                    <Text style={styles.cell}>{item.name}</Text>
+                    <Text style={styles.cell}>{item.id_number}</Text>
+                    <Text style={styles.cell}>{item.phone_number}</Text>
+                    <Text style={styles.cell}>{item.purpose_of_visit}</Text>
+                    <Text style={styles.cell}>{item.gate}</Text>
+                    <Text style={styles.cell}>{item.host}</Text>
+                    <Text style={styles.cell}>{item.time_in}</Text>
+                    <Text style={styles.cell}>{item.time_out}</Text>
+                    <Text style={styles.cell}>
+                      {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
+                    </Text>
+                  </View>
+                ))}
+                
+                {(!selectedReport?.data || selectedReport.data.length === 0) && (
+                  <View style={styles.emptyTableRow}>
+                    <Text style={styles.emptyTableText}>No data available</Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -298,6 +520,78 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.lightGray,
+  },
+  // New Filter styles
+  filtersContainer: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: colors.gray,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    color: colors.black,
+    backgroundColor: colors.lightGray,
+  },
+  filterToggleButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  advancedFilters: {
+    marginTop: 12,
+  },
+  filterRow: {
+    marginBottom: 12,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: colors.black,
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.gray,
+    backgroundColor: colors.white,
+  },
+  filterOptionSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterOptionText: {
+    fontSize: 12,
+    color: colors.black,
+  },
+  filterOptionTextSelected: {
+    color: colors.white,
+  },
+  clearFiltersButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  clearFiltersText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   reportsContainer: {
     flex: 1,
@@ -316,46 +610,51 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   reportCard: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    elevation: 2,
     shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   reportInfo: {
-    marginBottom: 8,
+    flex: 1,
+    marginBottom: 12,
   },
   reportTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 4,
     color: colors.black,
   },
   reportDate: {
-    fontSize: 12,
-    color: colors.mediumGray,
+    fontSize: 14,
+    color: colors.darkGray,
+    marginBottom: 2,
+  },
+  reportName: {
+    fontSize: 14,
+    color: colors.darkGray,
   },
   reportActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: colors.gray,
+    paddingTop: 12,
   },
   actionButton: {
     padding: 8,
-    marginLeft: 8,
+    marginLeft: 12,
   },
   confirmationContainer: {
     marginTop: 12,
     padding: 12,
     backgroundColor: colors.dangerLight,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.danger,
   },
   confirmationText: {
     marginBottom: 12,
@@ -421,6 +720,82 @@ const styles = StyleSheet.create({
   buttonTextDark: {
     color: colors.black,
     fontWeight: '600',
+  }, 
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray,
+    backgroundColor: colors.navyBlue, // Updated to navyBlue to match Admin Reports header
+  },
+  modalHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.white,
+  },
+  tableContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.gray,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: colors.darkGray,
+    paddingVertical: 12,
+  },
+  headerCell: {
+    width: 120,
+    color: colors.white,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray,
+  },
+  evenRow: {
+    backgroundColor: colors.white,
+  },
+  oddRow: {
+    backgroundColor: colors.lightGray,
+  },
+  cell: {
+    width: 120,
+    padding: 10,
+    textAlign: 'center',
+  },
+  emptyTableRow: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyTableText: {
+    color: colors.mediumGray,
+  },
+  filterInfo: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.gray,
+  },
+  filterInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  filtersList: {
+    marginTop: 8,
   },
 });
 
