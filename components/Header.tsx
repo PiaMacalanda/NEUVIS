@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'reac
 import Logo from './logo';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { supabase } from '@/app/lib/supabaseClient';
+import { router } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import { supabase } from '@/app/lib/supabaseClient';
 import NotificationPanel from './NotificationPanel';
@@ -249,7 +249,6 @@ const Header: React.FC<HeaderProps> = ({
         <TouchableOpacity 
           style={styles.profileButton}
           onPress={() => setProfileModalVisible(true)}
-          activeOpacity={0.7}
         >
           <View style={styles.avatar}>
             <Ionicons name="person" size={16} color="#fff" />
@@ -263,7 +262,9 @@ const Header: React.FC<HeaderProps> = ({
       </View>
 
       {/* Profile Modal */}
-      <ProfileModal 
+      <Modal
+        animationType="fade"
+        transparent={true}
         visible={profileModalVisible}
         onRequestClose={() => setProfileModalVisible(false)}
       >
@@ -357,6 +358,10 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: 'bold',
+    color: '#252525',
+  },
+  subtitle: {
+    fontSize: 12,
     color: '#252525',
   },
   right: {
