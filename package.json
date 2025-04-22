@@ -27,7 +27,6 @@
     "@supabase/storage-js": "^2.7.1",
     "@supabase/supabase-js": "^2.49.4",
     "date-fns": "^4.1.0",
-    "dependencies": "^0.0.1",
     "expo": "~52.0.37",
     "expo-auth-session": "^6.0.3",
     "expo-blur": "~14.0.3",

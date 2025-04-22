@@ -162,7 +162,7 @@ export default function SecuritySignupScreen() {
             
             <View style={styles.loginPrompt}>
               <Text style={styles.loginPromptText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/neuvisLanding')}>
+              <TouchableOpacity onPress={() => router.back()}>
                 <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>
             </View>
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
-    color: '#B0B0B0',
+    color: '#252525',
   },
   securityIcon: {
     padding: 10,

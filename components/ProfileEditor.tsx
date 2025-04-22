@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { supabase } from '@/app/lib/supabaseClient';
 
 interface ProfileEditorProps {
@@ -217,13 +217,11 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#252525" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile Settings</Text>
-      </View>
+    <ScrollView style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 0 }]}>
+      <Stack.Screen options={{ 
+              headerShown: true, title: 'Profile',
+              headerStyle: { backgroundColor: '#4a89dc' },
+            }} />
 
       {/* Profile Avatar Section */}
       <View style={styles.avatarSection}>

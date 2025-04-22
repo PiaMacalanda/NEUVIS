@@ -177,8 +177,8 @@ export default function NeuvisLanding() {
             onPress={() => router.push('./Notifications')}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconContainer, styles.logsIcon]}>
-              <Ionicons name="book-outline" size={32} color="#fff" />
+            <View style={[styles.iconContainer, styles.expiredIcon]}>
+              <Ionicons name="alert-circle-outline" size={32} color="#fff" />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>Expired ID</Text>
@@ -322,6 +322,10 @@ const styles = StyleSheet.create({
   },
   logsIcon: {
     backgroundColor: '#003566',
+    opacity: 0.9,
+  },
+  expiredIcon: {
+    backgroundColor: '#ffc300',
     opacity: 0.9,
   },
   cardContent: {

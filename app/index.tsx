@@ -14,12 +14,10 @@ export default function HomeScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#252525" />
 
       <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
+        <View style={styles.imageHeaderContainer}>
+          <Image source={require('../assets/NEUFront.jpg')} style={styles.imageHeader} resizeMode="cover" />
+          <View style={styles.headerOverlay}>
             <Logo size="small" />
-          </View>
-
-          <View style={styles.headerContent}>
             <Text style={styles.title}>NEUVIS</Text>
             <Text style={styles.subtitle}>New Era University Visitor Identification System</Text>
           </View>
@@ -84,6 +82,27 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     paddingHorizontal: 20,
   },
+  imageHeaderContainer: {
+    width: '100%',
+    height: 200,
+    overflow: 'hidden',
+  },
+  
+  imageHeader: {
+    width: '100%',
+    height: '100%',
+    alignSelf: 'center',
+  },  
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },  
   logoContainer: {
     alignItems: 'center',
     marginBottom: 20,
