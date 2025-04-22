@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabaseClient';
-
+import { Alert } from 'react-native';
+import { v4 as uuidv4 } from 'uuid'; // install uuid: npm install uuid
 
 type VisitorData = {
   id: number;
@@ -108,28 +109,28 @@ export default function AdminDataScreen() {
   
           // Parse timestamps
           // Change this part in the useEffect where you're parsing timestamps
-        // In the useEffect where you create combinedData
-const visitTime = new Date(visit.time_of_visit);
-// Update this line to check for different time_out fields
-const timeOutDate = visit.time_out ? new Date(visit.time_out) : 
-                   (visit.expiration ? new Date(visit.expiration) : visitTime);
-          
-return {
-  id: visit.id,
-  name: visitor ? visitor.name : 'Unknown Visitor',
-  id_number: visit.visit_id || 'Unknown ID',
-  phone_number: visitor ? visitor.phone_number : 'Unknown Phone',
-  purpose_of_visit: visit.purpose_of_visit || 'Unknown Purpose',
-  gate: security ? security.assign_gate : `Gate ${visit.id % 2 + 1}`,
-  host: security ? security.full_name : 'Security Staff',
-  // Format time_in 
-  time_in: visitTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/am|pm/i, m => m.toUpperCase()),
-  // Updated time_out formatting with fallback options
-  time_out: visit.time_out || visit.expiration ? 
-    timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/am|pm/i, m => m.toUpperCase()) : 
-    'N/A',
-  date: visitTime
-};
+          // In the useEffect where you create combinedData
+          const visitTime = new Date(visit.time_of_visit);
+          // Update this line to check for different time_out fields
+          const timeOutDate = visit.time_out ? new Date(visit.time_out) : 
+                            (visit.expiration ? new Date(visit.expiration) : visitTime);
+                  
+          return {
+            id: visit.id,
+            name: visitor ? visitor.name : 'Unknown Visitor',
+            id_number: visit.visit_id || 'Unknown ID',
+            phone_number: visitor ? visitor.phone_number : 'Unknown Phone',
+            purpose_of_visit: visit.purpose_of_visit || 'Unknown Purpose',
+            gate: security ? security.assign_gate : `Gate ${visit.id % 2 + 1}`,
+            host: security ? security.full_name : 'Security Staff',
+            // Format time_in 
+            time_in: visitTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/am|pm/i, m => m.toUpperCase()),
+            // Updated time_out formatting with fallback options
+            time_out: visit.time_out || visit.expiration ? 
+              timeOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/am|pm/i, m => m.toUpperCase()) : 
+              'N/A',
+            date: visitTime
+          };
         });
   
         setTableData(combinedData);
@@ -241,11 +242,44 @@ return {
     setDetailsModalVisible(true);
   };
 
-  
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.headerContainer}>
+        {/* Added Save Current View button to header container */}
+        <Button
+  title="Save Current View"
+  onPress={async () => {
+    try {
+      const reportTitle = `Report ${new Date().toLocaleString()}`;
+      const reportData = sortedData.map(({ id, name, id_number, phone_number, purpose_of_visit, gate, host, time_in, time_out, date }) => ({
+        id, name, id_number, phone_number, purpose_of_visit, gate, host, time_in, time_out, date: date.toISOString()
+      }));
+
+      // This should match your Supabase table structure
+      const { data, error } = await supabase
+        .from('saved_reports')
+        .insert([
+          {
+            // No need to explicitly set id as it's auto-generated with gen_random_uuid()
+            name: reportTitle,
+            created_at: new Date().toISOString(),
+            data_snapshot: reportData, // Store in data_snapshot rather than 'data' field
+            filters: filterConfig // Store current filters
+          }
+        ]);
+
+      if (error) {
+        console.error('Failed to save report:', error);
+        Alert.alert('Error', 'Could not save report: ' + error.message);
+      } else {
+        Alert.alert('Success', 'View saved to reports!');
+      }
+    } catch (err) {
+      console.error('Exception saving report:', err);
+      Alert.alert('Error', 'An unexpected error occurred');
+    }
+  }}
+/>
       </View>
       
       {/* Search and Filter */}
@@ -525,89 +559,89 @@ return {
 
       {/* Details Modal */}
       <Modal
-  animationType="slide"
-  transparent={true}
-  visible={detailsModalVisible}
-  onRequestClose={() => setDetailsModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Visitor Details</Text>
-        <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
-          <Ionicons name="close" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-      
-      {selectedVisitor && (
-        <ScrollView 
-          style={styles.modalScrollView}
-          contentContainerStyle={styles.modalScrollViewContent}
-          showsVerticalScrollIndicator={true}
-        >
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Name:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>ID Number:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.id_number}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Phone:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.phone_number}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Purpose:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.purpose_of_visit}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Gate:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.gate}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Host:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.host}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Time In:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.time_in}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Time Out:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.time_out}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Date:</Text>
-              <Text style={styles.detailValue}>{selectedVisitor.date.toLocaleDateString()}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Visit Count:</Text>
-              <Text style={styles.detailValue}>{visitorFrequencies[selectedVisitor.name]}</Text>
+        animationType="slide"
+        transparent={true}
+        visible={detailsModalVisible}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Visitor Details</Text>
+              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
             </View>
             
-            <View style={styles.visitHistoryHeader}>
-              <Text style={styles.visitHistoryTitle}>Visit History</Text>
-            </View>
+            {selectedVisitor && (
+              <ScrollView 
+                style={styles.modalScrollView}
+                contentContainerStyle={styles.modalScrollViewContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={styles.detailsContainer}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Name:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.name}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>ID Number:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.id_number}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Phone:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.phone_number}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Purpose:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.purpose_of_visit}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Gate:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.gate}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Host:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.host}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Time In:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.time_in}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Time Out:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.time_out}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Date:</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.date.toLocaleDateString()}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Visit Count:</Text>
+                    <Text style={styles.detailValue}>{visitorFrequencies[selectedVisitor.name]}</Text>
+                  </View>
                   
-            {tableData.filter(item => item.name === selectedVisitor.name).map((visit) => (
-        <View key={visit.id} style={styles.visitHistoryItem}>
-          <Text style={styles.visitHistoryDate}>
-            {/* Format the date as "Day Month Year" (1 Apr 2025) */}
-            {`${visit.date.getDate()} ${visit.date.toLocaleString('default', { month: 'short' })} ${visit.date.getFullYear()}`} ({visit.time_in} - {visit.time_out})
-          </Text>
-          <Text style={styles.visitHistoryPurpose}>
-            Purpose: {visit.purpose_of_visit}
-          </Text>
-        </View>
-      ))}
+                  <View style={styles.visitHistoryHeader}>
+                    <Text style={styles.visitHistoryTitle}>Visit History</Text>
+                  </View>
+                        
+                  {tableData.filter(item => item.name === selectedVisitor.name).map((visit) => (
+                    <View key={visit.id} style={styles.visitHistoryItem}>
+                      <Text style={styles.visitHistoryDate}>
+                        {/* Format the date as "Day Month Year" (1 Apr 2025) */}
+                        {`${visit.date.getDate()} ${visit.date.toLocaleString('default', { month: 'short' })} ${visit.date.getFullYear()}`} ({visit.time_in} - {visit.time_out})
+                      </Text>
+                      <Text style={styles.visitHistoryPurpose}>
+                        Purpose: {visit.purpose_of_visit}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
           </View>
-        </ScrollView>
-      )}
-    </View>
-  </View>
-</Modal>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

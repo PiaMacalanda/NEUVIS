@@ -22,10 +22,12 @@
     "@react-native-ml-kit/text-recognition": "^1.5.2",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
+    "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.0.14",
     "@supabase/storage-js": "^2.7.1",
     "@supabase/supabase-js": "^2.49.4",
     "date-fns": "^4.1.0",
+    "dependencies": "^0.0.1",
     "expo": "~52.0.37",
     "expo-auth-session": "^6.0.3",
     "expo-blur": "~14.0.3",
@@ -53,7 +55,8 @@
     "react-native-screens": "~4.4.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
-    "tailwindcss": "3.4.17"
+    "tailwindcss": "3.4.17",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
