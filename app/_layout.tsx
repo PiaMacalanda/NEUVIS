@@ -1,7 +1,8 @@
-import React from 'react';
-import { Stack } from 'expo-router';
+import React, { useEffect } from 'react';
+import { router, Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './context/AuthContext';
+
 
 export default function RootLayout() {
   return (
@@ -28,5 +29,5 @@ export default function RootLayout() {
         </Stack>
       </GestureHandlerRootView>
     </AuthProvider>
-    );
+  );
 }
