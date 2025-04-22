@@ -24,12 +24,22 @@ interface Report {
   id: string;
   title: string;
   created: string;
+  data: any[];
+  filters: any;
 }
 
 interface ButtonProps {
   onPress: () => void;
   label: string;
   variant?: 'primary' | 'secondary' | 'danger';
+}
+
+interface SavedReport {
+  id: string;
+  title: string;
+  created: string;
+  data: any[]; // This will hold the data_snapshot contents
+  filters: any;
 }
 
 // Simple button component to avoid type errors
@@ -67,6 +77,8 @@ const AdminReport: React.FC = () => {
   const [reportToRename, setReportToRename] = useState<string | null>(null);
   const [newReportName, setNewReportName] = useState<string>('');
   const navigation = useNavigation();
+  const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
+  const [showMaximizeModal, setShowMaximizeModal] = useState<boolean>(false);
 
 
 
@@ -178,13 +190,13 @@ const AdminReport: React.FC = () => {
     }
   };
 
-  function handlePrint(id: string): void {
-    throw new Error('Function not implemented.');
-  }
+  const handlePrint = (id: string) => {
+    Alert.alert('Print', 'Printing functionality not implemented yet');
+  };
 
-  function handleDelete(id: string): void {
-    throw new Error('Function not implemented.');
-  }
+  const handleDelete = (id: string) => {
+    setShowDeleteConfirm(id);
+  };
 
   return (
     <View style={styles.container}>
@@ -228,10 +240,15 @@ const AdminReport: React.FC = () => {
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
-                  style={styles.actionButton}
-                >
-                  <Ionicons name="expand" size={24} color={colors.black} />
-                </TouchableOpacity>
+             style={styles.actionButton}
+              onPress={() => {
+              const reportToView = reports.find(r => r.id === report.id);
+              setSelectedReport(reportToView || null);
+               setShowMaximizeModal(true);
+              }}
+              >
+  <Ionicons name="expand" size={24} color={colors.black} />
+</TouchableOpacity>
               </View>
               
               {showDeleteConfirm === report.id && (
@@ -290,6 +307,85 @@ const AdminReport: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Maximize Modal */}
+<Modal
+  visible={showMaximizeModal}
+  transparent={false}
+  animationType="slide"
+  onRequestClose={() => setShowMaximizeModal(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalHeader}>
+      <Text style={styles.modalHeaderText}>
+        {selectedReport?.title || 'Report Details'}
+      </Text>
+      <TouchableOpacity onPress={() => setShowMaximizeModal(false)}>
+        <Ionicons name="close" size={24} color={colors.black} />
+      </TouchableOpacity>
+    </View>
+    
+    <ScrollView>
+      {/* Table Header */}
+      <ScrollView horizontal>
+        <View style={styles.tableContainer}>
+          <View style={styles.tableHeader}>
+            <Text style={styles.headerCell}>Name</Text>
+            <Text style={styles.headerCell}>ID</Text>
+            <Text style={styles.headerCell}>Phone</Text>
+            <Text style={styles.headerCell}>Purpose</Text>
+            <Text style={styles.headerCell}>Gate</Text>
+            <Text style={styles.headerCell}>Host</Text>
+            <Text style={styles.headerCell}>Time In</Text>
+            <Text style={styles.headerCell}>Time Out</Text>
+            <Text style={styles.headerCell}>Date</Text>
+          </View>
+          
+          {/* Table Rows */}
+          {selectedReport?.data?.map((item, index) => (
+            <View 
+              key={index}
+              style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
+            >
+              <Text style={styles.cell}>{item.name}</Text>
+              <Text style={styles.cell}>{item.id_number}</Text>
+              <Text style={styles.cell}>{item.phone_number}</Text>
+              <Text style={styles.cell}>{item.purpose_of_visit}</Text>
+              <Text style={styles.cell}>{item.gate}</Text>
+              <Text style={styles.cell}>{item.host}</Text>
+              <Text style={styles.cell}>{item.time_in}</Text>
+              <Text style={styles.cell}>{item.time_out}</Text>
+              <Text style={styles.cell}>
+                {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
+              </Text>
+            </View>
+          ))}
+          
+          {(!selectedReport?.data || selectedReport.data.length === 0) && (
+            <View style={styles.emptyTableRow}>
+              <Text style={styles.emptyTableText}>No data available</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+      
+      <View style={styles.filterInfo}>
+        <Text style={styles.filterInfoTitle}>Applied Filters:</Text>
+        {selectedReport?.filters && (
+          <View style={styles.filtersList}>
+            <Text>Gate: {selectedReport.filters.gate || 'All'}</Text>
+            <Text>Purpose: {selectedReport.filters.purpose || 'All'}</Text>
+            <Text>Host: {selectedReport.filters.host || 'All'}</Text>
+            {selectedReport.filters.date && (
+              <Text>Date: {new Date(selectedReport.filters.date).toLocaleDateString()}</Text>
+            )}
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  </View>
+</Modal>
+
     </View>
   );
 };
@@ -421,6 +517,81 @@ const styles = StyleSheet.create({
   buttonTextDark: {
     color: colors.black,
     fontWeight: '600',
+  }, modalContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray,
+    backgroundColor: colors.primary,
+  },
+  modalHeaderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.white,
+  },
+  tableContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.gray,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: colors.darkGray,
+    paddingVertical: 12,
+  },
+  headerCell: {
+    width: 120,
+    color: colors.white,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray,
+  },
+  evenRow: {
+    backgroundColor: colors.white,
+  },
+  oddRow: {
+    backgroundColor: colors.lightGray,
+  },
+  cell: {
+    width: 120,
+    padding: 10,
+    textAlign: 'center',
+  },
+  emptyTableRow: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyTableText: {
+    color: colors.mediumGray,
+  },
+  filterInfo: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.gray,
+  },
+  filterInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  filtersList: {
+    marginTop: 8,
   },
 });
 
