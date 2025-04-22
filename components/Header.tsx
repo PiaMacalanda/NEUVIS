@@ -5,13 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/context/AuthContext';
-import { supabase } from '@/app/lib/supabaseClient';
+import ProfileModal from './ProfileModal';
 import NotificationPanel from './NotificationPanel';
 import NotificationAlert from './NotificationAlert';
+import { router } from 'expo-router';
 
 // Define the Notification interface
 interface Notification {
-  id: string;  // Using string type for id
+  id: string;
   content: string;
   read: boolean;
   created_at: string;
@@ -35,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotificationAlert, setShowNotificationAlert] = useState(false);
   const [latestNotification, setLatestNotification] = useState<Notification | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState({
     full_name: "Loading...",
     role: "Loading..."
@@ -43,33 +45,59 @@ const Header: React.FC<HeaderProps> = ({
   // Fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsLoading(true);
       try {
-        if (user && user.id) {
-          const { data, error } = await supabase
-            .from('users')
-            .select('full_name, role')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching user data:', error);
-            return;
-          }
-          
-          if (data) {
-            setUserData({
-              full_name: data.full_name || "User",
-              role: data.role || "No Role Assigned"
-            });
-          }
+        if (!user || !user.id) {
+          console.log('No user ID available');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('Fetching user data for ID:', user.id);
+        
+        // Fetch the user data from Supabase using the authenticated user's ID
+        const { data, error } = await supabase
+          .from('users')
+          .select('full_name, role')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching user data:', error);
+          setUserData({
+            full_name: "Error loading",
+            role: "Try again later"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data) {
+          console.log('User data fetched successfully:', data);
+          setUserData({
+            full_name: data.full_name || "User",
+            role: data.role || "No Role Assigned"
+          });
+        } else {
+          console.log('No user data found');
+          setUserData({
+            full_name: "Unknown User",
+            role: "No Data Found"
+          });
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error);
+        setUserData({
+          full_name: "Error",
+          role: "Connection issue"
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, [user]);
+  }, [user?.id]);
 
   // Fetch initial notifications and set up real-time subscription
   useEffect(() => {
@@ -230,7 +258,9 @@ const Header: React.FC<HeaderProps> = ({
         </View>
       </View>
 
+      {/* Right Side: Profile */}
       <View style={styles.right}>
+        {/* Notification Button */}
         <TouchableOpacity 
           style={styles.notificationButton}
           onPress={handleNotificationPress}
@@ -246,6 +276,7 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </TouchableOpacity>
 
+        {/* Profile Button */}
         <TouchableOpacity 
           style={styles.profileButton}
           onPress={() => setProfileModalVisible(true)}
@@ -255,16 +286,22 @@ const Header: React.FC<HeaderProps> = ({
             <Ionicons name="person" size={16} color="#fff" />
           </View>
           <View style={styles.guardInfo}>
-            <Text style={styles.guardTitle} numberOfLines={1}>{userData.role}</Text>
-            <Text style={styles.guardSubtitle} numberOfLines={1}>{userData.full_name}</Text>
+            <Text style={styles.guardTitle} numberOfLines={1}>
+              {isLoading ? "Loading..." : userData.role}
+            </Text>
+            <Text style={styles.guardSubtitle} numberOfLines={1}>
+              {isLoading ? "Please wait..." : userData.full_name}
+            </Text>
           </View>
           <Ionicons name="chevron-down" size={16} color="#252525" />
         </TouchableOpacity>
       </View>
 
       {/* Profile Modal */}
-      <ProfileModal 
+      <Modal
         visible={profileModalVisible}
+        transparent={true}
+        animationType="fade"
         onRequestClose={() => setProfileModalVisible(false)}
       >
         <Pressable 
@@ -389,7 +426,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center', // Ensure text is centered
   },
-  
   profileButton: {
     flexDirection: 'row',
     alignItems: 'center',
