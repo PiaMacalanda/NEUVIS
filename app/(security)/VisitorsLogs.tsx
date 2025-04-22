@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../../components/logo';
 
-
 interface Visitor {
   id: number;
   name: string;
@@ -16,6 +15,7 @@ interface Visitor {
   card_type?: string;
   id_number?: string;
   visit_count?: number;
+  expiration?: string; // Added field for expiration
   visitors?: {
     id: number;
     name: string;
@@ -81,6 +81,29 @@ const VisitorsLogs: React.FC = () => {
     return `${month} ${day}, ${year} ${hours}:${minutesStr} ${ampm}`;
   }
 
+  // Updated function to check if a visitor pass is expired
+  const isVisitorExpired = (visitor: Visitor): boolean => {
+    // If the visitor has an expiration field, use it
+    if (visitor.expiration) {
+      const expirationDate = new Date(visitor.expiration);
+      const now = new Date();
+      return now > expirationDate;
+    }
+    
+    // If no expiration date is available, fall back to the 10 PM same day logic
+    const visitDate = new Date(visitor.time_of_visit);
+    
+    // Set expiration to 10 PM (22:00) on the same day
+    const expirationDate = new Date(visitDate);
+    expirationDate.setHours(22, 0, 0, 0);
+    
+    // Adjust for timezone if needed
+    const expirationPht = new Date(expirationDate.getTime() - (8 * 60 * 60 * 1000));
+    
+    const now = new Date();
+    return now > expirationPht;
+  };
+
   const handleDateSelection = (year: number, month: number, day: number) => {
     const newDate = new Date(year, month - 1, day);
     setSelectedDate(newDate);
@@ -96,7 +119,7 @@ const VisitorsLogs: React.FC = () => {
       const startOfDay = new Date(new Date(selectedDate).setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(new Date(selectedDate).setHours(23, 59, 59, 999)).toISOString();
       
-      // Modified query to fetch more visitor details
+      // Modified query to fetch more visitor details including expiration
       let query = supabase
         .from('visits')
         .select(`
@@ -105,6 +128,7 @@ const VisitorsLogs: React.FC = () => {
           time_out,
           visit_id,
           purpose_of_visit,
+          expiration,
           visitors(
             id, 
             name, 
@@ -127,20 +151,37 @@ const VisitorsLogs: React.FC = () => {
       
       if (error) throw error;
 
-      // Transform data with comprehensive visitor details
+      // Transform data with comprehensive visitor details and filter out expired visitors
       const formattedData = data
         .filter(item => item.visitors !== null)
         .map(item => ({
           id: item.id,
           name: item.visitors?.name || 'Unknown Visitor',
-          time_of_visit: formatDateTime(item.time_of_visit),
-          time_out: item.time_out ? formatDateTime(item.time_out) : undefined,
+          time_of_visit: item.time_of_visit,
+          formatted_time_of_visit: formatDateTime(item.time_of_visit),
+          time_out: item.time_out,
+          formatted_time_out: item.time_out ? formatDateTime(item.time_out) : undefined,
           visit_id: item.visit_id,
           purpose_of_visit: item.purpose_of_visit || '',
           phone_number: item.visitors?.phone_number || '',
           card_type: item.visitors?.card_type || '',
           id_number: item.visitors?.id_number || '',
-          visit_count: 3 // This would ideally be dynamically fetched
+          visit_count: 3, // This would ideally be dynamically fetched
+          expiration: item.expiration
+        }))
+        .filter(visitor => {
+          // If it's an ongoing visit, don't show expired passes
+          if (activeTab === 'ongoing') {
+            return !isVisitorExpired(visitor);
+          }
+          // For completed visits, only show those that have been properly checked out
+          // and don't include expired but unchecked visitors
+          return visitor.time_out;
+        })
+        .map(visitor => ({
+          ...visitor,
+          time_of_visit: visitor.formatted_time_of_visit,
+          time_out: visitor.formatted_time_out
         }));
             
       setVisitors(formattedData);

@@ -3,26 +3,11 @@ import React from 'react';
 import { Image, StyleSheet, View, Text, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { Logo } from '../components';
 import { useRouter } from 'expo-router';
-import { supabase } from './lib/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 import FooterFull from '../components/FooterFull';
 
 export default function HomeScreen() {
   const router = useRouter();
-
-  // Function to handle Google Sign-in
-  async function signInWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: 'http://localhost:8081/callback', // Replace with your deep link
-      },
-    });
-
-    if (error) {
-      console.error('Google Sign-in Error:', error.message);
-    }
-  }
 
   return (
     <>
@@ -74,7 +59,7 @@ export default function HomeScreen() {
           <View style={styles.buttonGroup}>
             <TouchableOpacity 
               style={[styles.routeButton, styles.darkButton]}
-              onPress={() => router.push('/superadmin')}
+              onPress={() => router.push('/superadmin-login')}
             >
               <Ionicons name="person-outline" size={24} color="#fff" style={styles.buttonIcon} />
               <Text style={styles.routeButtonText}>Superadmin Portal</Text>
