@@ -6,14 +6,15 @@ export default function StaticLayout() {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#f4511e',
+          backgroundColor: '#ffffff',
         },
-        headerTintColor: '#fff',
+        headerTintColor: '#252525',
         headerTitleStyle: {
           fontWeight: 'bold',
+          fontSize: 16,
         },
       }}>
-      <Stack.Screen name="privacy" />
+      <Stack.Screen name="privacy" options={{title: " "}}/>
     </Stack>
   );
 }

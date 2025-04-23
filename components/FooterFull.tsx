@@ -7,9 +7,16 @@ type AuthorProps = {
   name: string;
   role: string;
   imageUrl?: string;
+  githubUrl?: string;
 };
 
-const Author: React.FC<AuthorProps> = ({ name, role, imageUrl }) => {
+const Author: React.FC<AuthorProps> = ({ name, role, imageUrl, githubUrl }) => {
+  const handleNamePress = () => {
+    if (githubUrl) {
+      Linking.openURL(githubUrl);
+    }
+  };  
+
   return (
     <View style={styles.authorContainer}>
       {imageUrl && (
@@ -20,7 +27,9 @@ const Author: React.FC<AuthorProps> = ({ name, role, imageUrl }) => {
         />
       )}
       <View style={styles.authorInfo}>
-        <Text style={styles.authorName}>{name}</Text>
+        <TouchableOpacity onPress={handleNamePress}>
+          <Text style={[styles.authorName, {color: '#4a89dc'}]}>{name}</Text>
+        </ TouchableOpacity>
         <Text style={styles.authorRole}>{role}</Text>
       </View>
     </View>
@@ -28,23 +37,14 @@ const Author: React.FC<AuthorProps> = ({ name, role, imageUrl }) => {
 };
 
 export default function FooterFull() {
-  const currentYear = new Date().getFullYear();
   
-  const handlePrivacyPress = () => {
-    Linking.openURL('https://your-privacy-policy-url.com');
-  };
-  
-  const handleTermsPress = () => {
-    Linking.openURL('https://your-terms-of-service-url.com');
-  };
-
   const authors = [
-    { name: "Pia Katleya Macalanda", role: "Scrum Master & Lead Developer", imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/b/bb/Espressora_Signora.jpg/revision/latest?cb=20250422100132" },
-    { name: "Jaime III Dy", role: "Backend Developer & Security Specialist", imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/e/e3/Bombini_Gusini.jpg/revision/latest?cb=20250416185048" },
-    { name: "Leo Gabriel Rentazida", role: "UI/UX Designer", imageUrl: "https://media1.tenor.com/m/riuW5lq1bt0AAAAC/tralalero-tralala.gif" },
-    { name: "Aliyah Aira Llan", role: "UI/UX Designer", imageUrl: "https://th.bing.com/th/id/OIF.HN1FQwewVhjXJE79r2ZXxw?rs=1&pid=ImgDetMain" },
-    { name: "Lyrine Poliarco", role: "Database Analyst", imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/3/37/CrocoPotato.jpg/revision/latest?cb=20250415130348" },
-    { name: "Angelica Toquero", role: "Database Analyst", imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/3/38/Hq720.jpg/revision/latest?cb=20250405141658" },
+    { name: "Pia Katleya Macalanda", role: "Scrum Master & Lead Developer", githubUrl: 'https://github.com/PiaMacalanda', imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/b/bb/Espressora_Signora.jpg/revision/latest?cb=20250422100132" },
+    { name: "Jaime III Dy", role: "Backend Developer & Security Specialist", githubUrl: "https://github.com/JaimeDyIII", imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/e/e3/Bombini_Gusini.jpg/revision/latest?cb=20250416185048" },
+    { name: "Leo Gabriel Rentazida", role: "UI/UX Designer", githubUrl: "https://github.com/Doc-Leo", imageUrl: "https://media1.tenor.com/m/riuW5lq1bt0AAAAC/tralalero-tralala.gif" },
+    { name: "Aliyah Aira Llana", role: "UI/UX Designer", githubUrl: "https://github.com/AliyahAira", imageUrl: "https://th.bing.com/th/id/OIF.HN1FQwewVhjXJE79r2ZXxw?rs=1&pid=ImgDetMain" },
+    { name: "Lyrine Poliarco", role: "Database Analyst", githubUrl: "https://github.com/LyrinePoliarco", imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/3/37/CrocoPotato.jpg/revision/latest?cb=20250415130348" },
+    { name: "Angelica Toquero", role: "Database Analyst", githubUrl: "https://github.com/AngelicaToquero",imageUrl: "https://static.wikia.nocookie.net/brainrotnew/images/3/38/Hq720.jpg/revision/latest?cb=20250405141658" },
   ];
 
   return (
@@ -66,7 +66,7 @@ export default function FooterFull() {
           <TouchableOpacity onPress={() => router.push('/privacy')}>
             <Text style={styles.footerLink}>Privacy Policy</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleTermsPress}>
+          <TouchableOpacity onPress={() => router.push('/privacy')}>
             <Text style={styles.footerLink}>Terms of Service</Text>
           </TouchableOpacity>
         </View>
@@ -83,6 +83,7 @@ export default function FooterFull() {
               name={author.name}
               role={author.role}
               imageUrl={author.imageUrl}
+              githubUrl={author.githubUrl}
             />
           ))}
         </View>

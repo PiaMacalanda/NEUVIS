@@ -15,18 +15,8 @@ export default function PrivacyPolicy() {
 
   return (
       <>
-      <Stack.Screen options={{ headerShown: false }} />
       
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#4a89dc" />
-          </TouchableOpacity>
-          <View style={styles.placeholder} />
-        </View>
       
         <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
           <Text style={styles.title}>Privacy Policy for NEUVIS</Text>
