@@ -161,7 +161,7 @@ export default function SecurityLoginScreen() {
             
             <TouchableOpacity 
               style={styles.signupButton}
-              onPress={() => router.push('/security-signup')}
+              onPress={() => router.push('/neuvisLanding')}
             >
               <Text style={styles.signupButtonText}>Create New Account</Text>
             </TouchableOpacity>

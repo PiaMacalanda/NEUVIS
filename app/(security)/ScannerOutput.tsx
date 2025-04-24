@@ -8,10 +8,9 @@ import * as FileSystem from 'expo-file-system';
 export default function ScannerOutput() {
     const params = useLocalSearchParams();
     const router = useRouter();
-    
 
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const card_type = params.card_type as string || '';
     const id_number = params.id_number as string || '';
     const last_name = params.last_name as string || '';
@@ -19,22 +18,17 @@ export default function ScannerOutput() {
     const middle_name = params.middle_name as string || '';
     const full_name = params.full_name as string || '';
     const image_uri = params.image_uri as string || '';
-    
-   
-    const middleInitial = middle_name ? middle_name.charAt(0) + '.' : '';
-    const concatenatedFullName = middleInitial 
-        ? `${last_name}, ${first_name} ${middleInitial}`
-        : `${last_name}, ${first_name}`;
-    const fullName = full_name ? full_name : concatenatedFullName;
-    
+
+  
+    const middleInitial = middle_name ? middle_name.charAt(0) : '';
+    const fullName = full_name || `${last_name}, ${first_name}${middleInitial ? ' ' + middleInitial : ''}`;
 
     const [showDateModal, setShowDateModal] = useState(false);
     const today = new Date();
     const [selectedDate, setSelectedDate] = useState(today);
-    
 
     const [formData, setFormData] = useState({
-        name: fullName,
+        name: fullName, 
         cellphone: '',
         dateOfVisit: formatDate(today),
         idType: card_type,
@@ -47,14 +41,12 @@ export default function ScannerOutput() {
         cellphone: false,
         purposeOfVisit: false
     });
-    
 
     const [errorMessages, setErrorMessages] = useState({
         cellphone: 'Cellphone number is required',
         purposeOfVisit: 'Purpose of visit is required'
     });
 
-  
     const [touched, setTouched] = useState({
         cellphone: false,
         purposeOfVisit: false
@@ -67,132 +59,55 @@ export default function ScannerOutput() {
         return `${month}/${day}/${year}`;
     }
 
-  
     const formatPhoneNumber = (text: string): string => {
         const digits = text.replace(/\s/g, '');
-        
-        if (digits.length <= 3) {
-            return digits;
-        } else if (digits.length <= 6) {
-            return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-        } else {
-            return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
-        }
+        if (digits.length <= 3) return digits;
+        else if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+        else return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
     };
 
-  
     const years = Array.from({ length: 10 }, (_, i) => today.getFullYear() - 5 + i);
-    const months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     
-    const getDaysInMonth = (month: number, year: number) => {
-        return new Date(year, month, 0).getDate();
-    };
+    const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
     
     const handleDateSelection = (year: number, month: number, day: number) => {
         const newDate = new Date(year, month - 1, day);
         setSelectedDate(newDate);
-        setFormData({
-            ...formData,
-            dateOfVisit: formatDate(newDate)
-        });
+        setFormData({ ...formData, dateOfVisit: formatDate(newDate) });
         setShowDateModal(false);
     };
 
     const handlePhoneChange = (value: string) => {
-        
         const sanitizedValue = value.replace(/[^0-9\s]/g, '').replace(/\s/g, '').slice(0, 10);
-        
-      
         const formattedValue = formatPhoneNumber(sanitizedValue);
-        
-        setFormData({
-            ...formData,
-            cellphone: formattedValue
-        });
-        
-     
-        setTouched({
-            ...touched,
-            cellphone: true
-        });
-        
-       
+        setFormData({ ...formData, cellphone: formattedValue });
+        setTouched({ ...touched, cellphone: true });
         const digits = formattedValue.replace(/\s/g, '');
         const isEmpty = digits.trim() === '';
         const isInvalidLength = digits.length > 0 && digits.length < 10;
-        
-        let errorMessage = '';
-        if (isEmpty) {
-            errorMessage = 'Cellphone number is required';
-        } else if (isInvalidLength) {
-            errorMessage = 'Cellphone number must be 10 digits';
-        }
-        
-        setErrorMessages({
-            ...errorMessages,
-            cellphone: errorMessage
-        });
-        
-        setErrors({
-            ...errors,
-            cellphone: isEmpty || isInvalidLength
-        });
+        let errorMessage = isEmpty ? 'Cellphone number is required' : isInvalidLength ? 'Cellphone number must be 10 digits' :'';
+        setErrorMessages({ ...errorMessages, cellphone: errorMessage });
+        setErrors({ ...errors, cellphone: isEmpty || isInvalidLength });
     };
 
     const handleChange = (field: string, value: string) => {
-        setFormData({
-            ...formData,
-            [field]: value
-        });
-        
-       
-        setTouched({
-            ...touched,
-            [field]: true
-        });
-        
-      
-        setErrors({
-            ...errors,
-            [field]: value.trim() === ''
-        });
+        setFormData({ ...formData, [field]: value });
+        setTouched({ ...touched, [field]: true });
+        setErrors({ ...errors, [field]: value.trim() === '' });
     };
 
     const handleBlur = (field: string) => {
-        setTouched({
-            ...touched,
-            [field]: true
-        });
-        
+        setTouched({ ...touched, [field]: true });
         if (field === 'cellphone') {
             const digits = formData.cellphone.replace(/\s/g, '');
             const isEmpty = digits.trim() === '';
             const isInvalidLength = digits.length > 0 && digits.length < 10;
-            
-            let errorMessage = '';
-            if (isEmpty) {
-                errorMessage = 'Cellphone number is required';
-            } else if (isInvalidLength) {
-                errorMessage = 'Cellphone number must be 10 digits';
-            }
-            
-            setErrorMessages({
-                ...errorMessages,
-                cellphone: errorMessage
-            });
-            
-            setErrors({
-                ...errors,
-                cellphone: isEmpty || isInvalidLength
-            });
+            let errorMessage = isEmpty ? 'Cellphone number is required' : isInvalidLength ? 'Cellphone number must be 10 digits' : '';
+            setErrorMessages({ ...errorMessages, cellphone: errorMessage });
+            setErrors({ ...errors, cellphone: isEmpty || isInvalidLength });
         } else {
-            setErrors({
-                ...errors,
-                [field]: formData[field as keyof typeof formData].trim() === ''
-            });
+            setErrors({ ...errors, [field]: formData[field as keyof typeof formData].trim() === '' });
         }
     };
 
@@ -201,194 +116,150 @@ export default function ScannerOutput() {
         const cellphoneIsEmpty = digits.trim() === '';
         const cellphoneIsInvalidLength = digits.length > 0 && digits.length < 10;
         const purposeIsEmpty = formData.purposeOfVisit.trim() === '';
-        
         const newErrors = {
             cellphone: cellphoneIsEmpty || cellphoneIsInvalidLength,
             purposeOfVisit: purposeIsEmpty
         };
-        
         const newErrorMessages = {
-            cellphone: cellphoneIsEmpty ? 'Cellphone number is required' : 
-                       cellphoneIsInvalidLength ? 'Cellphone number must be 10 digits' : '',
+            cellphone: cellphoneIsEmpty ? 'Cellphone number is required' : cellphoneIsInvalidLength ? 'Cellphone number must be 10 digits' : '',
             purposeOfVisit: 'Purpose of visit is required'
         };
-        
         setErrorMessages(newErrorMessages);
         setErrors(newErrors);
-        setTouched({
-            cellphone: true,
-            purposeOfVisit: true
-        });
-        
+        setTouched({ cellphone: true, purposeOfVisit: true });
         return !Object.values(newErrors).some(error => error);
     };
 
     const formatDateTime = (date: Date): string => {
         const options: Intl.DateTimeFormatOptions = { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'Asia/Manila'
+            month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
         };
         return date.toLocaleDateString('en-US', options);
     };
 
     const uploadImage = async (imageUri: string) => {
         try {
-          if (!imageUri) {
-            console.error("No image URI provided");
-            return null;
-          }
-          
-          console.log("Starting upload with URI:", imageUri);
-          
-          const fileInfo = await FileSystem.getInfoAsync(imageUri);
-          if (!fileInfo.exists) {
-            console.error("File does not exist");
-            return null;
-          }
-          
-          const base64 = await FileSystem.readAsStringAsync(imageUri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          
-          const uniqueFileName = `id_image_${Date.now()}.jpg`;
-          
-          const { data, error } = await supabase.storage
-            .from('id-images')
-            .upload(uniqueFileName, decode(base64), {
-              contentType: 'image/jpeg',
-            });
-          
-          if (error) {
-            console.error("Supabase upload error:", error);
-            throw error;
-          }
-          
-          const { data: urlData } = supabase.storage
-            .from('id-images')
-            .getPublicUrl(uniqueFileName);
-          
-          console.log("Upload successful, public URL:", urlData.publicUrl);
-          return urlData.publicUrl;
+            if (!imageUri) {
+                console.error("No image URI provided");
+                return null;
+            }
+            const fileInfo = await FileSystem.getInfoAsync(imageUri);
+            if (!fileInfo.exists) {
+                console.error("File does not exist");
+                return null;
+            }
+            const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+            const uniqueFileName = `id_image_${Date.now()}.jpg`;
+            const { data, error } = await supabase.storage.from('id-images').upload(uniqueFileName, decode(base64), { contentType: 'image/jpeg' });
+            if (error) {
+                console.error("Supabase upload error:", error);
+                throw error;
+            }
+            const { data: urlData } = supabase.storage.from('id-images').getPublicUrl(uniqueFileName);
+            return urlData.publicUrl;
         } catch (error) {
-          console.error('Error uploading image:', error);
-          return null;
+            console.error('Error uploading image:', error);
+            return null;
         }
-      };
-      
-    function decode(base64String:string) {
+    };
+
+    function decode(base64String: string) {
         const binaryString = atob(base64String);
         const bytes = new Uint8Array(binaryString.length);
-        
         for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
         }
-        
         return bytes;
     }
 
-    const insertVisits = async (visitorID: number, visitID:string, time_of_visit: Date, expirationpht: Date, imageUrl: string | null) => {
+    const insertVisits = async (visitorID: number, visitID: string, time_of_visit: Date, expirationpht: Date, imageUrl: string | null) => {
         const { error } = await supabase
-        .from('visits')
-        .insert([
-            {
-                visitor_id: visitorID,
-                visit_id: visitID,
-                purpose_of_visit: formData['purposeOfVisit'],
-                time_of_visit: time_of_visit.toISOString(),
-                expiration: expirationpht.toISOString(),
-                image_url: imageUrl
-            },
-        ])
-        .select()
-        
-        if(error) console.error('Error inserting visits: ',error);
-    }
+            .from('visits')
+            .insert([
+                {
+                    visitor_id: visitorID,
+                    visit_id: visitID,
+                    purpose_of_visit: formData['purposeOfVisit'],
+                    time_of_visit: time_of_visit.toISOString(),
+                    expiration: expirationpht.toISOString(),
+                    image_url: imageUrl
+                },
+            ])
+            .select();
+        if (error) console.error('Error inserting visits: ', error);
+    };
 
     const insertVisitor = async () => {
         const { data: existingVisitor, error: searchError } = await supabase
-        .from('visitors')
-        .select('id')
-        .eq('id_number', formData['idNumber'])
-        .single();
-
+            .from('visitors')
+            .select('id')
+            .eq('id_number', formData['idNumber'])
+            .single();
         if (searchError && searchError.code !== 'PGRST116') {
             console.error('Error searching for existing visitor:', searchError);
             return null;
         }
-
         if (existingVisitor) {
             console.log('Visitor already exists with ID:', existingVisitor.id);
             return existingVisitor.id;
-        }    
-
+        }
         const { data, error } = await supabase
-        .from('visitors')
-        .insert([
-            { 
-                name: formData['name'],
-                card_type: formData['idType'],
-                id_number: formData['idNumber'],
-                phone_number: '0' + formData['cellphone'],
-            },
-        ])
-        .select()
-        
-
-        if(error) {
+            .from('visitors')
+            .insert([
+                { 
+                    name: formData['name'],
+                    card_type: formData['idType'],
+                    id_number: formData['idNumber'],
+                    phone_number: '0' + formData['cellphone'],
+                },
+            ])
+            .select();
+        if (error) {
             console.error('Error inserting visitor:', error);
             return null;
         }
-
         if (data && data.length > 0) {
             const newVisitorId = data[0].id;
             console.log('New visitor ID:', newVisitorId);
             return newVisitorId;
         }
-
         return null;
-    }
+    };
 
     const handleSubmit = async () => {
-        try{
+        try {
             if (validateForm()) {
                 setIsLoading(true);
-    
                 const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
                 const visitID = `VST-${randomID}`;
-                
                 const time_of_visit = new Date();
                 const expiration = new Date();
                 const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
-                expirationpht.setHours(22, 0, 0, 0)
-    
+                expirationpht.setHours(22, 0, 0, 0);
                 const formattedTimeOfVisit = formatDateTime(time_of_visit);
                 const formattedExpiration = formatDateTime(expirationpht);
-    
                 const imageUrl = await uploadImage(image_uri);
-        
                 const visitorID = await insertVisitor();
                 await insertVisits(visitorID, visitID, time_of_visit, expirationpht, imageUrl);
-    
                 setTimeout(() => {
                     router.push({
                         pathname: '/IDgenerate',
                         params: {
-                            ...formData,
+                            fullName: fullName, // Pass fullName explicitly
+                            cellphone: formData.cellphone,
+                            idType: formData.idType,
+                            idNumber: formData.idNumber,
+                            purposeOfVisit: formData.purposeOfVisit,
                             visitID,
                             formattedTimeOfVisit,
                             formattedExpiration,
                         }
                     });
-                }, 2000); 
+                }, 2000);
             } else {
                 Alert.alert('Error', 'Please fill in all required fields correctly');
             }
-        } catch(error){
+        } catch (error) {
             console.error('Submission error:', error);
             Alert.alert('Error', 'An unexpected error occurred during submission');
         } finally {
@@ -396,20 +267,36 @@ export default function ScannerOutput() {
         }
     };
 
+    // Rest of the component (UI, modals, styles) remains unchanged
     return (
-        <SafeAreaView style={styles.container}>     
+        <SafeAreaView style={styles.container}>
             <ProgressBar progress={70} />
             <ScrollView style={styles.scrollView}>
                 <View style={styles.formContainer}>
                     <View style={styles.formField}>
                         <Text style={styles.label}>Full Name</Text>
-                        <TextInput
-                            style={[styles.input, styles.disabledInput]}
-                            value={formData.name}
-                            editable={false}
-                        />
+                        <View style={styles.nameFieldsContainer}>
+                            <TextInput
+                                style={[styles.input, styles.disabledInput, styles.lastnameInput]}
+                                value={last_name}
+                                editable={false}
+                                placeholder="Lastname"
+                            />
+                            <TextInput
+                                style={[styles.input, styles.disabledInput, styles.firstnameInput]}
+                                value={first_name}
+                                editable={false}
+                                placeholder="Firstname"
+                            />
+                            <TextInput
+                                style={[styles.input, styles.disabledInput, styles.middleInitialInput]}
+                                value={middle_name ? middle_name.charAt(0) + '.' : ''}
+                                editable={false}
+                                placeholder="M.I"
+                            />
+                        </View>
                     </View>
-
+                    {/* Rest of the form fields */}
                     <View style={styles.formField}>
                         <Text style={styles.label}>
                             Cellphone Number <Text style={styles.requiredStar}>*</Text>
@@ -431,7 +318,6 @@ export default function ScannerOutput() {
                             />
                         </View>
                     </View>
-
                     <View style={styles.formField}>
                         <Text style={styles.label}>Date of Visit</Text>
                         <TouchableOpacity
@@ -442,7 +328,6 @@ export default function ScannerOutput() {
                             <Ionicons name="calendar-outline" size={20} color="#252525" />
                         </TouchableOpacity>
                     </View>
-
                     <View style={styles.formField}>
                         <Text style={styles.label}>ID Type</Text>
                         <TextInput
@@ -451,7 +336,6 @@ export default function ScannerOutput() {
                             editable={false}
                         />
                     </View>
-
                     <View style={styles.formField}>
                         <Text style={styles.label}>ID Number</Text>
                         <TextInput
@@ -460,7 +344,6 @@ export default function ScannerOutput() {
                             editable={false}
                         />
                     </View>
-
                     <View style={styles.formField}>
                         <Text style={styles.label}>
                             Purpose of Visit <Text style={styles.requiredStar}>*</Text>
@@ -479,19 +362,17 @@ export default function ScannerOutput() {
                             textAlignVertical="top"
                         />
                     </View>
-
                     {(errors.cellphone || errors.purposeOfVisit) && touched.cellphone && touched.purposeOfVisit && (
                         <View style={styles.errorContainer}>
                             <Ionicons name="alert-circle" size={20} color="#ff3b30" />
                             <Text style={styles.errorSummary}>Please fill all required fields</Text>
                         </View>
                     )}
-
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[
                             styles.submitButton,
                             (errors.cellphone || errors.purposeOfVisit) ? styles.submitButtonDisabled : null
-                        ]} 
+                        ]}
                         onPress={handleSubmit}
                         disabled={isLoading}
                     >
@@ -499,14 +380,7 @@ export default function ScannerOutput() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-
-            {/* Custom Date Picker Modal */}
-            <Modal
-                visible={showDateModal}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setShowDateModal(false)}
-            >
+            <Modal visible={showDateModal} transparent={true} animationType="slide" onRequestClose={() => setShowDateModal(false)}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
@@ -515,17 +389,12 @@ export default function ScannerOutput() {
                                 <Ionicons name="close" size={24} color="black" />
                             </TouchableOpacity>
                         </View>
-                        
                         <View style={styles.datePickerContainer}>
-                            {/* Month Picker */}
                             <ScrollView style={styles.pickerColumn}>
                                 {months.map((month, index) => (
                                     <TouchableOpacity 
                                         key={index}
-                                        style={[
-                                            styles.pickerItem,
-                                            selectedDate.getMonth() === index ? styles.selectedPickerItem : null
-                                        ]}
+                                        style={[styles.pickerItem, selectedDate.getMonth() === index ? styles.selectedPickerItem : null]}
                                         onPress={() => {
                                             const newDate = new Date(selectedDate);
                                             newDate.setMonth(index);
@@ -536,19 +405,11 @@ export default function ScannerOutput() {
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                            
-                            {/* Day Picker */}
                             <ScrollView style={styles.pickerColumn}>
-                                {Array.from(
-                                    { length: getDaysInMonth(selectedDate.getMonth() + 1, selectedDate.getFullYear()) }, 
-                                    (_, i) => i + 1
-                                ).map(day => (
+                                {Array.from({ length: getDaysInMonth(selectedDate.getMonth() + 1, selectedDate.getFullYear()) }, (_, i) => i + 1).map(day => (
                                     <TouchableOpacity 
                                         key={day}
-                                        style={[
-                                            styles.pickerItem,
-                                            selectedDate.getDate() === day ? styles.selectedPickerItem : null
-                                        ]}
+                                        style={[styles.pickerItem, selectedDate.getDate() === day ? styles.selectedPickerItem : null]}
                                         onPress={() => {
                                             const newDate = new Date(selectedDate);
                                             newDate.setDate(day);
@@ -559,16 +420,11 @@ export default function ScannerOutput() {
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                            
-                            {/* Year Picker */}
                             <ScrollView style={styles.pickerColumn}>
                                 {years.map(year => (
                                     <TouchableOpacity 
                                         key={year}
-                                        style={[
-                                            styles.pickerItem,
-                                            selectedDate.getFullYear() === year ? styles.selectedPickerItem : null
-                                        ]}
+                                        style={[styles.pickerItem, selectedDate.getFullYear() === year ? styles.selectedPickerItem : null]}
                                         onPress={() => {
                                             const newDate = new Date(selectedDate);
                                             newDate.setFullYear(year);
@@ -580,29 +436,16 @@ export default function ScannerOutput() {
                                 ))}
                             </ScrollView>
                         </View>
-                        
                         <TouchableOpacity 
                             style={styles.confirmButton}
-                            onPress={() => {
-                                handleDateSelection(
-                                    selectedDate.getFullYear(),
-                                    selectedDate.getMonth() + 1,
-                                    selectedDate.getDate()
-                                );
-                            }}
+                            onPress={() => handleDateSelection(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate())}
                         >
                             <Text style={styles.confirmButtonText}>Confirm</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
-
-            {/* Loading Modal - Removed black container */}
-            <Modal
-                visible={isLoading}
-                transparent={true}
-                animationType="fade"
-            >
+            <Modal visible={isLoading} transparent={true} animationType="fade">
                 <View style={styles.loadingModalContainer}>
                     <ActivityIndicator size="large" color="#fff" />
                     <Text style={styles.loadingText}>Generating ID, please wait...</Text>
@@ -612,10 +455,7 @@ export default function ScannerOutput() {
     );
 }
 
-interface ProgressBarProps {
-    progress: number;
-}
-
+interface ProgressBarProps { progress: number; }
 const ProgressBar = ({ progress }: ProgressBarProps) => (
     <View style={styles.progressBarContainer}>
         <View style={styles.progressBar}>
@@ -648,7 +488,7 @@ const styles = StyleSheet.create({
     },
     progress: {
         height: '100%',
-        backgroundColor: '#22c55e', 
+        backgroundColor: '#22c55e',
     },
     formContainer: {
         paddingHorizontal: 20,
@@ -678,7 +518,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     purposeInput: {
-        height: 120, // Increased height for purpose input
+        height: 120,
         paddingTop: 15,
         paddingBottom: 15,
         textAlignVertical: 'top',
@@ -827,7 +667,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    // Updated loading modal styles - removed black container background
     loadingModalContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -839,5 +678,22 @@ const styles = StyleSheet.create({
         marginTop: 15,
         fontSize: 16,
         fontWeight: '500',
-    }
+    },
+  
+    nameFieldsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    lastnameInput: {
+        flex: 2,
+        marginRight: 10,
+    },
+    firstnameInput: {
+        flex: 2,
+        marginRight: 10,
+    },
+    middleInitialInput: {
+        flex: 1,
+        textAlign: 'center',
+    },
 });

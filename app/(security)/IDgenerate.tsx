@@ -18,7 +18,7 @@ export default function IDgenerate() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [idData, setIdData] = useState({
-    name: params.name as string || '',
+    name: params.fullName as string || '',
     cellphone: params.cellphone as string || '',
     idType: params.idType as string || '',
     idNumber: params.idNumber as string || '',
