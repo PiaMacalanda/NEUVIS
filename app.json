@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.neuvis_team.neuvis"
+      "package": "com.neuvis_team.neuvis",
+      "permissions": ["WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE"]
     },
     "web": {
       "bundler": "metro",
