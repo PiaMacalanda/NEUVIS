@@ -103,7 +103,7 @@ const AdminReport: React.FC = () => {
           id,
           name,
           created_at,
-          created_by:users (
+          created_by:admins (
             full_name
           ),
           data_snapshot,

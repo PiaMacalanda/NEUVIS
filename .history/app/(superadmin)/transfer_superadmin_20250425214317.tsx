@@ -3,6 +3,7 @@ import { Alert, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Scr
 import supabase from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import React from "react";
+import warning-outline from 
 
 type Admin = {
     user_id: string;
@@ -159,7 +160,7 @@ const TransferSuperadmin = () => {
                             <View style={styles.adminInfo}>
                                 <Text style={styles.adminName}>{admin.full_name}</Text>
                                 <Text style={styles.adminEmail}>{admin.email}</Text>
-                                <Text style={styles.adminDate}>Date Created: {formatDate(admin.created_at)}</Text>
+                                <Text style={styles.adminDate}>{formatDate(admin.created_at)}</Text>
                             </View>
                             <TouchableOpacity
                                 style={styles.transferButton}

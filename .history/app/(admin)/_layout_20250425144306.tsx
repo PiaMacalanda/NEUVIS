@@ -7,7 +7,7 @@ export default function AuthenticationLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user || user.user_metadata?.role !== 'admin') {
+    if (!user) {
       router.replace('/admin-login');
       return;
     }

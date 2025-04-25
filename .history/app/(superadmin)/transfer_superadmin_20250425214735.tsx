@@ -159,7 +159,7 @@ const TransferSuperadmin = () => {
                             <View style={styles.adminInfo}>
                                 <Text style={styles.adminName}>{admin.full_name}</Text>
                                 <Text style={styles.adminEmail}>{admin.email}</Text>
-                                <Text style={styles.adminDate}>Date Created: {formatDate(admin.created_at)}</Text>
+                                <Text style={styles.adminDate}>DateCreated: {formatDate(admin.created_at)}</Text>
                             </View>
                             <TouchableOpacity
                                 style={styles.transferButton}

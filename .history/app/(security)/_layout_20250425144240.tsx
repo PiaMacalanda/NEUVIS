@@ -7,7 +7,7 @@ export default function SecurityLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user || user.user_metadata?.role !== 'security') {
+    if (!user) {
       router.replace('/security-login');
       return;
     }

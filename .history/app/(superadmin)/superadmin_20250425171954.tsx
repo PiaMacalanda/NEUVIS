@@ -41,7 +41,7 @@ const Admin = () => {
             onPress={() => router.push('./admin-create')} 
           />
           <TouchableCard 
-            icon="warning-outline" 
+            icon="create-outline" 
             title="Transfer Superadmin"
             onPress={() => router.push('./transfer_superadmin')} 
           />
