@@ -1,7 +1,18 @@
-import { Stack } from 'expo-router';
-import React from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
-export default function SecurityLayout() {
+export default function SuperAdminLayout() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/superadmin-login');
+      return;
+    }
+  }, [user]);
+
   return (
     <Stack
       screenOptions={{
@@ -16,6 +27,7 @@ export default function SecurityLayout() {
       }}>
       <Stack.Screen name="admin-create" options={{ headerShown: true, title: ' ' }}/>
       <Stack.Screen name="superadmin" options={{ headerShown: true, title: ' ' }} />
+      <Stack.Screen name="transfer_superadmin" options={{ headerShown: true, title: 'Transfer Superadmin' }} />
     </Stack>
   );
 }

@@ -1,7 +1,18 @@
-import { Stack } from 'expo-router';
-import React from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function SecurityLayout() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/security-login');
+      return;
+    }
+  }, [user]);
+  
   return (
     <Stack
       screenOptions={{
