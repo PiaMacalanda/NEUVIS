@@ -1,3 +1,4 @@
+// to send the verification email
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';

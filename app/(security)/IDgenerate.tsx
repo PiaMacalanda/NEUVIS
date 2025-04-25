@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../../components/logo';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import { generateVisitorPassHTML } from '../../components/htmlTemplates/visitorPassTemplate';
 
 export default function IDgenerate() {
   const params = useLocalSearchParams();
@@ -23,24 +26,84 @@ export default function IDgenerate() {
     idType: params.idType as string || '',
     idNumber: params.idNumber as string || '',
     purposeOfVisit: params.purposeOfVisit as string || '',
-    visitorID: params.visitorId as string || '',
+    visitorID: params.visitID as string || '',
     dateOfVisit: params.formattedTimeOfVisit as string || '',
-    expirationTime: params.formattedExpiration || ''
+    expirationTime: params.formattedExpiration as string || ''
   });
 
-  const handlePrint = () => {
-   
-    Alert.alert(
-      'Print',
-      'Sending visitor pass to printer...',
-      [{ text: 'OK' }]
-    );
+  // Handle printing functionality
+  const handlePrint = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Generating visitor pass HTML...');
+      
+      // Generate the PDF file
+      const { uri } = await Print.printToFileAsync({
+        html: generateVisitorPassHTML(idData),
+        base64: false
+      });
+
+      console.log('PDF generated at URI:', uri);
+      
+      // Check if device supports sharing
+      const isAvailable = await Sharing.isAvailableAsync();
+      console.log('Sharing available:', isAvailable);
+      
+      if (isAvailable) {
+        // Create a copy in app documents directory with a proper filename
+        const pdfName = `${idData.visitorID}_pass.pdf`;
+        const pdfDir = `${FileSystem.documentDirectory}pdfs/`;
+        
+        // Create directory if doesn't exist
+        const dirInfo = await FileSystem.getInfoAsync(pdfDir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(pdfDir, { intermediates: true });
+          console.log('Directory created:', pdfDir);
+        }
+        
+        const destination = `${pdfDir}${pdfName}`;
+        console.log('Copying PDF to destination:', destination);
+        await FileSystem.copyAsync({ from: uri, to: destination });
+        console.log('Successfully copied PDF.');
+        
+        // Share the PDF
+        await Sharing.shareAsync(destination, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'View or Print Visitor Pass',
+          UTI: 'com.adobe.pdf' // For iOS
+        });
+        
+        Alert.alert(
+          'Success',
+          'Visitor pass is ready for printing or sharing',
+          [{ text: 'OK' }]
+        );
+      } else {
+        console.log('Successfully shared.');
+
+        // If sharing isn't available, just show the URI
+        Alert.alert(
+          'PDF Created',
+          `Visitor pass saved at: ${uri}`,
+          [{ text: 'OK' }]
+        );
+      }
+
+      console.log('Finished processing.'); // for debuging only
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Error creating PDF:', error);
+      Alert.alert(
+        'Error',
+        'Failed to create visitor pass PDF. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
-
   const handleFinish = () => {
-   
-    router.replace('/neuvisLanding');
+    router.replace('/(security)/neuvisLanding');
   };
 
   if (isLoading) {
@@ -74,11 +137,7 @@ export default function IDgenerate() {
           </View>
           
           <View style={styles.cardBody}>
-            
-           
-                             <Logo size="large" style={styles.logoCircle} />
-                             
-                          
+            <Logo size="large" style={styles.logoCircle} />
             
             <View style={styles.infoContainer}>
               <Text style={styles.infoLabel}>NAME</Text>
@@ -106,10 +165,8 @@ export default function IDgenerate() {
       <View style={styles.actionsContainer}>
         <TouchableOpacity style={styles.actionButton} onPress={handlePrint}>
           <Ionicons name="print-outline" size={24} color="white" />
-          <Text style={styles.actionButtonText}>Print</Text>
+          <Text style={styles.actionButtonText}>Print / Save PDF</Text>
         </TouchableOpacity>
-        
-        
       </View>
       
       <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
@@ -136,13 +193,11 @@ const ProgressBar = ({ progress }: ProgressBarProps) => (
 );
 
 const styles = StyleSheet.create({
- 
   logoCircle: {
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     right: 10,
-    
   },
   infoContainer: {
     flex: 1,
@@ -152,7 +207,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#252525',
     marginTop: 8,
-   right: 5
+    right: 5
   },
   infoValue: {
     fontSize: 14,
@@ -160,7 +215,6 @@ const styles = StyleSheet.create({
     color: '#000',
     right: 5
   },
- 
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -257,10 +311,6 @@ const styles = StyleSheet.create({
     padding: 20,
     flexDirection: 'row',
   },
-  // QR code placeholder styling
-  
-  
- 
   cardFooter: {
     backgroundColor: '#f5f5f5',
     padding: 15,
