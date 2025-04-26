@@ -7,7 +7,7 @@ export default function SuperAdminLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user || user.user_metadata?.role !== 'superadmin') {
+    if (!user) {
       router.replace('/superadmin-login');
       return;
     }

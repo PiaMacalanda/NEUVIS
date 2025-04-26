@@ -27,7 +27,6 @@ export default function ProfileScreen() {
         
         console.log('Fetching user data for ID:', user.id);
         
-        // Fetch the user data from Supabase using the authenticated user's ID
         const { data, error } = await supabase
           .from('users')
           .select('full_name, email, role')

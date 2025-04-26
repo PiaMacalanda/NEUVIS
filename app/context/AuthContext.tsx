@@ -4,10 +4,20 @@ import { Session, User } from '@supabase/supabase-js';
 import { router, usePathname } from 'expo-router';
 import * as authService from '../services/authService';
 
+interface UserProfile {
+    id: string;
+    full_name: string;
+    email: string;
+    role: string;
+    created_at: string;
+}
+
 interface AuthContextProps {
     user: User | null;
+    userProfile: UserProfile | null;
     session: Session | null;
     loading: boolean;
+    refreshUserProfile: () => Promise<void>;
     signUp: (email: string, password: string, full_name: string, role: string) => Promise<{
         data: { user: User | null; session: Session | null } | null;
         error: Error | null;
@@ -24,8 +34,10 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps>({
     user: null,
+    userProfile: null,
     session: null,
     loading: true,
+    refreshUserProfile: async () => {},
     signUp: async () => ({ data: null, error: null }),
     signIn: async () => ({ data: null, error: null }),
     signOut: async () => {},
@@ -40,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
     const pathname = usePathname();
 
@@ -53,9 +66,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (error) {
                     setUser(null);
                     setSession(null);
+                    setUserProfile(null);
                 } else {
                     setSession(loadedSession);
                     setUser(loadedUser);
+                    await refreshUserProfile();
                 }
             } finally {
                 setLoading(false);
@@ -85,40 +100,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
     }, []);
 
-    useEffect(() => {
-        // Throw user to landing if authenticated and in login/signup pages
-        if (!session || !user) return;
-
-        if (!user) {
-            console.error("User doesn't exist");
-            return;
+    const refreshUserProfile = async () => {
+        if (!session?.user?.id) return;
+      
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+      
+        if (error) {
+          console.error('Failed to refresh user profile:', error.message);
+          setUserProfile(null);
+        } else {
+          setUserProfile(data);
         }
-        
-        const role = user.user_metadata.role;
-        const authScreens = ['/', '/security-login', '/security-signup', '/admin-login', '/admin-signup'];
-        const adminScreens = ['/admin', '/adminData', '/adminHome', '/adminReport', 'accessControl'];
-        const securityScreens = ['/neuvisLanding', "/VisitorsLogs", '/ScannerOutput', '/Scanner', '/IDGenerate', '/ManualForm','/Notifications'];
-    
-        if (authScreens.includes(pathname)) {
-            if (role === 'security') {
-                router.replace('/neuvisLanding');
-            } else if (role === 'admin') {
-                router.replace('/admin');
-            } else if (role === 'superadmin'){
-                router.replace('/superadmin');
-            }
-        }
-
-        if (adminScreens.includes(pathname)){
-            if (role === 'security'){
-                router.replace('/neuvisLanding');
-            }
-        } else if (securityScreens.includes(pathname)){
-            if (role === 'admin'){
-                router.replace('/admin');
-            }
-        }
-    }, [session, user?.user_metadata?.role, pathname]);
+      };
+      
 
     const handleSignUp = async (email: string, password: string, full_name: string, role: string) => {
         setLoading(true);
@@ -166,8 +164,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         <AuthContext.Provider
           value={{
             user,
+            userProfile,
             session,
             loading,
+            refreshUserProfile,
             signUp: handleSignUp,
             signIn: handleSignIn,
             signOut: handleSignOut,
