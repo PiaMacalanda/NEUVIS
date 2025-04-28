@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../../components/logo';
 import Footer from '@/components/Footer';
 import { visit } from './types/visits';
 import { fetchExpiredUntimedoutVisits } from './api/notification-service/visits';
@@ -193,7 +194,15 @@ const ExpiredVisitors: React.FC = () => {
             </TouchableOpacity>
             
             {selectedVisitor && (
+              
               <View style={styles.visitorDetailsContainer}>
+
+                 <View style={styles.logoContainer}>
+                                  <Logo size="small" style={styles.logoCircle} />
+                                  <Text style={styles.universityName}>New Era University</Text>
+                                </View>
+
+                
                 <View style={styles.visitorDetailsName}>
                   <Text style={styles.visitorDetailsName}>
                     {selectedVisitor.visitorDetails?.name || 'Unknown Visitor'}
@@ -276,6 +285,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoCircle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  universityInitials: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  universityName: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -367,8 +395,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   visitorId: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 14,
+    color: '#252525',
+    textAlign: 'center',
   },
   timeInfo: {
     flex: 4,
