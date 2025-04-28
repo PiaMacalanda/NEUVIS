@@ -202,6 +202,8 @@ const VisitorsLogs: React.FC = () => {
       
       if (error) throw error;
       
+      // Close the modal after time out
+      setShowVisitorModal(false);
       // Refresh the list
       fetchVisitors();
       // Switch to completed tab to show the logged out visitor
@@ -230,21 +232,12 @@ const VisitorsLogs: React.FC = () => {
         {item.time_out && <Text style={[styles.timeText, styles.timeOutText]}>{item.time_out}</Text>}
       </View>
       <View style={styles.actionContainer}>
-        {activeTab === 'ongoing' ? (
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.timeOutButton]} 
-            onPress={() => handleTimeOut(item.id)}
-          >
-            <Text style={styles.buttonText}>Time Out</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => handleViewVisitor(item)}
-          >
-            <Text style={styles.buttonText}>View</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => handleViewVisitor(item)}
+        >
+          <Text style={styles.buttonText}>View</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -520,6 +513,16 @@ const VisitorsLogs: React.FC = () => {
                       <Text style={styles.timeOutValue}>{selectedVisitor.time_out || 'Not Checked Out'}</Text>
                     </View>
                   </View>
+                  
+                  {/* Time Out Button - Only show in ongoing visits modal */}
+                  {activeTab === 'ongoing' && !selectedVisitor.time_out && (
+                    <TouchableOpacity 
+                      style={styles.timeOutModalButton}
+                      onPress={() => handleTimeOut(selectedVisitor.id)}
+                    >
+                      <Text style={styles.timeOutModalButtonText}>Time Out</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             )}
@@ -874,6 +877,40 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FF3B30',
   },
+  // Time Out button in modal
+  timeOutModalButton: {
+    backgroundColor: '#D9534F',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  timeOutModalButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  // Additional styles for better UI
+  badgeContainer: {
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    marginLeft: 8,
+  },
+  activeBadge: {
+    backgroundColor: '#E1F5FE',
+  },
+  activeBadgeText: {
+    color: '#0288D1',
+    fontSize: 12,
+  },
+  expiredBadge: {
+    backgroundColor: '#FFEBEE',
+  },
+  expiredBadgeText: {
+    color: '#D32F2F',
+    fontSize: 12,
+  }
 });
 
 export default VisitorsLogs;
