@@ -73,26 +73,6 @@ export const isVisitorExpired = (visitor: Visitor): boolean => {
   return now > expirationPht;
 };
 
-// Define interfaces for database responses
-interface VisitorRecord {
-  id: number;
-  name: string;
-  phone_number?: string | null;
-  card_type?: string | null;
-  id_number?: string | null;
-}
-
-interface VisitRecord {
-  id: number;
-  time_of_visit: string;
-  time_out?: string | null;
-  visit_id: string;
-  purpose_of_visit?: string | null;
-  expiration?: string | null;
-  visitors?: VisitorRecord | null;
-  created_at: string;
-}
-
 export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
   try {
     // Get start and end of selected date
@@ -109,7 +89,6 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
         visit_id,
         purpose_of_visit,
         expiration,
-        created_at,
         visitors(
           id, 
           name, 
@@ -133,14 +112,14 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
     if (error) throw error;
 
     // Transform data with comprehensive visitor details and filter out expired visitors
-    const formattedData = (data as unknown as VisitRecord[])
+    const formattedData = data
       .filter(item => item.visitors !== null)
       .map(item => ({
         id: item.id,
         name: item.visitors?.name || 'Unknown Visitor',
         time_of_visit: item.time_of_visit,
         formatted_time_of_visit: formatDateTime(item.time_of_visit),
-        time_out: item.time_out || undefined,
+        time_out: item.time_out,
         formatted_time_out: item.time_out ? formatDateTime(item.time_out) : undefined,
         visit_id: item.visit_id,
         purpose_of_visit: item.purpose_of_visit || '',
@@ -148,8 +127,8 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
         card_type: item.visitors?.card_type || '',
         id_number: item.visitors?.id_number || '',
         visit_count: 3, // This would ideally be dynamically fetched
-        expiration: item.expiration || undefined
-      } as Visitor))
+        expiration: item.expiration
+      }))
       .filter(visitor => {
         // If it's an ongoing visit, don't show expired passes
         if (activeTab === 'ongoing') {
@@ -172,7 +151,7 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
   }
 };
 
-export const updateVisitorTimeOut = async (id: number): Promise<boolean> => {
+export const updateVisitorTimeOut = async (id: number) => {
   try {
     const now = new Date().toISOString();
     const { error } = await supabase
@@ -183,7 +162,7 @@ export const updateVisitorTimeOut = async (id: number): Promise<boolean> => {
     if (error) throw error;
     
     return true;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating time out:', error);
     throw error;
   }

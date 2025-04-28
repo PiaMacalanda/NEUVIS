@@ -228,7 +228,7 @@ export default function NeuvisLanding() {
       if (data && data.length > 0) {
         for (const visit of data) {
           const notificationContent = `
-            Visitor ID Expired but is not Timed Out!
+            Visitor ID Expired!
             Visit ID: + ${visit.visit_id}
           `;
           
