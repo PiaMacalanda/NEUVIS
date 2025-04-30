@@ -16,7 +16,9 @@ import { supabase } from '../lib/supabaseClient';
 import { router } from 'expo-router';
 
 interface FormDataType {
-  name: string;
+  lastname: string;
+  firstname: string;
+  mi: string;
   dateofVisit: string;
   cellphone: string;
   idType: string;
@@ -27,13 +29,14 @@ interface FormDataType {
 }
 
 const ManualForm: React.FC = () => {
-  
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [showDateModal, setShowDateModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormDataType>({
-    name: '',
+    lastname: '',
+    firstname: '',
+    mi: '',
     cellphone: '',
     dateofVisit: formatDate(today),
     idType: 'Phils ID',
@@ -43,29 +46,30 @@ const ManualForm: React.FC = () => {
     expiration: ''
   });
 
-
   const [errors, setErrors] = useState({
-    name: false,
+    lastname: false,
+    firstname: false,
     cellphone: false,
     idNumber: false,
     purposeOfVisit: false
   });
-  
+
   const [errorMessages, setErrorMessages] = useState({
-    name: 'Name is required',
+    lastname: 'Last name is required',
+    firstname: 'First name is required',
     cellphone: 'Cellphone number is required',
     idNumber: 'ID number is required',
     purposeOfVisit: 'Purpose of visit is required'
   });
-  
+
   const [touched, setTouched] = useState({
-    name: false,
+    lastname: false,
+    firstname: false,
     cellphone: false,
     idNumber: false,
     purposeOfVisit: false
   });
 
-  
   const years = Array.from({ length: 10 }, (_, i) => today.getFullYear() - 5 + i);
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -99,7 +103,7 @@ const ManualForm: React.FC = () => {
     setFormData({
       ...formData,
       dateofVisit: formatDate(newDate),
-      time_of_visit: formatDate(newDate) // Update time_of_visit as well
+      time_of_visit: formatDate(newDate)
     });
     setShowDateModal(false);
   };
@@ -116,7 +120,6 @@ const ManualForm: React.FC = () => {
     }
   };
 
- 
   const formatIdNumber = (text: string): string => {
     const digits = text.replace(/\s/g, '');
     let formatted = '';
@@ -167,18 +170,10 @@ const ManualForm: React.FC = () => {
     });
   };
 
-  
   const handleIdNumberChange = (value: string) => {
-   
     const sanitizedValue = value.replace(/[^0-9\s]/g, '');
-    
-    
     const digitsOnly = sanitizedValue.replace(/\s/g, '');
-    
-   
     const truncatedValue = digitsOnly.slice(0, 16);
-    
- 
     const formattedValue = formatIdNumber(truncatedValue);
     
     setFormData({
@@ -191,7 +186,6 @@ const ManualForm: React.FC = () => {
       idNumber: true
     });
     
-  
     setErrors({
       ...errors,
       idNumber: truncatedValue.trim() === ''
@@ -215,12 +209,32 @@ const ManualForm: React.FC = () => {
     });
   };
 
+  const handleNameChange = (field: 'lastname' | 'firstname' | 'mi', value: string) => {
+    const uppercaseValue = value.toUpperCase();
+    
+    setFormData({
+      ...formData,
+      [field]: uppercaseValue
+    });
+    
+    if (field === 'lastname' || field === 'firstname') {
+      setTouched({
+        ...touched,
+        [field]: true
+      });
+      
+      setErrors({
+        ...errors,
+        [field]: uppercaseValue.trim() === ''
+      });
+    }
+  };
+
   const handleBlur = (field: keyof typeof errors) => {
     setTouched({
       ...touched,
       [field]: true
     });
-
 
     if (field === 'cellphone') {
       const digits = formData.cellphone.replace(/\s/g, '');
@@ -252,7 +266,8 @@ const ManualForm: React.FC = () => {
   };
 
   const validateForm = () => {
-    const nameIsEmpty = formData.name.trim() === '';
+    const lastnameIsEmpty = formData.lastname.trim() === '';
+    const firstnameIsEmpty = formData.firstname.trim() === '';
     const digits = formData.cellphone.replace(/\s/g, '');
     const cellphoneIsEmpty = digits.trim() === '';
     const cellphoneIsInvalidLength = digits.length > 0 && digits.length < 10;
@@ -260,14 +275,16 @@ const ManualForm: React.FC = () => {
     const purposeIsEmpty = formData.purposeOfVisit.trim() === '';
     
     const newErrors = {
-      name: nameIsEmpty,
+      lastname: lastnameIsEmpty,
+      firstname: firstnameIsEmpty,
       cellphone: cellphoneIsEmpty || cellphoneIsInvalidLength,
       idNumber: idNumberIsEmpty,
       purposeOfVisit: purposeIsEmpty
     };
     
     const newErrorMessages = {
-      name: 'Name is required',
+      lastname: 'Last name is required',
+      firstname: 'First name is required',
       cellphone: cellphoneIsEmpty ? 'Cellphone number is required' : 
                  cellphoneIsInvalidLength ? 'Cellphone number must be 10 digits' : '',
       idNumber: 'ID number is required',
@@ -277,7 +294,8 @@ const ManualForm: React.FC = () => {
     setErrorMessages(newErrorMessages);
     setErrors(newErrors);
     setTouched({
-      name: true,
+      lastname: true,
+      firstname: true,
       cellphone: true,
       idNumber: true,
       purposeOfVisit: true
@@ -286,115 +304,120 @@ const ManualForm: React.FC = () => {
     return !Object.values(newErrors).some(error => error);
   };
 
-    const formatDateTime = (date: Date): string => {
-        const options: Intl.DateTimeFormatOptions = { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'Asia/Manila'
-        };
-        return date.toLocaleDateString('en-US', options);
+  const formatDateTime = (date: Date): string => {
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Manila'
     };
+    return date.toLocaleDateString('en-US', options);
+  };
 
-    const insertVisit = async (visitorID: number, visitID:string, time_of_visit: Date, expirationpht: Date) => {
-      const { error } = await supabase
+  const insertVisit = async (visitorID: number, visitID: string, time_of_visit: Date, expirationpht: Date) => {
+    const { error } = await supabase
       .from('visits')
       .insert([
-          {
-              visit_id: visitID,
-              visitor_id: visitorID,
-              purpose_of_visit: formData['purposeOfVisit'],
-              time_of_visit: time_of_visit.toISOString(),
-              expiration: expirationpht.toISOString(),
-          },
+        {
+          visit_id: visitID,
+          visitor_id: visitorID,
+          purpose_of_visit: formData['purposeOfVisit'],
+          time_of_visit: time_of_visit.toISOString(),
+          expiration: expirationpht.toISOString(),
+        },
       ])
       .select()
       
-      if(error) console.error('Error inserting visits: ',error);
+    if(error) console.error('Error inserting visits: ', error);
+  }
+
+  const insertVisitor = async () => {
+    const { data: existingVisitor, error: searchError } = await supabase
+      .from('visitors')
+      .select('id')
+      .eq('id_number', formData['idNumber'])
+      .single();
+
+    if (searchError && searchError.code !== 'PGRST116') {
+      console.error('Error searching for existing visitor:', searchError);
+      return null;
     }
 
-    const insertVisitor = async () => {
-        const { data: existingVisitor, error: searchError } = await supabase
-        .from('visitors')
-        .select('id')
-        .eq('id_number', formData['idNumber'])
-        .single();
+    if (existingVisitor) {
+      console.log('Visitor already exists with ID:', existingVisitor.id);
+      return existingVisitor.id;
+    }    
 
-        if (searchError && searchError.code !== 'PGRST116') {
-            console.error('Error searching for existing visitor:', searchError);
-            return null;
-        }
+    const fullName = `${formData.lastname}, ${formData.firstname}${formData.mi ? ' ' + formData.mi : ''}`;
 
-        if (existingVisitor) {
-            console.log('Visitor already exists with ID:', existingVisitor.id);
-            return existingVisitor.id;
-        }    
-
-        const { data, error } = await supabase
-        .from('visitors')
-        .insert([
-            { 
-                name: formData['name'],
-                card_type: formData['idType'],
-                id_number: formData['idNumber'],
-                phone_number: '0' + formData['cellphone'],
-            },
-        ])
-        .select()
-        
-
-        if(error) {
-            console.error('Error inserting visitor:', error);
-            return null;
-        }
-
-        if (data && data.length > 0) {
-            const newVisitorId = data[0].id;
-            console.log('New visitor ID:', newVisitorId);
-            return newVisitorId;
-        }
-
-        return null;
+    const { data, error } = await supabase
+      .from('visitors')
+      .insert([
+        { 
+          name: fullName,
+          card_type: formData['idType'],
+          id_number: formData['idNumber'],
+          phone_number: '0' + formData['cellphone'],
+        },
+      ])
+      .select()
+    
+    if(error) {
+      console.error('Error inserting visitor:', error);
+      return null;
     }
 
-    const handleSubmit = async () => {
-        if (validateForm()) {
-            setIsLoading(true);
+    if (data && data.length > 0) {
+      const newVisitorId = data[0].id;
+      console.log('New visitor ID:', newVisitorId);
+      return newVisitorId;
+    }
 
-            const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const visitID = `VST-${randomID}`;
-            
-            const time_of_visit = new Date();
-            const expiration = new Date();
-            const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
-            expirationpht.setHours(22, 0, 0, 0)
+    return null;
+  }
 
-            const formattedTimeOfVisit = formatDateTime(time_of_visit);
-            const formattedExpiration = formatDateTime(expirationpht);
-
-            const visitorID = await insertVisitor();
-            await insertVisit(visitorID, visitID, time_of_visit, expirationpht);
-
-            setTimeout(() => {
-                setIsLoading(false);
-              
-                router.push({
-                    pathname: '/IDgenerate',
-                    params: {
-                        ...formData,
-                        visitID,
-                        formattedTimeOfVisit,
-                        formattedExpiration,
-                    }
-                });
-            }, 2000); 
-        } else {
-            Alert.alert('Error', 'Please fill in all required fields correctly');
-        }
-    };
+  const handleSubmit = async () => {
+    if (validateForm()) {
+      setIsLoading(true);
+  
+      const randomID = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const visitID = `VST-${randomID}`;
+      
+      const time_of_visit = new Date();
+      const expiration = new Date();
+      const expirationpht = new Date(expiration.getTime() - (8 * 60 * 60 * 1000));
+      expirationpht.setHours(22, 0, 0, 0)
+  
+      const formattedTimeOfVisit = formatDateTime(time_of_visit);
+      const formattedExpiration = formatDateTime(expirationpht);
+  
+      
+      const fullName = `${formData.lastname}, ${formData.firstname}${formData.mi ? ' ' + formData.mi : ''}`;
+      
+      const visitorID = await insertVisitor();
+      await insertVisit(visitorID, visitID, time_of_visit, expirationpht);
+  
+      setTimeout(() => {
+        setIsLoading(false);
+      
+        router.push({
+          pathname: '/IDgenerate',
+          params: {
+            ...formData,
+            fullName,
+            visitID,
+            formattedTimeOfVisit,
+            formattedExpiration,
+          }
+        });
+      }, 2000); 
+    } else {
+      Alert.alert('Error', 'Please fill in all required fields correctly');
+    }
+  };
 
   const selectIdOption = (option: string): void => {
     setFormData({
@@ -412,19 +435,57 @@ const ManualForm: React.FC = () => {
             <Text style={styles.label}>
               Full Name <Text style={styles.requiredStar}>*</Text>
             </Text>
-            <TextInput
-              style={[
-                styles.input,
-                (touched.name && errors.name) && styles.inputError
-              ]}
-              value={formData.name}
-              onChangeText={(text) => handleChange('name', text)}
-              onBlur={() => handleBlur('name')}
-              placeholder="Enter your full name"
-            />
-            {touched.name && errors.name && (
-              <Text style={styles.errorText}>{errorMessages.name}</Text>
-            )}
+            <View style={styles.nameFieldsContainer}>
+              <View style={styles.nameFieldWrapper}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.lastnameInput,
+                    (touched.lastname && errors.lastname) && styles.inputError
+                  ]}
+                  value={formData.lastname}
+                  onChangeText={(value) => handleNameChange('lastname', value)}
+                  onBlur={() => handleBlur('lastname')}
+                  placeholder="Lastname"
+                  autoCapitalize="characters"
+                />
+                {touched.lastname && errors.lastname && (
+                  <Text style={styles.errorText}>{errorMessages.lastname}</Text>
+                )}
+              </View>
+              
+              <View style={styles.nameFieldWrapper}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.firstnameInput,
+                    (touched.firstname && errors.firstname) && styles.inputError
+                  ]}
+                  value={formData.firstname}
+                  onChangeText={(value) => handleNameChange('firstname', value)}
+                  onBlur={() => handleBlur('firstname')}
+                  placeholder="Firstname"
+                  autoCapitalize="characters"
+                />
+                {touched.firstname && errors.firstname && (
+                  <Text style={styles.errorText}>{errorMessages.firstname}</Text>
+                )}
+              </View>
+              
+              <View style={styles.miFieldWrapper}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.miInput
+                  ]}
+                  value={formData.mi}
+                  onChangeText={(value) => handleNameChange('mi', value)}
+                  placeholder="M.I"
+                  autoCapitalize="characters"
+                  maxLength={2}
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.formField}>
@@ -485,7 +546,6 @@ const ManualForm: React.FC = () => {
             </View>
           </View>
 
-          
           <View style={styles.formField}>
             <Text style={styles.label}>
               ID Number <Text style={styles.requiredStar}>*</Text>
@@ -528,8 +588,8 @@ const ManualForm: React.FC = () => {
             )}
           </View>
 
-          {(errors.name || errors.cellphone || errors.idNumber || errors.purposeOfVisit) && 
-           touched.name && touched.cellphone && touched.idNumber && touched.purposeOfVisit && (
+          {(errors.lastname || errors.firstname || errors.cellphone || errors.idNumber || errors.purposeOfVisit) && 
+           touched.lastname && touched.firstname && touched.cellphone && touched.idNumber && touched.purposeOfVisit && (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={20} color="#ff3b30" />
               <Text style={styles.errorSummary}>Please fill all required fields</Text>
@@ -539,7 +599,7 @@ const ManualForm: React.FC = () => {
           <TouchableOpacity 
             style={[
               styles.submitButton,
-              (errors.name || errors.cellphone || errors.idNumber || errors.purposeOfVisit) ? styles.submitButtonDisabled : null
+              (errors.lastname || errors.firstname || errors.cellphone || errors.idNumber || errors.purposeOfVisit) ? styles.submitButtonDisabled : null
             ]} 
             onPress={handleSubmit}
             disabled={isLoading}
@@ -549,7 +609,6 @@ const ManualForm: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Loading Modal */}
       <Modal
         visible={isLoading}
         transparent={true}
@@ -812,7 +871,28 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 16,
     fontWeight: '500',
-  }
+  },
+  nameFieldsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  nameFieldWrapper: {
+    flex: 2,
+    marginRight: 10,
+  },
+  miFieldWrapper: {
+    flex: 0.9,
+  },
+  lastnameInput: {
+    marginBottom: 0,
+  },
+  firstnameInput: {
+    marginBottom: 0,
+  },
+  miInput: {
+    textAlign: 'center',
+  },
 });
 
-export default ManualForm;
+export default ManualForm;  
