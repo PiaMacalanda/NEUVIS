@@ -34,18 +34,28 @@ type Security = {
   confirmed: boolean; // New field to track confirmed status
 };
 
+type Admin = {
+  id: string;
+  full_name: string;
+  email: string;
+  role_admin: string;
+};
+
 export default function AccessControlScreen() {
   const [security, setSecurity] = useState<Security[]>([]);
+  const [admins, setAdmins] = useState<Admin[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editUser, setEditUser] = useState<Security | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
 
-  // Fetch security personnel from Supabase
+  // Fetch security personnel and admin users from Supabase
   useEffect(() => {
     fetchSecurityPersonnel();
+    fetchAdminUsers();
   }, []);
 
   const fetchSecurityPersonnel = async () => {
@@ -78,6 +88,33 @@ export default function AccessControlScreen() {
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchAdminUsers = async () => {
+    try {
+      setIsAdminLoading(true);
+      const { data, error } = await supabase
+        .from('admins')
+        .select('user_id, full_name, email, role_admin');
+      
+      if (error) {
+        console.error('Error fetching admin users:', error);
+        Alert.alert('Error', `Failed to load admin users: ${error.message}`);
+        return;
+      }
+      
+      setAdmins((data || []).map(item => ({
+        id: item.user_id,
+        full_name: item.full_name,
+        email: item.email,
+        role_admin: item.role_admin,
+      })));
+    } catch (err) {
+      console.error('Exception fetching admin users:', err);
+      Alert.alert('Error', 'An unexpected error occurred while loading admin users.');
+    } finally {
+      setIsAdminLoading(false);
     }
   };
 
@@ -264,17 +301,22 @@ export default function AccessControlScreen() {
         <Text style={styles.debugText}>Total Records: {security.length}</Text>
         <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
         <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
+        <Text style={styles.debugText}>Admins: {admins.length}</Text>
         <TouchableOpacity 
           style={styles.debugButton}
-          onPress={fetchSecurityPersonnel}
+          onPress={() => {
+            fetchSecurityPersonnel();
+            fetchAdminUsers();
+          }}
         >
-          <Text style={styles.debugButtonText}>Retry Fetch</Text>
+          <Text style={styles.debugButtonText}>Refresh Data</Text>
         </TouchableOpacity>
       </View>
 
+   
       {/* New Section: Recently Created Accounts */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recently Created Accounts ({unconfirmedUsers.length})</Text>
+        <Text style={styles.sectionTitle}>Recently Created Security Accounts ({unconfirmedUsers.length})</Text>
       </View>
       
       {isLoading ? (
@@ -320,6 +362,34 @@ export default function AccessControlScreen() {
           </View>
         ))
       )}
+         {/* Admin Users Section */}
+         <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>System Administrators ({admins.length})</Text>
+      </View>
+      
+      {isAdminLoading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color="#0066cc" />
+          <Text style={styles.emptyText}>Loading administrator data...</Text>
+        </View>
+      ) : admins.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No administrators found.</Text>
+        </View>
+      ) : (
+        admins.map((admin) => (
+          <View key={admin.id} style={styles.adminPane}>
+            <View style={styles.adminDetails}>
+              <Text style={styles.userName}>{admin.full_name}</Text>
+              <Text style={styles.userEmail}>{admin.email}</Text>
+              <View style={styles.adminRoleBadge}>
+                <Text style={styles.statusBadgeText}>{admin.role_admin}</Text>
+              </View>
+            </View>
+          </View>
+        ))
+      )}
+
 
       {/* Active and Inactive Users Section (Only for confirmed users) */}
       <View style={styles.sectionHeader}>
@@ -584,6 +654,33 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center'
   },
+  // Admin styles
+  adminPane: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    borderLeftWidth: 5,
+    borderColor: '#0066cc', // Different color to distinguish admins
+  },
+  adminDetails: {
+    position: 'relative',
+  },
+  adminRoleBadge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0, 102, 204, 0.15)',
+  },
+  // Security user pane styles
   userPane: {
     backgroundColor: 'white',
     padding: 15,
