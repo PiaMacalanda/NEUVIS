@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import Header from '../../components/Header'; 
 import { supabase } from '../lib/supabaseClient';
 
@@ -44,6 +46,9 @@ interface SavedReport {
   created: string;
   data: any[]; // This will hold the data_snapshot contents
   filters: any;
+  created_by: {
+    name: string;
+  };
 }
 
 // Simple button component to avoid type errors
@@ -84,6 +89,7 @@ const AdminReport: React.FC = () => {
   const navigation = useNavigation();
   const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
   const [showMaximizeModal, setShowMaximizeModal] = useState<boolean>(false);
+  const [isPrinting, setIsPrinting] = useState<boolean>(false);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -114,7 +120,6 @@ const AdminReport: React.FC = () => {
           console.error('Error fetching reports:', error);
           throw error;
         }
-    
         const formatted = (data || []).map(r => ({
           id: r.id,
           title: r.name || 'Untitled Report',
@@ -257,6 +262,163 @@ const AdminReport: React.FC = () => {
     setShowDeleteConfirm(id);
   };
 
+  // Function to generate HTML for printing
+  const generatePrintHTML = (report: SavedReport | null) => {
+    if (!report) return '';
+
+    // Generate table rows for the report data
+    const tableRows = report.data.map((item, index) => `
+      <tr style="background-color: ${index % 2 === 0 ? '#f8f8f8' : '#ffffff'}; border-bottom: 1px solid #e0e0e0;">
+        <td style="padding: 8px; text-align: center;">${item.name || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.id_number || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.phone_number || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.purpose_of_visit || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.gate || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.host || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.time_in || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.time_out || 'N/A'}</td>
+        <td style="padding: 8px; text-align: center;">${item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    // Get filter information
+    const filters = report.filters || {};
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+          <style>
+            body {
+              font-family: 'Helvetica', 'Arial', sans-serif;
+              margin: 0;
+              padding: 20px;
+              color: #333;
+            }
+            h1 {
+              color: #0A3B75;
+              font-size: 24px;
+              margin-bottom: 20px;
+            }
+            .report-info {
+              margin-bottom: 30px;
+            }
+            .report-info p {
+              margin: 5px 0;
+              font-size: 14px;
+            }
+            .filter-section {
+              background-color: #f8f8f8;
+              border: 1px solid #e0e0e0;
+              border-radius: 5px;
+              padding: 15px;
+              margin-bottom: 20px;
+            }
+            .filter-section h2 {
+              font-size: 16px;
+              margin-top: 0;
+              margin-bottom: 10px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+              font-size: 12px;
+            }
+            th {
+              background-color: #0A3B75;
+              color: white;
+              padding: 10px;
+              text-align: center;
+            }
+            .footer {
+              margin-top: 30px;
+              font-size: 12px;
+              text-align: center;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${report.title}</h1>
+          
+          <div class="report-info">
+            <p><strong>Created:</strong> ${new Date(report.created).toLocaleString()}</p>
+            <p><strong>Created by:</strong> ${report.created_by?.name || 'Unknown'}</p>
+          </div>
+          
+          <div class="filter-section">
+            <h2>Applied Filters:</h2>
+            <p><strong>Gate:</strong> ${filters.gate || 'All'}</p>
+            <p><strong>Purpose:</strong> ${filters.purpose || 'All'}</p>
+            <p><strong>Host:</strong> ${filters.host || 'All'}</p>
+            ${filters.date ? `<p><strong>Date:</strong> ${new Date(filters.date).toLocaleDateString()}</p>` : ''}
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ID</th>
+                <th>Phone</th>
+                <th>Purpose</th>
+                <th>Gate</th>
+                <th>Host</th>
+                <th>Time In</th>
+                <th>Time Out</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows.length > 0 ? tableRows : '<tr><td colspan="9" style="text-align: center; padding: 20px;">No data available</td></tr>'}
+            </tbody>
+          </table>
+          
+          <div class="footer">
+            <p>Report generated on ${new Date().toLocaleString()}</p>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  // Function to print the report
+  const printReport = async (report: SavedReport | null) => {
+    if (!report) {
+      Alert.alert('Error', 'No report selected for printing');
+      return;
+    }
+
+    try {
+      setIsPrinting(true);
+      const html = generatePrintHTML(report);
+      
+      // Print the PDF
+      const { uri } = await Print.printToFileAsync({ html });
+      console.log('PDF file saved to:', uri);
+      
+      // Check if sharing is available
+      const isSharingAvailable = await Sharing.isAvailableAsync();
+      
+      if (isSharingAvailable) {
+        // Share the PDF
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `${report.title} Report`,
+          UTI: 'com.adobe.pdf'
+        });
+      } else {
+        Alert.alert('Success', 'PDF created successfully!');
+      }
+    } catch (error) {
+      console.error('Error printing report:', error);
+      Alert.alert('Error', 'Failed to print report');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Filters Section at the top */}
@@ -375,6 +537,17 @@ const AdminReport: React.FC = () => {
                 >
                   <Ionicons name="expand" size={24} color={colors.black} />
                 </TouchableOpacity>
+                
+                {/* Print Button */}
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={() => {
+                    const reportToPrint = reports.find(r => r.id === report.id);
+                    printReport(reportToPrint || null);
+                  }}
+                >
+                  <Ionicons name="print-outline" size={24} color={colors.black} />
+                </TouchableOpacity>
               </View>
               
               {showDeleteConfirm === report.id && (
@@ -446,9 +619,32 @@ const AdminReport: React.FC = () => {
             <Text style={styles.modalHeaderText}>
               {selectedReport?.title || 'Report Details'}
             </Text>
-            <TouchableOpacity onPress={() => setShowMaximizeModal(false)}>
-              <Ionicons name="close" size={24} color={colors.white} />
-            </TouchableOpacity>
+            <View style={styles.modalHeaderActions}>
+              {/* Print Button */}
+              <TouchableOpacity 
+                style={styles.modalHeaderButton}
+                onPress={() => printReport(selectedReport)}
+                disabled={isPrinting}
+              >
+                <Ionicons 
+                  name="print-outline" 
+                  size={24} 
+                  color={colors.white} 
+                />
+              </TouchableOpacity>
+              
+              {/* Close Button */}
+              <TouchableOpacity 
+                style={styles.modalHeaderButton}
+                onPress={() => setShowMaximizeModal(false)}
+              >
+                <Ionicons 
+                  name="close" 
+                  size={24} 
+                  color={colors.white} 
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           
           {/* Filters Section - Positioned above the ScrollView */}
@@ -510,6 +706,15 @@ const AdminReport: React.FC = () => {
               </View>
             </ScrollView>
           </ScrollView>
+          
+          {/* Print loading indicator */}
+          {isPrinting && (
+            <View style={styles.printingOverlay}>
+              <View style={styles.printingContent}>
+                <Text style={styles.printingText}>Generating PDF...</Text>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
@@ -739,6 +944,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.white,
   },
+  modalHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalHeaderButton: {
+    marginLeft: 16,
+    padding: 4,
+  },
   tableContainer: {
     marginHorizontal: 16,
     marginTop: 16,
@@ -796,6 +1009,34 @@ const styles = StyleSheet.create({
   },
   filtersList: {
     marginTop: 8,
+  },
+  // New styles for printing
+  printingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  printingContent: {
+    backgroundColor: colors.white,
+    padding: 20,
+    borderRadius: 8,
+    minWidth: 200,
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  printingText: {
+    fontSize: 16,
+    color: colors.black,
+    fontWeight: '600',
   },
 });
 
