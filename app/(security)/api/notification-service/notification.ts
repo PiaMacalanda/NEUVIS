@@ -16,7 +16,6 @@ export const insertVisitExpirationNotificationWithoutTimeout = async (visit: vis
         const { data: existingNotification, error: selectError } = await supabase
             .from('notifications')
             .select("*")
-            .eq('user_id', security_id)
             .eq('visit_id', visit_id);
     
         if (selectError) {
@@ -29,7 +28,7 @@ export const insertVisitExpirationNotificationWithoutTimeout = async (visit: vis
     
         const { error: insertError } = await supabase
             .from('notifications')
-            .insert([{ user_id: security_id, visit_id, read: false, content }]);
+            .insert([{ visit_id, content }]);
     
         if (insertError) {
             throw new Error('Error Inserting Notification: ' + insertError.message);
@@ -41,7 +40,6 @@ export const insertVisitExpirationNotificationWithoutTimeout = async (visit: vis
             .from('visits')
             .update({ notification_sent: true })
             .eq('id', visit_id)
-            .eq('security_id', security_id);
 
         if (updateError) {
             throw new Error('Error Updating Column: ' + updateError.message);

@@ -38,9 +38,8 @@ const ExpiredVisitors: React.FC = () => {
   const fetchExpiredVisitors = async () => {
     try {
       setLoading(true);
-      if (!user) return;
 
-      const data = await fetchExpiredUntimedoutVisits(user);
+      const data = await fetchExpiredUntimedoutVisits();
       
       const enhancedData = await Promise.all(
         data.map(async (visit) => {
