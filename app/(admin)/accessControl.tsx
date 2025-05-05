@@ -10,7 +10,6 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Switch
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,7 +49,6 @@ export default function AccessControlScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
-  const [showInactive, setShowInactive] = useState(false);
 
   // Fetch security personnel and admin users from Supabase
   useEffect(() => {
@@ -288,17 +286,16 @@ export default function AccessControlScreen() {
   // Filter out unconfirmed accounts for the recently created accounts section
   const unconfirmedUsers = security.filter(entry => !entry.confirmed);
   
-  // Filter security personnel based on their active status for the active/inactive section
+  // Filter security personnel based on confirmed status only (no active filtering)
   const confirmedUsers = security.filter(entry => entry.confirmed);
-  const filteredConfirmedUsers = confirmedUsers.filter(entry => showInactive || entry.active);
   const activeCount = confirmedUsers.filter(entry => entry.active).length;
 
   return (
     <ScrollView style={styles.container}>
-      {/* Debug Info - Add this to help debug */}
+     
+      {/* Debug Info Section */}
       <View style={styles.debugSection}>
-        <Text style={styles.debugTitle}>Debug Info:</Text>
-        <Text style={styles.debugText}>Total Records: {security.length}</Text>
+        <Text style={styles.debugText}>Security Records: {security.length}</Text>
         <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
         <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
         <Text style={styles.debugText}>Admins: {admins.length}</Text>
@@ -313,7 +310,6 @@ export default function AccessControlScreen() {
         </TouchableOpacity>
       </View>
 
-   
       {/* New Section: Recently Created Accounts */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recently Created Security Accounts ({unconfirmedUsers.length})</Text>
@@ -362,8 +358,9 @@ export default function AccessControlScreen() {
           </View>
         ))
       )}
-         {/* Admin Users Section */}
-         <View style={styles.sectionHeader}>
+
+      {/* Admin Users Section */}
+      <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>System Administrators ({admins.length})</Text>
       </View>
       
@@ -390,18 +387,10 @@ export default function AccessControlScreen() {
         ))
       )}
 
-
-      {/* Active and Inactive Users Section (Only for confirmed users) */}
+      {/* Active and Inactive Users Section (Only for confirmed users) - MODIFIED: Removed filter */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Active and Inactive Users ({activeCount} active / {confirmedUsers.length} total)</Text>
-        <View style={styles.toggleContainer}>
-          <Switch 
-            value={showInactive} 
-            onValueChange={setShowInactive}
-            trackColor={{ false: "#d3d3d3", true: "#81b0ff" }}
-            thumbColor={showInactive ? "#007bff" : "#f4f3f4"}
-          />
-        </View>
+        {/* Removed the toggle switch that was here */}
       </View>
       
       {isLoading ? (
@@ -409,16 +398,12 @@ export default function AccessControlScreen() {
           <ActivityIndicator size="large" color="#00a824" />
           <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ) : filteredConfirmedUsers.length === 0 ? (
+      ) : confirmedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {confirmedUsers.length === 0 ? 
-              "No confirmed users found." : 
-              "No active personnel found. Toggle 'Show Inactive' to view inactive personnel."}
-          </Text>
+          <Text style={styles.emptyText}>No confirmed users found.</Text>
         </View>
       ) : (
-        filteredConfirmedUsers.map((entry) => (
+        confirmedUsers.map((entry) => (
           <View 
             key={entry.id} 
             style={[
@@ -590,34 +575,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 15
   },
-  // Debug section styles
   debugSection: {
-    backgroundColor: '#f0f8ff',
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: '#003366',
+    padding: 12,
+    borderRadius: 10,
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#add8e6'
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   debugTitle: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 5
+    marginBottom: 8,
+    color: 'white',
+    textAlign: 'left',
   },
   debugText: {
-    fontSize: 14,
-    marginBottom: 3
+    fontSize: 16,
+    marginBottom: 5,
+    color: 'white',
+    textAlign: 'left',
   },
   debugButton: {
-    backgroundColor: '#4682b4',
-    padding: 8,
-    borderRadius: 4,
-    marginTop: 5,
-    alignItems: 'center'
+    backgroundColor: '#0099ff',
+    padding: 12,
+    borderRadius: 6,
+    marginTop: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   debugButtonText: {
     color: 'white',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   input: {
     borderWidth: 1,
@@ -629,16 +627,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa'
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15
+    backgroundColor: 'transparent',
+    paddingVertical: 15,
+    paddingHorizontal: 5,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 0, // Removed margin bottom
+  },
+  sectionContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
     marginBottom: 15,
-    color: '#252525'
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionHeaderContainer: {
+    backgroundColor: '#003366',
+    padding: 12,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  sectionHeaderText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  sectionContent: {
+    padding: 15,
   },
   toggleContainer: {
     flexDirection: 'row',
