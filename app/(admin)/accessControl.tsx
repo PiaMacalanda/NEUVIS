@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Switch
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,6 +50,7 @@ export default function AccessControlScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Fetch security personnel and admin users from Supabase
   useEffect(() => {
@@ -286,30 +288,33 @@ export default function AccessControlScreen() {
   // Filter out unconfirmed accounts for the recently created accounts section
   const unconfirmedUsers = security.filter(entry => !entry.confirmed);
   
-  // Filter security personnel based on confirmed status only (no active filtering)
+  // Filter security personnel based on their active status for the active/inactive section
   const confirmedUsers = security.filter(entry => entry.confirmed);
+  const filteredConfirmedUsers = confirmedUsers.filter(entry => showInactive || entry.active);
   const activeCount = confirmedUsers.filter(entry => entry.active).length;
 
   return (
     <ScrollView style={styles.container}>
      
-      {/* Debug Info Section */}
-      <View style={styles.debugSection}>
-        <Text style={styles.debugText}>Security Records: {security.length}</Text>
-        <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
-        <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
-        <Text style={styles.debugText}>Admins: {admins.length}</Text>
-        <TouchableOpacity 
-          style={styles.debugButton}
-          onPress={() => {
-            fetchSecurityPersonnel();
-            fetchAdminUsers();
-          }}
-        >
-          <Text style={styles.debugButtonText}>Refresh Data</Text>
-        </TouchableOpacity>
-      </View>
+{/* Debug Info Section */}
+<View style={styles.debugSection}>
 
+  <Text style={styles.debugText}>Security Records: {security.length}</Text>
+  <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
+  <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
+  <Text style={styles.debugText}>Admins: {admins.length}</Text>
+  <TouchableOpacity 
+    style={styles.debugButton}
+    onPress={() => {
+      fetchSecurityPersonnel();
+      fetchAdminUsers();
+    }}
+  >
+    <Text style={styles.debugButtonText}>Refresh Data</Text>
+  </TouchableOpacity>
+</View>
+
+   
       {/* New Section: Recently Created Accounts */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recently Created Security Accounts ({unconfirmedUsers.length})</Text>
@@ -358,9 +363,8 @@ export default function AccessControlScreen() {
           </View>
         ))
       )}
-
-      {/* Admin Users Section */}
-      <View style={styles.sectionHeader}>
+         {/* Admin Users Section */}
+         <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>System Administrators ({admins.length})</Text>
       </View>
       
@@ -387,10 +391,18 @@ export default function AccessControlScreen() {
         ))
       )}
 
-      {/* Active and Inactive Users Section (Only for confirmed users) - MODIFIED: Removed filter */}
+
+      {/* Active and Inactive Users Section (Only for confirmed users) */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Active and Inactive Users ({activeCount} active / {confirmedUsers.length} total)</Text>
-        {/* Removed the toggle switch that was here */}
+        <View style={styles.toggleContainer}>
+          <Switch 
+            value={showInactive} 
+            onValueChange={setShowInactive}
+            trackColor={{ false: "#d3d3d3", true: "#81b0ff" }}
+            thumbColor={showInactive ? "#007bff" : "#f4f3f4"}
+          />
+        </View>
       </View>
       
       {isLoading ? (
@@ -398,12 +410,16 @@ export default function AccessControlScreen() {
           <ActivityIndicator size="large" color="#00a824" />
           <Text style={styles.emptyText}>Loading personnel data...</Text>
         </View>
-      ) : confirmedUsers.length === 0 ? (
+      ) : filteredConfirmedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No confirmed users found.</Text>
+          <Text style={styles.emptyText}>
+            {confirmedUsers.length === 0 ? 
+              "No confirmed users found." : 
+              "No active personnel found. Toggle 'Show Inactive' to view inactive personnel."}
+          </Text>
         </View>
       ) : (
-        confirmedUsers.map((entry) => (
+        filteredConfirmedUsers.map((entry) => (
           <View 
             key={entry.id} 
             style={[
