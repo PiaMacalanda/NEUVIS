@@ -215,7 +215,7 @@ const ExpiredVisitors: React.FC = () => {
                       </Text>
                       {selectedVisitor.visitorDetails?.phone_number && (
                         <TouchableOpacity onPress={() => copyToClipboard(selectedVisitor.visitorDetails?.phone_number)}>
-                          <Ionicons name="copy-outline" size={20} color="#4682B4" style={{ marginLeft: 10 }} />
+                          <Ionicons name="copy-outline" size={23} color="#4682B4" style={{ marginRight: 30 }} />
                         </TouchableOpacity>
                       )}
                     </View>
