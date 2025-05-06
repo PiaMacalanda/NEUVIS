@@ -12,6 +12,7 @@ export interface Visitor {
   id_number?: string;
   visit_count?: number;
   expiration?: string;
+  entry_gate?: string; // Added field for the entry gate information
   visitors?: {
     id: number;
     name: string;
@@ -73,13 +74,48 @@ export const isVisitorExpired = (visitor: Visitor): boolean => {
   return now > expirationPht;
 };
 
+// Fetch security personnel information to get gate assignment
+export const fetchSecurityGateInfo = async (securityId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('security')
+      .select('assign_gate')
+      .eq('id', securityId)
+      .single();
+    
+    if (error) throw error;
+    
+    return data?.assign_gate || 'Unknown Gate';
+  } catch (error) {
+    console.error('Error fetching security gate info:', error);
+    return 'Unknown Gate';
+  }
+};
+
+// Count the number of visits for a specific visitor
+export const countVisitorVisits = async (visitorId: number) => {
+  try {
+    const { count, error } = await supabase
+      .from('visits')
+      .select('*', { count: 'exact', head: false })
+      .eq('visitor_id', visitorId);
+    
+    if (error) throw error;
+    
+    return count || 1; // Return at least 1 visit (the current one)
+  } catch (error) {
+    console.error('Error counting visitor visits:', error);
+    return 1; // Default to 1 if there's an error
+  }
+};
+
 export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
   try {
     // Get start and end of selected date
     const startOfDay = new Date(new Date(selectedDate).setHours(0, 0, 0, 0)).toISOString();
     const endOfDay = new Date(new Date(selectedDate).setHours(23, 59, 59, 999)).toISOString();
     
-    // Modified query to fetch more visitor details including expiration
+    // Modified query to fetch more visitor details including expiration and security_id
     let query = supabase
       .from('visits')
       .select(`
@@ -89,6 +125,8 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
         visit_id,
         purpose_of_visit,
         expiration,
+        security_id,
+        visitor_id,
         visitors(
           id, 
           name, 
@@ -112,23 +150,41 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
     if (error) throw error;
 
     // Transform data with comprehensive visitor details and filter out expired visitors
-    const formattedData = data
+    const formattedDataPromises = data
       .filter(item => item.visitors !== null)
-      .map(item => ({
-        id: item.id,
-        name: item.visitors?.name || 'Unknown Visitor',
-        time_of_visit: item.time_of_visit,
-        formatted_time_of_visit: formatDateTime(item.time_of_visit),
-        time_out: item.time_out,
-        formatted_time_out: item.time_out ? formatDateTime(item.time_out) : undefined,
-        visit_id: item.visit_id,
-        purpose_of_visit: item.purpose_of_visit || '',
-        phone_number: item.visitors?.phone_number || '',
-        card_type: item.visitors?.card_type || '',
-        id_number: item.visitors?.id_number || '',
-        visit_count: 3, // This would ideally be dynamically fetched
-        expiration: item.expiration
-      }))
+      .map(async item => {
+        // Fetch gate information for each security personnel
+        const entryGate = item.security_id ? await fetchSecurityGateInfo(item.security_id) : 'Unknown Gate';
+        
+        // Get the visitor_id, defaulting to the visitors.id if visitor_id is not available
+        const visitorId = item.visitor_id || item.visitors?.id;
+        
+        // Count the number of visits for this visitor
+        const visitCount = visitorId ? await countVisitorVisits(visitorId) : 1;
+        
+        return {
+          id: item.id,
+          name: item.visitors?.name || 'Unknown Visitor',
+          time_of_visit: item.time_of_visit,
+          formatted_time_of_visit: formatDateTime(item.time_of_visit),
+          time_out: item.time_out,
+          formatted_time_out: item.time_out ? formatDateTime(item.time_out) : undefined,
+          visit_id: item.visit_id,
+          purpose_of_visit: item.purpose_of_visit || '',
+          phone_number: item.visitors?.phone_number || '',
+          card_type: item.visitors?.card_type || '',
+          id_number: item.visitors?.id_number || '',
+          visit_count: visitCount, // Use the actual visit count
+          expiration: item.expiration,
+          entry_gate: entryGate // Include the entry gate information
+        };
+      });
+    
+    // Resolve all promises to get the complete formatted data
+    const formattedData = await Promise.all(formattedDataPromises);
+    
+    // Filter out expired visitors
+    const filteredData = formattedData
       .filter(visitor => {
         // If it's an ongoing visit, don't show expired passes
         if (activeTab === 'ongoing') {
@@ -144,7 +200,7 @@ export const fetchVisitors = async (selectedDate: Date, activeTab: string) => {
         time_out: visitor.formatted_time_out
       }));
           
-    return formattedData;
+    return filteredData;
   } catch (error) {
     console.error('Error fetching visitors:', error);
     throw error;

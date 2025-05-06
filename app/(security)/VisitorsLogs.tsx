@@ -325,7 +325,7 @@ const VisitorsLogs: React.FC = () => {
                   
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Entry:</Text>
-                    <Text style={styles.detailsValue}>Main Entrance</Text>
+                    <Text style={styles.detailsValue}>{selectedVisitor.entry_gate || 'Unknown Gate'}</Text>
                   </View>
                   
                   <View style={styles.detailsSection}>
