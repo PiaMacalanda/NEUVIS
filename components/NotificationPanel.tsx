@@ -61,35 +61,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
     try {
-      // Note: First check if we can get the schema of the table to verify column names
-      // This is for debugging only - you would remove this in production
-      const { data: tableInfo, error: schemaError } = await supabase
-        .from('notifications')
-        .select('*')
-        .limit(1);
-        
-      if (schemaError) {
-        console.error('Error fetching table schema:', schemaError);
-        return;
-      }
-      
-      // Log the first row to see the column names
-      if (tableInfo && tableInfo.length > 0) {
-        console.log('Notification columns:', Object.keys(tableInfo[0]));
-      }
-      
-      // Assuming the primary key is 'notification_id' instead of 'id'
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId);
-        
-      if (error) {
-        console.error('Error marking notification as read:', error);
-        return;
-      }
-      
-      // Update local state immediately
+      // Update local state immediately for UI responsiveness
       const updatedNotifications = notifications.map(n => 
         n.id === notificationId ? { ...n, read: true } : n
       );
@@ -100,8 +72,22 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
         const unreadCount = updatedNotifications.filter(n => !n.read).length;
         updateBadgeCount(unreadCount);
       }
+      
+      // Then update in database
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+        
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        // Revert to original state if error
+        fetchNotifications();
+        return;
+      }
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
+      fetchNotifications();
     }
   };
 
@@ -112,11 +98,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
       
       setIsLoading(true);
       
-      const unreadIds = notifications
-        .filter(n => !n.read)
-        .map(n => n.id);
-      
-      if (unreadIds.length === 0) {
+      // Check if there are any unread notifications
+      const unreadNotifications = notifications.filter(n => !n.read);
+      if (unreadNotifications.length === 0) {
         setIsLoading(false);
         return;
       }
@@ -130,21 +114,22 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
         updateBadgeCount(0);
       }
       
-      // Use notification_id instead of id
+      // Get all notification IDs that are unread
+      const unreadIds = unreadNotifications.map(n => n.id);
+      
+      // Update all unread notifications
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('user_id', user.id)
-        .filter('read', 'eq', false); // Alternative approach - filter by unread instead of using .in()
+        .in('id', unreadIds);
         
       if (error) {
         console.error('Error marking all notifications as read:', error);
         // Revert local state if there was an error
         fetchNotifications();
-        return;
+      } else {
+        console.log('All notifications marked as read successfully');
       }
-      
-      console.log('All notifications marked as read successfully');
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
       // Revert local state if there was an error
@@ -159,10 +144,11 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
     try {
       if (!user) return;
       
+      // Looking at notification.ts, we need to fetch security guard notifications 
+      // based on the security_id associated with each visit
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -173,11 +159,11 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
       if (data) {
         // Map the database column names to our interface
         const formattedData = data.map(item => ({
-          id: item.notification_id || item.id, // Try both column names
+          id: item.id,
           content: item.content,
           read: item.read,
           created_at: item.created_at,
-          user_id: item.user_id,
+          user_id: user.id, // Set this for our local data structure
           visit_id: item.visit_id
         }));
         setNotifications(formattedData);
@@ -200,8 +186,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
       
       setIsLoading(true);
       
-      // Get user ID for the where clause
-      const userId = user.id;
+      // Get all notification IDs
+      const notificationIds = notifications.map(n => n.id);
+      
+      if (notificationIds.length === 0) {
+        setIsLoading(false);
+        return;
+      }
       
       // Update local state immediately for UI responsiveness
       setNotifications([]);
@@ -211,20 +202,19 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
         updateBadgeCount(0);
       }
       
-      // Then delete from the database
+      // Delete from the database using notification IDs
       const { error } = await supabase
         .from('notifications')
         .delete()
-        .eq('user_id', userId);
+        .in('id', notificationIds);
         
       if (error) {
         console.error('Error clearing notifications:', error);
         // Revert local state if there was an error
         fetchNotifications();
-        return;
+      } else {
+        console.log('All notifications cleared successfully');
       }
-      
-      console.log('All notifications cleared successfully');
     } catch (error) {
       console.error('Failed to clear notifications:', error);
       fetchNotifications();
