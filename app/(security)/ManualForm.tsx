@@ -121,16 +121,48 @@ const ManualForm: React.FC = () => {
   };
 
   const formatIdNumber = (text: string): string => {
-    const digits = text.replace(/\s/g, '');
+    const raw = text.replace(/\s|-/g, '').toUpperCase();
     let formatted = '';
-    
-    for (let i = 0; i < digits.length; i++) {
-      if (i > 0 && i % 4 === 0) {
-        formatted += ' ';
-      }
-      formatted += digits[i];
+  
+    switch (formData.idType) {
+      case 'Phils ID':
+        for (let i = 0; i < raw.length; i++) {
+          if (i > 0 && i % 4 === 0) {
+            formatted += '-';
+          }
+          formatted += raw[i];
+        }
+        break;
+  
+      case "Driver's License":
+        if (raw.length >= 11) {
+          const l = raw[0]; // Letter
+          const part1 = raw.slice(1, 3); // 2 Digits
+          const part2 = raw.slice(3, 7); // 4 Digitss
+          const part3 = raw.slice(7, 11); // 4 Digits
+          formatted = `${l}${part1}-${part2}-${part3}`;
+        } else {
+          formatted = raw;
+        }
+        break;
+  
+      case 'UMID':
+        if (raw.length >= 12) {
+          const part1 = raw.slice(0, 3); // 'CRN'
+          const part2 = raw.slice(3, 7); // 4 digits
+          const part3 = raw.slice(7, 14); // 7 digits
+          const part4 = raw.slice(14, 15); // 1 digit
+  
+          formatted = `${part1}-${part2}-${part3}-${part4}`;
+        } else {
+          formatted = raw;
+        }
+        break;  
+
+      default:
+        formatted = raw;
     }
-    
+  
     return formatted;
   };
 
@@ -171,11 +203,17 @@ const ManualForm: React.FC = () => {
   };
 
   const handleIdNumberChange = (value: string) => {
-    const sanitizedValue = value.replace(/[^0-9\s]/g, '');
+    let sanitizedValue = '';
+    if(formData.idType === 'Phils ID'){
+      sanitizedValue = value.replace(/[^0-9\s]/g, '');
+    } else if(formData.idType === 'Driver\'s License'){
+      sanitizedValue = value.replace(/[^a-zA-Z0-9\s]/g, '');
+    }
+    
     const digitsOnly = sanitizedValue.replace(/\s/g, '');
     const truncatedValue = digitsOnly.slice(0, 16);
     const formattedValue = formatIdNumber(truncatedValue);
-    
+
     setFormData({
       ...formData,
       idNumber: formattedValue
@@ -559,7 +597,11 @@ const ManualForm: React.FC = () => {
               onChangeText={handleIdNumberChange}
               onBlur={() => handleBlur('idNumber')}
               placeholder="Enter your ID number"
-              keyboardType="numeric"
+              keyboardType={
+                formData.idType === 'Phils ID' ? 'numeric' :
+                formData.idType === 'Driver\'s License' || 'UMID' ? 'default' :
+                'default'
+              }
             />
             {touched.idNumber && errors.idNumber && (
               <Text style={styles.errorText}>{errorMessages.idNumber}</Text>
