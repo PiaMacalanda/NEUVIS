@@ -77,15 +77,20 @@ export const isVisitorExpired = (visitor: Visitor): boolean => {
 // Fetch security personnel information to get gate assignment
 export const fetchSecurityGateInfo = async (securityId: string) => {
   try {
+    // Remove the .single() method and handle possible multiple/no results manually
     const { data, error } = await supabase
       .from('security')
       .select('assign_gate')
-      .eq('id', securityId)
-      .single();
+      .eq('id', securityId);
     
     if (error) throw error;
     
-    return data?.assign_gate || 'Unknown Gate';
+    // Check if data exists and has at least one record
+    if (data && data.length > 0) {
+      return data[0].assign_gate || 'Unknown Gate';
+    } else {
+      return 'Unknown Gate';
+    }
   } catch (error) {
     console.error('Error fetching security gate info:', error);
     return 'Unknown Gate';

@@ -93,7 +93,7 @@ export default function NeuvisLanding() {
           const { data, error } = await supabase
             .from('notifications')
             .select('*')
-            .eq('read', false)
+           
             .order('created_at', { ascending: false });
           
           if (error) {
@@ -226,16 +226,13 @@ export default function NeuvisLanding() {
       
       if (data && data.length > 0) {
         for (const visit of data) {
-          const notificationContent = `
-            Visitor ID Expired!
-            Visit ID: + ${visit.visit_id}
-          `;
-          
+          const notificationContent = `              Visitor ID Expired!`;
+            
           await insertVisitExpirationNotificationWithoutTimeout(visit, notificationContent);
         }
       }
-    }
-
+    };
+  
     sendNotfications();
   }, []);
 
