@@ -348,14 +348,7 @@ const VisitorsLogs: React.FC = () => {
                     </View>
                   </View>
                   
-                  <View style={styles.detailsSection}>
-                    <Text style={styles.detailsLabel}>Captured ID:</Text>
-                    <View style={styles.visitCountContainer}>         
-                      <TouchableOpacity>
-                        <Text style={styles.viewLogLink}>View Image</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                 
                   
                   <View style={styles.timeSection}>
                     <View style={styles.timeRow}>
