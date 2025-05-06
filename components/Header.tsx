@@ -116,12 +116,16 @@ const Header: React.FC<HeaderProps> = ({
                 <Text style={styles.modalOptionText}>View Profile</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.modalOption}>
+              {/* <TouchableOpacity style={styles.modalOption}>
                 <Ionicons name="settings-outline" size={20} color="#333" />
                 <Text style={styles.modalOptionText}>Settings</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               
-              <TouchableOpacity style={styles.modalOption}>
+              <TouchableOpacity style={styles.modalOption}
+              onPress={() => {
+                setProfileModalVisible(false);
+                router.push('/(static)/helpSupport');
+              }}>
                 <Ionicons name="help-circle-outline" size={20} color="#333" />
                 <Text style={styles.modalOptionText}>Help & Support</Text>
               </TouchableOpacity>

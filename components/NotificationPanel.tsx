@@ -356,9 +356,10 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     marginTop: 60,
-    marginRight: 20,
-    width: 350,
+    marginRight: 10,
+    width: 320,
     maxHeight: 500,
+    alignSelf: 'flex-end',
   },
   notificationPanel: {
     backgroundColor: '#fff',

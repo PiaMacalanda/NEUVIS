@@ -15,6 +15,7 @@ export default function StaticLayout() {
         },
       }}>
       <Stack.Screen name="privacy" options={{title: " "}}/>
+      <Stack.Screen name="helpSupport" options={{title: " "}}/>
     </Stack>
   );
 }
