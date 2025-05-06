@@ -38,47 +38,6 @@ export const signUp = async (email: string, password: string, full_name: string,
   }
 };
 
-export const insertUserToUsersTable = async (email: string, id: string, full_name: string, role: string): Promise<Error | null> => {
-  try {
-    const { data: existingUser, error: fetchError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', id)
-      .single();
-        
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Error checking existing user:', fetchError.message);
-      return fetchError;
-    }
-
-    if (existingUser) return new Error('Account already exists');
-
-    const { error } = await supabase.from('users').insert([
-      {
-        id: id,
-        email: email,
-        full_name: full_name,
-        role: role,
-      }
-    ]);
-
-    if (error) {
-      if (error.code === '23505') {
-        return new Error('Account already exists');
-      } else {
-        console.error('Insert failed:', error.message);
-        return error;
-      }
-    }
-        
-    console.log('User successfully inserted.');
-    return null;
-  } catch (error) {
-    console.error('Unexpected error inserting user:', (error as Error).message);
-    return error as Error;
-  }
-};
-
 export const signIn = async (email: string, password: string, requiredRole?: 'admin' | 'security' | 'superadmin'): Promise<AuthResponse> => {
   try {
     if (!email.endsWith('@neu.edu.ph')) throw new Error('Use your institutional email');
@@ -89,7 +48,8 @@ export const signIn = async (email: string, password: string, requiredRole?: 'ad
       if (error.message.toLowerCase().includes('email not confirmed')) {
         Alert.alert(
           'Error during sign-in', 
-          'Email is not verified. Please check your inbox or resend verification email.'
+          'Email is not verified. Please check your inbox or resend verification email.',
+          [{ text: 'OK', onPress: () => router.push({pathname: '/verify', params: { email: email }}) }]
         );
 
         console.error(error);
@@ -106,35 +66,23 @@ export const signIn = async (email: string, password: string, requiredRole?: 'ad
       throw new Error('Please verify your email before signing in.');
     }
 
+    // Check if user profile exists in the database
     const { data: existingUser, error: userError } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (userError && userError.code !== 'PGRST116') throw userError;
-
-    let userData: { role: string } | undefined;
-    let role: string | undefined;
-
-    if (!existingUser) {
-      console.log('User is verified but not in database. Inserting...');
-      const full_name = user.user_metadata?.full_name || 'Unknown';
-      role = user.user_metadata?.role || 'user';
-
-      if(!role){
-        Alert.alert('User role not found!');
-        throw new Error("User role not found!");
+    if (userError) {
+      if (userError.code === 'PGRST116') {
+        // User exists in auth but not in users table - this should no longer happen
+        // since profiles are created during email verification
+        throw new Error('User profile not found. Please contact support.');
       }
-
-      const insertError = await insertUserToUsersTable(email, user.id, full_name, role);
-      if (insertError) throw insertError;
-
-      userData = { role };
-    } else {
-      userData = { role: existingUser.role };
-      role = existingUser.role;
+      throw userError;
     }
+
+    const role = existingUser.role;
 
     if (requiredRole && role !== requiredRole) {
       throw new Error(`Access denied. This login requires ${requiredRole} privileges.`);
@@ -142,7 +90,7 @@ export const signIn = async (email: string, password: string, requiredRole?: 'ad
 
     return { 
       data, 
-      userData, 
+      userData: { role }, 
       role, 
       error: null 
     };

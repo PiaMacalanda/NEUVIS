@@ -1,4 +1,3 @@
-// to send the verification email
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../context/AuthContext';
@@ -6,9 +5,9 @@ import supabase from '../lib/supabaseClient';
 import { router, useGlobalSearchParams, useLocalSearchParams } from 'expo-router';
 
 const VerifyScreen = () => {
-    const { user, session } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-    const params = useGlobalSearchParams()
+  const params = useGlobalSearchParams();
   const emailParam = Array.isArray(params['email']) ? params['email'][0] : params['email'] || null;
 
   const resendVerificationEmail = async () => {
@@ -26,7 +25,7 @@ const VerifyScreen = () => {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-            Alert.alert('Success', 'Verification email resent. Check your inbox.');
+        Alert.alert('Success', 'Verification email resent. Check your inbox.');
     }
   };
 

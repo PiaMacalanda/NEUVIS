@@ -50,7 +50,7 @@ export default function SecuritySignupScreen() {
         Alert.alert(
             "Verify Email",
             "Verify your email to be signed up successfully.",
-            [{ text: "OK", onPress: () => router.push('/verify') }]
+            [{ text: "OK", onPress: () => router.push({ pathname: '/verify', params: { email: email } }) }]
         );
 
     } catch (error) {
