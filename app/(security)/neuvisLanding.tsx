@@ -93,7 +93,6 @@ export default function NeuvisLanding() {
           const { data, error } = await supabase
             .from('notifications')
             .select('*')
-            .eq('user_id', user.id)
             .eq('read', false)
             .order('created_at', { ascending: false });
           
@@ -223,7 +222,7 @@ export default function NeuvisLanding() {
 
   useEffect(() => {
     const sendNotfications = async () => {
-      const data = await fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet(user);
+      const data = await fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet();
       
       if (data && data.length > 0) {
         for (const visit of data) {

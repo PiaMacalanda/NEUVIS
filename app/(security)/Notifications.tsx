@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Clipboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -38,9 +38,8 @@ const ExpiredVisitors: React.FC = () => {
   const fetchExpiredVisitors = async () => {
     try {
       setLoading(true);
-      if (!user) return;
 
-      const data = await fetchExpiredUntimedoutVisits(user);
+      const data = await fetchExpiredUntimedoutVisits();
       
       const enhancedData = await Promise.all(
         data.map(async (visit) => {
@@ -103,7 +102,11 @@ const ExpiredVisitors: React.FC = () => {
     }
   };
 
- 
+  const copyToClipboard = (text: string | undefined) => {
+    if (text) {
+      Clipboard.setString(text);
+    }
+  };
 
   const handleViewVisitor = (visitor: ExtendedVisit) => {
     setSelectedVisitor(visitor);
@@ -114,10 +117,8 @@ const ExpiredVisitors: React.FC = () => {
     <View style={styles.visitorRow}>
       <View style={styles.visitorInfo}>
         <Text style={styles.visitorName}>{item.visitorDetails?.name || 'Unknown Visitor'}</Text>
-      
       </View>
       <View style={styles.timeInfo}>
-  
         <Text style={styles.timeLabel}>Visit time:</Text>
         <Text style={styles.timeValue}>{item.formattedVisitTime}</Text>
       </View>
@@ -128,8 +129,6 @@ const ExpiredVisitors: React.FC = () => {
         >
           <Text style={styles.buttonText}>View</Text>
         </TouchableOpacity>
-       
-        
       </View>
     </View>
   );
@@ -194,16 +193,13 @@ const ExpiredVisitors: React.FC = () => {
             </TouchableOpacity>
             
             {selectedVisitor && (
-              
               <View style={styles.visitorDetailsContainer}>
-
-                 <View style={styles.logoContainer}>
-                                  <Logo size="small" style={styles.logoCircle} />
-                                  <Text style={styles.universityName}>New Era University</Text>
-                                </View>
-
+                <View style={styles.logoContainer}>
+                  <Logo size="small" style={styles.logoCircle} />
+                  <Text style={styles.universityName}>New Era University</Text>
+                </View>
                 
-                <View style={styles.visitorDetailsName}>
+                <View style={styles.visitorDetailsHeader}>
                   <Text style={styles.visitorDetailsName}>
                     {selectedVisitor.visitorDetails?.name || 'Unknown Visitor'}
                   </Text>
@@ -213,9 +209,16 @@ const ExpiredVisitors: React.FC = () => {
                 <View style={styles.detailsContent}>
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Phone no:</Text>
-                    <Text style={styles.detailsValue}>
-                      {selectedVisitor.visitorDetails?.phone_number || 'N/A'}
-                    </Text>
+                    <View style={styles.phoneContainer}>
+                      <Text style={styles.detailsValue}>
+                        {selectedVisitor.visitorDetails?.phone_number || 'N/A'}
+                      </Text>
+                      {selectedVisitor.visitorDetails?.phone_number && (
+                        <TouchableOpacity onPress={() => copyToClipboard(selectedVisitor.visitorDetails?.phone_number)}>
+                          <Ionicons name="copy-outline" size={23} color="#4682B4" style={{ marginRight: 30 }} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                   
                   <View style={styles.detailsSection}>
@@ -245,14 +248,10 @@ const ExpiredVisitors: React.FC = () => {
                       <Text style={styles.timeInValue}>{selectedVisitor.formattedVisitTime}</Text>
                     </View>
                     
-                    
-
                     <View style={styles.timeRow}>
                       <Text style={styles.timeLabel}>Status:</Text>
                       <Text style={styles.expiredStatus}>Expired - Not Timed Out</Text>
                     </View>
-
-                   
                   </View>
                 </View>
 
@@ -266,9 +265,6 @@ const ExpiredVisitors: React.FC = () => {
                   >
                     <Text style={styles.modalButtonText}>Time Out</Text>
                   </TouchableOpacity>
-                  
-             
-                  
                 </View>
               </View>
             )}
@@ -454,6 +450,10 @@ const styles = StyleSheet.create({
   visitorDetailsContainer: {
     width: '100%',
   },
+  visitorDetailsHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   visitorDetailsName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -479,6 +479,11 @@ const styles = StyleSheet.create({
     flex: 2,
     fontSize: 14,
     fontWeight: '500',
+  },
+  phoneContainer: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   timeSection: {
     width: '100%',
@@ -526,4 +531,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
 export default ExpiredVisitors;

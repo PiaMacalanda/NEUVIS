@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, FlatList, Modal, ScrollView, SafeAreaView, Clipboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../../components/logo';
 import { Visitor, fetchVisitors, updateVisitorTimeOut, formatDate } from './api/notification-service/visitorsApi';
@@ -11,7 +11,7 @@ const VisitorsLogs: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [showVisitorModal, setShowVisitorModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('ongoing'); // 'ongoing' or 'completed'
+  const [activeTab, setActiveTab] = useState<'ongoing' | 'completed'>('ongoing');
   
   const [showDateModal, setShowDateModal] = useState(false);
   const today = new Date();
@@ -55,11 +55,8 @@ const VisitorsLogs: React.FC = () => {
     try {
       await updateVisitorTimeOut(id);
       
-      // Close the modal after time out
       setShowVisitorModal(false);
-      // Refresh the list
       loadVisitors();
-      // Switch to completed tab to show the logged out visitor
       setActiveTab('completed');
     } catch (error) {
       console.error('Error handling time out:', error);
@@ -69,6 +66,12 @@ const VisitorsLogs: React.FC = () => {
   const handleViewVisitor = (visitor: Visitor) => {
     setSelectedVisitor(visitor);
     setShowVisitorModal(true);
+  };
+
+  const copyToClipboard = (text: string | undefined) => {
+    if (text) {
+      Clipboard.setString(text);
+    }
   };
 
   const filteredVisitors = visitors.filter(visitor => 
@@ -177,7 +180,6 @@ const VisitorsLogs: React.FC = () => {
         />
       )}
       
-      {/* Date Selection Modal */}
       <Modal
         visible={showDateModal}
         transparent={true}
@@ -194,7 +196,6 @@ const VisitorsLogs: React.FC = () => {
             </View>
             
             <View style={styles.datePickerContainer2}>
-              {/* Month Picker */}
               <ScrollView style={styles.pickerColumn}>
                 {months.map((month, index) => (
                   <TouchableOpacity 
@@ -214,7 +215,6 @@ const VisitorsLogs: React.FC = () => {
                 ))}
               </ScrollView>
               
-              {/* Day Picker */}
               <ScrollView style={styles.pickerColumn}>
                 {Array.from(
                   { length: getDaysInMonth(selectedDate.getMonth() + 1, selectedDate.getFullYear()) }, 
@@ -237,7 +237,6 @@ const VisitorsLogs: React.FC = () => {
                 ))}
               </ScrollView>
               
-              {/* Year Picker */}
               <ScrollView style={styles.pickerColumn}>
                 {years.map(year => (
                   <TouchableOpacity 
@@ -274,7 +273,6 @@ const VisitorsLogs: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Visitor Details Modal */}
       <Modal
         visible={showVisitorModal}
         transparent={true}
@@ -292,13 +290,11 @@ const VisitorsLogs: React.FC = () => {
             
             {selectedVisitor && (
               <View style={styles.visitorDetailsContainer}>
-                {/* University Logo */}
                 <View style={styles.logoContainer}>
                   <Logo size="small" style={styles.logoCircle} />
                   <Text style={styles.universityName}>New Era University</Text>
                 </View>
                 
-                {/* Visitor Name and ID */}
                 <View style={styles.visitorDetailsHeader}>
                   <Text style={styles.visitorDetailsName}>{selectedVisitor.name}</Text>
                   <Text style={styles.visitorId}>{selectedVisitor.visit_id}</Text>
@@ -307,7 +303,14 @@ const VisitorsLogs: React.FC = () => {
                 <View style={styles.detailsContent}>
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Phone no:</Text>
-                    <Text style={styles.detailsValue}>{selectedVisitor.phone_number || 'N/A'}</Text>
+                    <View style={styles.visitCountContainer}>
+                      <Text style={styles.detailsValue}>{selectedVisitor.phone_number || 'N/A'}</Text>
+                      {selectedVisitor.phone_number && (
+                        <TouchableOpacity onPress={() => copyToClipboard(selectedVisitor.phone_number)}>
+                          <Ionicons name="copy-outline" size={20} color="#4682B4" style={{ marginLeft: 10 }} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                   
                   <View style={styles.detailsSection}>
@@ -361,7 +364,6 @@ const VisitorsLogs: React.FC = () => {
                     </View>
                   </View>
                   
-                  {/* Time Out Button - Only show in ongoing visits modal */}
                   {activeTab === 'ongoing' && !selectedVisitor.time_out && (
                     <TouchableOpacity 
                       style={styles.timeOutModalButton}

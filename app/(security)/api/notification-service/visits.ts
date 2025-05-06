@@ -6,11 +6,10 @@ import { visit } from "../../types/visits";
  * @param {user} - user data to fetch visits for the current security user
  * @returns {Promise<visits[]>} - returns a list of expired untimedout visits for the security that inserted the visit
  */
-export const fetchExpiredUntimedoutVisits = async (user: any) => {
+export const fetchExpiredUntimedoutVisits = async () => {
     const { data, error } = await supabase
         .from('visits')
         .select('*')
-        .eq('security_id', user.id)
         .lt('expiration', new Date().toISOString())
         .is('time_out', null);
     
@@ -28,11 +27,10 @@ export const fetchExpiredUntimedoutVisits = async (user: any) => {
  * @returns {Promise<visits[]>} - returns a list of expired untimedout visits for the security 
  *                                that inserted the visit where notification hasn't been sent yet
  */
-export const fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet = async (user: any) => {
+export const fetchExpiredUntimedoutVisitsWithNoNotificationsSentYet = async () => {
     const { data, error } = await supabase
         .from('visits')
         .select('*')
-        .eq('security_id', user?.id)
         .lte('expiration', new Date().toISOString())
         .is('time_out', null)
         .is('notification_sent', false);

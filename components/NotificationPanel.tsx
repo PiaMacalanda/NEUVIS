@@ -81,7 +81,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('notification_id', notificationId);
+        .eq('id', notificationId);
         
       if (error) {
         console.error('Error marking notification as read:', error);
