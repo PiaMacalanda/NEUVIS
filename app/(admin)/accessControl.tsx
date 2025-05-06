@@ -295,23 +295,24 @@ export default function AccessControlScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Debug Info - Add this to help debug */}
-      <View style={styles.debugSection}>
-        <Text style={styles.debugTitle}>Debug Info:</Text>
-        <Text style={styles.debugText}>Total Records: {security.length}</Text>
-        <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
-        <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
-        <Text style={styles.debugText}>Admins: {admins.length}</Text>
-        <TouchableOpacity 
-          style={styles.debugButton}
-          onPress={() => {
-            fetchSecurityPersonnel();
-            fetchAdminUsers();
-          }}
-        >
-          <Text style={styles.debugButtonText}>Refresh Data</Text>
-        </TouchableOpacity>
-      </View>
+     
+{/* Debug Info Section */}
+<View style={styles.debugSection}>
+
+  <Text style={styles.debugText}>Security Records: {security.length}</Text>
+  <Text style={styles.debugText}>Unconfirmed: {unconfirmedUsers.length}</Text>
+  <Text style={styles.debugText}>Confirmed: {confirmedUsers.length}</Text>
+  <Text style={styles.debugText}>Admins: {admins.length}</Text>
+  <TouchableOpacity 
+    style={styles.debugButton}
+    onPress={() => {
+      fetchSecurityPersonnel();
+      fetchAdminUsers();
+    }}
+  >
+    <Text style={styles.debugButtonText}>Refresh Data</Text>
+  </TouchableOpacity>
+</View>
 
    
       {/* New Section: Recently Created Accounts */}
@@ -590,34 +591,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 15
   },
-  // Debug section styles
   debugSection: {
-    backgroundColor: '#f0f8ff',
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: '#003366',
+    padding: 12,
+    borderRadius: 10,
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#add8e6'
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   debugTitle: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 5
+    marginBottom: 8,
+    color: 'white',
+    textAlign: 'left',
   },
   debugText: {
-    fontSize: 14,
-    marginBottom: 3
+    fontSize: 16,
+    marginBottom: 5,
+    color: 'white',
+    textAlign: 'left',
   },
   debugButton: {
-    backgroundColor: '#4682b4',
-    padding: 8,
-    borderRadius: 4,
-    marginTop: 5,
-    alignItems: 'center'
+    backgroundColor: '#0099ff',
+    padding: 12,
+    borderRadius: 6,
+    marginTop: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   debugButtonText: {
     color: 'white',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   input: {
     borderWidth: 1,
@@ -629,16 +643,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa'
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15
+    backgroundColor: 'transparent',
+    paddingVertical: 15,
+    paddingHorizontal: 5,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 0, // Removed margin bottom
+  },
+  sectionContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
     marginBottom: 15,
-    color: '#252525'
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionHeaderContainer: {
+    backgroundColor: '#003366',
+    padding: 12,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  sectionHeaderText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  sectionContent: {
+    padding: 15,
   },
   toggleContainer: {
     flexDirection: 'row',
