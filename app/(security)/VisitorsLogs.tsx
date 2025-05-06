@@ -337,9 +337,7 @@ const VisitorsLogs: React.FC = () => {
                     <Text style={styles.detailsLabel}>Number of Visit:</Text>
                     <View style={styles.visitCountContainer}>
                       <Text style={styles.visitCountValue}>{selectedVisitor.visit_count || 1}</Text>
-                      <TouchableOpacity>
-                        <Text style={styles.viewLogLink}>View Visit Log</Text>
-                      </TouchableOpacity>
+                      
                     </View>
                   </View>
                   
