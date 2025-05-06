@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/app/lib/supabaseClient';
+import { router } from 'expo-router'; // Import the router for navigation
 
 // Define the Notification interface
 interface Notification {
@@ -232,6 +233,14 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
     }
   };
 
+  // Navigate to Notifications.tsx (ExpiredVisitors component)
+  const navigateToExpiredVisitors = () => {
+    // First close the notification panel
+    onClose();
+    // Navigate to the expired visitors page
+    router.push('/Notifications');
+  };
+
   // Check if there are any unread notifications
   const hasUnread = notifications.some(n => !n.read);
 
@@ -290,7 +299,11 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({
                             styles.notificationItem,
                             !notification.read && styles.unreadNotification
                           ]}
-                          onPress={() => markAsRead(notification.id)}
+                          onPress={() => {
+                            markAsRead(notification.id);
+                            // Navigate to the Expired Visitors page
+                            navigateToExpiredVisitors();
+                          }}
                         >
                           <View style={styles.notificationIconContainer}>
                             <View style={[

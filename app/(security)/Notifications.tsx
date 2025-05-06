@@ -73,7 +73,14 @@ const ExpiredVisitors: React.FC = () => {
         })
       );
       
-      setExpiredVisits(enhancedData);
+      // Sort the data from newest to oldest based on visit time
+      const sortedData = enhancedData.sort((a, b) => {
+        const dateA = new Date(a.time_of_visit);
+        const dateB = new Date(b.time_of_visit);
+        return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+      });
+      
+      setExpiredVisits(sortedData);
     } catch (error) {
       console.error('Error fetching expired visits:', error);
     } finally {

@@ -36,7 +36,14 @@ const VisitorsLogs: React.FC = () => {
     try {
       setLoading(true);
       const visitorData = await fetchVisitors(selectedDate, activeTab);
-      setVisitors(visitorData);
+      // Sort visitors by time_of_visit in descending order (newest first)
+      const sortedVisitors = [...visitorData].sort((a, b) => {
+        // Convert time strings to Date objects for comparison
+        const timeA = new Date(`${selectedDate.toDateString()} ${a.time_of_visit}`);
+        const timeB = new Date(`${selectedDate.toDateString()} ${b.time_of_visit}`);
+        return timeB.getTime() - timeA.getTime();
+      });
+      setVisitors(sortedVisitors);
     } catch (error) {
       console.error('Error loading visitors:', error);
     } finally {
