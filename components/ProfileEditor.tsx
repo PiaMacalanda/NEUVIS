@@ -395,13 +395,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
               </TouchableOpacity>
             </View>
             
-            {/* Forgotten password link */}
-            <TouchableOpacity 
-              style={styles.forgotPasswordInlineButton} 
-              onPress={() => setShowForgotPasswordModal(true)}
-            >
-              <Text style={styles.forgotPasswordInlineText}>Forgotten your password?</Text>
-            </TouchableOpacity>
+            
             
             {/* Action buttons */}
             <View style={styles.buttonRow}>
