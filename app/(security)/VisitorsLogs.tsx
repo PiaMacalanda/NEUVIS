@@ -36,7 +36,14 @@ const VisitorsLogs: React.FC = () => {
     try {
       setLoading(true);
       const visitorData = await fetchVisitors(selectedDate, activeTab);
-      setVisitors(visitorData);
+      // Sort visitors by time_of_visit in descending order (newest first)
+      const sortedVisitors = [...visitorData].sort((a, b) => {
+        // Convert time strings to Date objects for comparison
+        const timeA = new Date(`${selectedDate.toDateString()} ${a.time_of_visit}`);
+        const timeB = new Date(`${selectedDate.toDateString()} ${b.time_of_visit}`);
+        return timeB.getTime() - timeA.getTime();
+      });
+      setVisitors(sortedVisitors);
     } catch (error) {
       console.error('Error loading visitors:', error);
     } finally {
@@ -325,7 +332,7 @@ const VisitorsLogs: React.FC = () => {
                   
                   <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Entry:</Text>
-                    <Text style={styles.detailsValue}>Main Entrance</Text>
+                    <Text style={styles.detailsValue}>{selectedVisitor.entry_gate || 'Unknown Gate'}</Text>
                   </View>
                   
                   <View style={styles.detailsSection}>
@@ -337,20 +344,11 @@ const VisitorsLogs: React.FC = () => {
                     <Text style={styles.detailsLabel}>Number of Visit:</Text>
                     <View style={styles.visitCountContainer}>
                       <Text style={styles.visitCountValue}>{selectedVisitor.visit_count || 1}</Text>
-                      <TouchableOpacity>
-                        <Text style={styles.viewLogLink}>View Visit Log</Text>
-                      </TouchableOpacity>
+                      
                     </View>
                   </View>
                   
-                  <View style={styles.detailsSection}>
-                    <Text style={styles.detailsLabel}>Captured ID:</Text>
-                    <View style={styles.visitCountContainer}>         
-                      <TouchableOpacity>
-                        <Text style={styles.viewLogLink}>View Image</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                 
                   
                   <View style={styles.timeSection}>
                     <View style={styles.timeRow}>
