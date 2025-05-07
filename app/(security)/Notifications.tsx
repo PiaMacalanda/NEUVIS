@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Clipboard } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Clipboard, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { visit } from './types/visits';
 import { fetchExpiredUntimedoutVisits } from './api/notification-service/visits';
 import { insertVisitExpirationNotificationWithoutTimeout } from './api/notification-service/notification';
+import { fetchSecurityGateInfo, countVisitorVisits } from './api/notification-service/visitorsApi';
 
 interface VisitorDetails {
   id: number;
@@ -22,6 +23,8 @@ interface ExtendedVisit extends visit {
   visitorDetails?: VisitorDetails;
   formattedExpiration?: string;
   formattedVisitTime?: string;
+  entry_gate?: string;
+  visit_count?: number;
 }
 
 const ExpiredVisitors: React.FC = () => {
@@ -51,16 +54,33 @@ const ExpiredVisitors: React.FC = () => {
           
           if (error) console.error('Error fetching visitor details:', error);
           
+          // Get entry gate info
+          const entryGate = visit.security_id 
+            ? await fetchSecurityGateInfo(visit.security_id) 
+            : 'Unknown Gate';
+          
+          // Get visit count
+          const visitorId = visit.visitor_id || visitorData?.id;
+          const visitCount = visitorId ? await countVisitorVisits(visitorId) : 1;
+          
           return {
             ...visit,
             visitorDetails: visitorData || undefined,
-            
-            formattedVisitTime: formatDateTime(visit.time_of_visit)
+            formattedVisitTime: formatDateTime(visit.time_of_visit),
+            entry_gate: entryGate,
+            visit_count: visitCount
           };
         })
       );
       
-      setExpiredVisits(enhancedData);
+      // Sort the data from newest to oldest based on visit time
+      const sortedData = enhancedData.sort((a, b) => {
+        const dateA = new Date(a.time_of_visit);
+        const dateB = new Date(b.time_of_visit);
+        return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+      });
+      
+      setExpiredVisits(sortedData);
     } catch (error) {
       console.error('Error fetching expired visits:', error);
     } finally {
@@ -193,7 +213,7 @@ const ExpiredVisitors: React.FC = () => {
             </TouchableOpacity>
             
             {selectedVisitor && (
-              <View style={styles.visitorDetailsContainer}>
+              <ScrollView style={styles.visitorDetailsContainer}>
                 <View style={styles.logoContainer}>
                   <Logo size="small" style={styles.logoCircle} />
                   <Text style={styles.universityName}>New Era University</Text>
@@ -236,11 +256,28 @@ const ExpiredVisitors: React.FC = () => {
                   </View>
                   
                   <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Entry:</Text>
+                    <Text style={styles.detailsValue}>
+                      {selectedVisitor.entry_gate || 'Unknown Gate'}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.detailsSection}>
                     <Text style={styles.detailsLabel}>Purpose of Visit:</Text>
                     <Text style={styles.detailsValue}>
                       {selectedVisitor.purpose_of_visit || 'N/A'}
                     </Text>
                   </View>
+                  
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.detailsLabel}>Number of Visit:</Text>
+                    <View style={styles.visitCountContainer}>
+                      <Text style={styles.visitCountValue}>{selectedVisitor.visit_count || 1}</Text>
+                      
+                    </View>
+                  </View>
+                  
+                  
                   
                   <View style={styles.timeSection}>
                     <View style={styles.timeRow}>
@@ -266,7 +303,7 @@ const ExpiredVisitors: React.FC = () => {
                     <Text style={styles.modalButtonText}>Time Out</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -485,6 +522,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  visitCountContainer: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  visitCountValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  viewLogLink: {
+    fontSize: 14,
+    color: '#4682B4',
+    textDecorationLine: 'underline',
+  },
   timeSection: {
     width: '100%',
     marginTop: 16,
@@ -510,7 +562,7 @@ const styles = StyleSheet.create({
   modalButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 24,
+    marginTop: 10,
   },
   modalButton: {
     paddingVertical: 10,

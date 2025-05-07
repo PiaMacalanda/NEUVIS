@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
 
   },
   confirmButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#003566',
     opacity: 0.9,
   },
   actionButtonText: {
