@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Clipboard } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, Clipboard, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -213,7 +213,7 @@ const ExpiredVisitors: React.FC = () => {
             </TouchableOpacity>
             
             {selectedVisitor && (
-              <View style={styles.visitorDetailsContainer}>
+              <ScrollView style={styles.visitorDetailsContainer}>
                 <View style={styles.logoContainer}>
                   <Logo size="small" style={styles.logoCircle} />
                   <Text style={styles.universityName}>New Era University</Text>
@@ -303,7 +303,7 @@ const ExpiredVisitors: React.FC = () => {
                     <Text style={styles.modalButtonText}>Time Out</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </ScrollView>
             )}
           </View>
         </View>
