@@ -1,5 +1,5 @@
-# Welcome to NEUVIS - Virtual Identification System 🧪👋
-
+# Welcome to NEUVIS - Virtual Identification System
+![Image](https://github.com/user-attachments/assets/47755593-00ac-4adc-90eb-25dd89aef6a5)
 NEUVIS is a Virtual Identification System designed to streamline visitor management in New Era University. Built with React Native, Expo, Supabase, and TypeScript, it enables security officers and administrators to verify, log, and track visitor check-ins and check-outs efficiently.
 
 ## 📌 Tech Stack  
