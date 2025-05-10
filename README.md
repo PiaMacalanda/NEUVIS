@@ -1,114 +1,126 @@
-# Welcome to NEUVIS - Virtual Identification System
-![Image](https://github.com/user-attachments/assets/47755593-00ac-4adc-90eb-25dd89aef6a5)
-NEUVIS is a Virtual Identification System designed to streamline visitor management in New Era University. Built with React Native, Expo, Supabase, and TypeScript, it enables security officers and administrators to verify, log, and track visitor check-ins and check-outs efficiently.
+---
 
-## 📌 Tech Stack  
-- **React Native** - Mobile app framework  
-- **Expo** - Development environment  
-- **Supabase** - Backend services  
-- **TypeScript** - Strongly typed JavaScript  
+# 🪪 NEUVIS – Virtual Identification System
 
-## Get Started
+![NEUVIS Banner](https://github.com/user-attachments/assets/47755593-00ac-4adc-90eb-25dd89aef6a5)
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/PiaMacalanda/NEUVIS.git
-   cd NEUVIS
-   ```
+**NEUVIS** (New Era University Virtual Identification System) is a visitor management tool built for security officers and administrators. It simplifies check-in and check-out processes by generating virtual visitor IDs, logging entries, and maintaining accurate visit records—all in real-time.
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+Built using **React Native**, **Expo**, **Supabase**, and **TypeScript**, NEUVIS is optimized for Android devices using the Expo Dev Client.
 
-3. **Set Up Environment Variables** (working on🚧)  
-   Create a `.env` file in the root directory and add:  
-   ```plaintext
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
+---
 
-4. **Start the Development Server with Expo Dev Build**
-   ```bash
-   npx expo start -c
-   ```
-   - The `-c` flag clears the cache to ensure a fresh start.
-   - Make sure you have the **Expo Dev Build** installed on your Android device.
-   - Connect your device via USB or ensure it is on the same network as your development machine.
-   - If the automatic build does not work, manually input the **Metro bundler URL** displayed in the terminal into the **Expo Dev Build** app.
+## 🚀 Tech Stack
 
-5. **GitHub Repository**
-   [NEUVIS Repository](https://github.com/PiaMacalanda/NEUVIS)
+* **React Native** – Cross-platform mobile app framework
+* **Expo** – Rapid development environment
+* **Supabase** – Scalable backend with authentication and database
+* **TypeScript** – Type-safe JavaScript for more robust code
 
-## 🛠 Collaborative Development Guide
+---
 
-### Creating a Branch
-Always create a new branch when working on a new feature or fixing a bug to keep the `main` branch stable.
+## ⚙️ Getting Started
+
+### 1. Clone the Repository
+
 ```bash
-git checkout -b feature-branch-name
-```
-Example:
-```bash
-git checkout -b add-login-feature
+git clone https://github.com/PiaMacalanda/NEUVIS.git
+cd NEUVIS
 ```
 
-### Committing Changes
-Make meaningful commit messages describing what you changed.
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+
+### 3. Run the App on Expo Dev Client
+
+```bash
+npx expo start -c
+```
+
+* The `-c` flag clears cache for a clean build.
+* Install **Expo Go** or **Expo Dev Client** on your Android device.
+* Connect via USB or ensure you're on the same Wi-Fi network.
+* If auto-launch fails, manually enter the Metro bundler URL into the Dev Client.
+
+---
+
+## 🌱 Collaborative Workflow
+
+### Branching
+
+Create a feature branch before making changes:
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+### Committing
+
+Write clear, descriptive commit messages:
+
 ```bash
 git add .
-git commit -m "Added login functionality with Google Auth"
+git commit -m "feat: added Google login feature"
 ```
 
-### Pushing Changes
-Push your branch to the remote repository.
+### Pushing
+
 ```bash
-git push origin feature-branch-name
-```
-Example:
-```bash
-git push origin add-login-feature
+git push origin feature/your-feature-name
 ```
 
-### Creating a Pull Request (PR)
-1. Go to the GitHub repository: [NEUVIS Repository](https://github.com/PiaMacalanda/NEUVIS)
-2. Click on the **Pull Requests** tab.
-3. Click **New pull request**.
-4. Select your feature branch and compare it with `main`.
-5. Click **Create pull request**, provide a description, and submit.
-6. Wait for a team member to review and approve before merging.
+### Pull Requests
 
-### Merging to Main
-Only merge changes into `main` after a successful PR review.
+1. Navigate to the [NEUVIS GitHub repo](https://github.com/PiaMacalanda/NEUVIS).
+2. Go to **Pull Requests** > **New pull request**.
+3. Select your branch and compare it with `main`.
+4. Add a description and submit the PR.
+5. Request review before merging.
+
+### Merging
+
+After approval:
+
 ```bash
 git checkout main
 git pull origin main
-git merge feature-branch-name
+git merge feature/your-feature-name
 ```
 
-### Keeping Your Branch Updated
-Before pushing your changes, sync your branch with `main` to avoid conflicts.
+### Syncing Your Branch
+
 ```bash
 git checkout main
 git pull origin main
-git checkout feature-branch-name
+git checkout feature/your-feature-name
 git merge main
 ```
 
-## 📚 Additional Resources
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Documentation](https://reactnative.dev/docs/getting-started)
-- [Supabase Documentation](https://supabase.io/docs)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [Google Auth for Expo](https://docs.expo.dev/guides/authentication/#google)
+---
 
-## 👨‍💻 Project Team
-- **Pia Macalanda** - Lead Developer & Scrum Master - [GitHub](https://github.com/PiaMacalanda)
-- **Jaime III Dy** - Backend Developer & Security Specialist - [GitHub](https://github.com/JaimeDyIII)
-- **Angelica Toquero** - Backend Developer - [GitHub](https://github.com/AngelicaToquero)
-- **Aliyah Llana** - UI/UX Designer - [GitHub](https://github.com/AliyahAira)
-- **Leo Rentazida** - UI/UX Designer - [GitHub](https://github.com/leorentazida)
-- **Lyrine Poliarco** - Database Analyst - [GitHub](https://github.com/LyrinePoliarco)
-- **Testers** - ALL  
+## 📚 Resources
 
-Happy coding! ✨💻
+* [📱 Expo Docs](https://docs.expo.dev/)
+* [⚛️ React Native Docs](https://reactnative.dev/docs/getting-started)
+* [🧩 Supabase Docs](https://supabase.io/docs)
+* [🔡 TypeScript Docs](https://www.typescriptlang.org/docs/)
 
+---
+
+## 👥 Project Team
+
+| Name                 | Role                          | GitHub Profile                                         |
+| -------------------- | ----------------------------- | ------------------------------------------------------ |
+| **Pia Macalanda**    | Lead Developer & Scrum Master | [@PiaMacalanda](https://github.com/PiaMacalanda)       |
+| **Jaime III Dy**     | Backend Developer & Security  | [@JaimeDyIII](https://github.com/JaimeDyIII)           |
+| **Angelica Toquero** | Backend Developer             | [@AngelicaToquero](https://github.com/AngelicaToquero) |
+| **Aliyah Llana**     | UI/UX Designer                | [@AliyahAira](https://github.com/AliyahAira)           |
+| **Leo Rentazida**    | UI/UX Designer                | [@leorentazida](https://github.com/leorentazida)       |
+| **Lyrine Poliarco**  | Database Analyst              | [@LyrinePoliarco](https://github.com/LyrinePoliarco)   |
+| **Testers**          | QA & Validation               | Everyone! 🙌                                           |
+
+---
